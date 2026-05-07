@@ -1726,10 +1726,14 @@
 
                 <div id="turno-section" style="display:none; margin-top:8px;">
                     <h3>Turno</h3>
-                    <input type="radio" id="turno_diurno" name="turno" value="Diurna">
-                    <label for="turno_diurno">Diurno</label><br>
-                    <input type="radio" id="turno_nocturno" name="turno" value="Nocturna">
-                    <label for="turno_nocturno">Nocturno</label><br>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" id="turno_diurno" name="turno" value="Diurna"> Diurno
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" id="turno_nocturno" name="turno" value="Nocturna"> Nocturno
+                        </label>
+                    </div>
                 </div>
 
                 <div id="pista-section" style="margin-top:8px;">
