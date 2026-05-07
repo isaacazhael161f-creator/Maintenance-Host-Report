@@ -6619,15 +6619,20 @@
                     try {
                         var { data, error } = await supabase
                             .from('vw_app_usuarios')
-                            .select('full_name, username, pertenece, permisos_extra, estatus');
+                            .select('*');
                         if (error) throw error;
 
                         var usuariosFiltrados = (data || []).filter(function (u) {
-                            var estatus = String(u.estatus || '').toLowerCase().trim();
-                            var activo = !estatus || estatus === 'alta' || estatus === 'activo';
-                            return activo && belongsToGsoPath(u.pertenece) && hasRevisionCrearPermission(u.permisos_extra);
+                            return belongsToGsoPath(u.pertenece) && hasRevisionCrearPermission(u.permisos_extra);
                         }).map(function (u) {
-                            return (u.full_name || u.username || '').trim();
+                            return (
+                                u.full_name ||
+                                u.nombre_completo ||
+                                u.nombre ||
+                                u.name ||
+                                u.username ||
+                                ''
+                            ).trim();
                         }).filter(Boolean).sort(function (a, b) {
                             return a.localeCompare(b, 'es', { sensitivity: 'base' });
                         });
