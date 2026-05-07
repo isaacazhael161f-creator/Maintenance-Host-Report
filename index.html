@@ -1715,18 +1715,25 @@
 
                 <h3>⚠️ Tipo de Inspección</h3>
 
-                <input type="checkbox" id="ins_primaria" name="tipo_inspeccion" value="Primaria">
-                <label for="ins_primaria">Primaria</label><br>
-
-                <input type="checkbox" id="ins_secundaria" name="tipo_inspeccion" value="Secundaria">
-                <label for="ins_secundaria">Secundaria</label><br>
+                <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <label class="pista-option" style="flex:1;">
+                        <input type="radio" id="ins_primaria" name="tipo_inspeccion" value="Primaria"> Primaria
+                    </label>
+                    <label class="pista-option" style="flex:1;">
+                        <input type="radio" id="ins_secundaria" name="tipo_inspeccion" value="Secundaria"> Secundaria
+                    </label>
+                </div>
 
                 <div id="turno-section" style="display:none; margin-top:8px;">
                     <h3>Turno</h3>
-                    <input type="radio" id="turno_diurno" name="turno" value="Diurna">
-                    <label for="turno_diurno">Diurno</label><br>
-                    <input type="radio" id="turno_nocturno" name="turno" value="Nocturna">
-                    <label for="turno_nocturno">Nocturno</label><br>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" id="turno_diurno" name="turno" value="Diurna"> Diurno
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" id="turno_nocturno" name="turno" value="Nocturna"> Nocturno
+                        </label>
+                    </div>
                 </div>
 
                 <div id="pista-section" style="margin-top:8px;">
@@ -1746,16 +1753,6 @@
                 <!-- Select para Responsable: reemplaza la lista de botones -->
                 <select id="report-authors-select" name="report_authors" title="Seleccionar Responsable">
                     <option value="">-- Seleccionar Responsable --</option>
-                    <option value="Miguel Méndez">Miguel Méndez</option>
-                    <option value="Juan Carlos Cruz">Juan Carlos Cruz</option>
-                    <option value="Baltazar Alarcón">Baltazar Alarcón</option>
-                    <option value="Jorge Soria">Jorge Soria</option>
-                    <option value="Israel Montes Sarabia">Israel Montes Sarabia</option>
-                    <option value="Daniel Cuevas">Daniel Cuevas</option>
-                    <option value="Mauricio Neos">Mauricio Neos</option>
-                    <option value="Isaac López">Isaac López</option>
-                    <option value="Mauro Hernández">Mauro Hernández</option>
-                    <option value="Daniel Mejía">Daniel Mejía</option>
                 </select>
                 <button type="button" id="report-authors-reset" style="display:none; margin-top:6px;">Cambiar
                     responsable</button>
@@ -6595,6 +6592,57 @@
                         showLogin();
                     }
                 }
+
+                function safeJsonParse(value) {
+                    if (!value) return null;
+                    if (typeof value === 'object') return value;
+                    try { return JSON.parse(value); } catch (_) { return null; }
+                }
+
+                function hasRevisionCrearPermission(permisosExtra) {
+                    var permisos = safeJsonParse(permisosExtra) || {};
+                    var acciones = (permisos && permisos.acciones) || {};
+                    var revisionAcciones = acciones['revision-area-movimiento'];
+                    if (!Array.isArray(revisionAcciones)) return false;
+                    return revisionAcciones.map(function (x) { return String(x || '').toLowerCase(); }).includes('crear');
+                }
+
+                function belongsToGsoPath(pertenece) {
+                    var perteneceObj = safeJsonParse(pertenece) || {};
+                    var path = String((perteneceObj && perteneceObj.path) || '').trim().toLowerCase();
+                    return path === 'dg.do.sd_so.gso';
+                }
+
+                async function loadRevisionResponsibleOptions() {
+                    var select = document.getElementById('report-authors-select');
+                    if (!select || !supabase) return;
+                    try {
+                        var { data, error } = await supabase
+                            .from('vw_app_usuarios')
+                            .select('full_name, username, pertenece, permisos_extra, estatus');
+                        if (error) throw error;
+
+                        var usuariosFiltrados = (data || []).filter(function (u) {
+                            var estatus = String(u.estatus || '').toLowerCase().trim();
+                            var activo = !estatus || estatus === 'alta' || estatus === 'activo';
+                            return activo && belongsToGsoPath(u.pertenece) && hasRevisionCrearPermission(u.permisos_extra);
+                        }).map(function (u) {
+                            return (u.full_name || u.username || '').trim();
+                        }).filter(Boolean).sort(function (a, b) {
+                            return a.localeCompare(b, 'es', { sensitivity: 'base' });
+                        });
+
+                        select.innerHTML = '<option value="">-- Seleccionar Responsable --</option>';
+                        usuariosFiltrados.forEach(function (nombre) {
+                            var option = document.createElement('option');
+                            option.value = nombre;
+                            option.textContent = nombre;
+                            select.appendChild(option);
+                        });
+                    } catch (e) {
+                        console.error('No se pudo cargar responsables desde vw_app_usuarios:', e);
+                    }
+                }
                 
                 async function loginWithUsuariosTable(usernameOrEmail, password) {
                     var userValue = String(usernameOrEmail || '').trim();
@@ -6694,6 +6742,7 @@
                                     role: role
                                 }
                             });
+                            loadRevisionResponsibleOptions();
                 
                         } catch (error) {
                 
@@ -6716,6 +6765,10 @@
                         location.reload();
                     });
                 }
+
+                setTimeout(function () {
+                    loadRevisionResponsibleOptions();
+                }, 800);
                 
                 checkSession();
         
