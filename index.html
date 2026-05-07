@@ -1715,11 +1715,14 @@
 
                 <h3>⚠️ Tipo de Inspección</h3>
 
-                <input type="checkbox" id="ins_primaria" name="tipo_inspeccion" value="Primaria">
-                <label for="ins_primaria">Primaria</label><br>
-
-                <input type="checkbox" id="ins_secundaria" name="tipo_inspeccion" value="Secundaria">
-                <label for="ins_secundaria">Secundaria</label><br>
+                <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <label class="pista-option" style="flex:1;">
+                        <input type="radio" id="ins_primaria" name="tipo_inspeccion" value="Primaria"> Primaria
+                    </label>
+                    <label class="pista-option" style="flex:1;">
+                        <input type="radio" id="ins_secundaria" name="tipo_inspeccion" value="Secundaria"> Secundaria
+                    </label>
+                </div>
 
                 <div id="turno-section" style="display:none; margin-top:8px;">
                     <h3>Turno</h3>
