@@ -3707,9 +3707,20 @@
                 if (!chk || !det) {
                     return;
                 }
+                var isPrimaryAvistamiento = (id === 'fauna_avistamiento');
+                if (isPrimaryAvistamiento) {
+                    chk.checked = true;
+                    det.style.display = 'block';
+                }
 
                 // Mostrar/ocultar detalles cuando cambia el checkbox
                 chk.addEventListener('change', function () {
+                    if (isPrimaryAvistamiento) {
+                        chk.checked = true;
+                        det.style.display = 'block';
+                        refresh();
+                        return;
+                    }
                     det.style.display = chk.checked ? 'block' : 'none';
                     refresh();
                 });
@@ -3763,9 +3774,9 @@
                     clearBtn.addEventListener('click', function (e) {
                         e.preventDefault();
                         // Desmarcar el checkbox
-                        chk.checked = false;
+                        chk.checked = isPrimaryAvistamiento ? true : false;
                         chk.disabled = false;
-                        det.style.display = 'none';
+                        det.style.display = isPrimaryAvistamiento ? 'block' : 'none';
                         // Limpiar todos los campos
                         try {
                             var inputs = det.querySelectorAll('input, textarea, select');
@@ -3802,6 +3813,10 @@
                         if (updateBtn) updateBtn.style.display = 'none';
                         if (dupBtn) dupBtn.style.display = 'none';
                         if (clearBtn) clearBtn.style.display = 'none';
+                    }
+                    if (isPrimaryAvistamiento) {
+                        chk.checked = true;
+                        det.style.display = 'block';
                     }
                 }
 
@@ -9445,8 +9460,17 @@
                     var chk = faunaForm.querySelector('input#' + id);
                     var det = faunaForm.querySelector('div#' + id.replace(/^fauna_/, 'fauna_details_'));
                     if (!chk || !det) return;
+                    if (id === 'fauna_avistamiento') {
+                        chk.checked = true;
+                        det.style.display = 'block';
+                    }
                     
                     chk.addEventListener('change', function () {
+                        if (id === 'fauna_avistamiento') {
+                            chk.checked = true;
+                            det.style.display = 'block';
+                            return;
+                        }
                         if (chk.checked) { det.style.display = 'block'; }
                         else {
                             det.style.display = 'none';
