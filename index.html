@@ -2424,39 +2424,23 @@
                     <input type="text" id="fauna_report-afac-name" name="fauna_report_afac_name" placeholder="Nombre del representante AFAC" style="margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
 
                     <h3>✈️ Aerolinea</h3>
-                    <select id="fauna_report-aerolinea" name="fauna_report_aerolinea" title="Seleccionar Aerolinea" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; margin-top:6px;">
-                        <option value="">-- Seleccionar Aerolinea --</option>
-                        <option value="Aeromexico">Aeromexico</option>
-                        <option value="Aerounion">Aerounion</option>
-                        <option value="Aerus">Aerus</option>
-                        <option value="Air Canada">Air Canada</option>
-                        <option value="Air China">Air China</option>
-                        <option value="Air France">Air France</option>
-                        <option value="AM Costera">AM Costera</option>
-                        <option value="Arajet">Arajet</option>
-                        <option value="Atlas Air">Atlas Air</option>
-                        <option value="Cargojet">Cargojet</option>
-                        <option value="Cathay Pacific">Cathay Pacific</option>
-                        <option value="China Southern">China Southern</option>
-                        <option value="DHL Guatemala">DHL Guatemala</option>
-                        <option value="Emirates">Emirates</option>
-                        <option value="Estafeta">Estafeta</option>
-                        <option value="Ethiopian">Ethiopian</option>
-                        <option value="Kalitta Air">Kalitta Air</option>
-                        <option value="Lufthansa">Lufthansa</option>
-                        <option value="Mas Air">Mas Air</option>
-                        <option value="Mexicana">Mexicana</option>
-                        <option value="Otra">Otra</option>
-                        <option value="Qatar Airways">Qatar Airways</option>
-                        <option value="UPS">UPS</option>
-                        <option value="Viva">Viva</option>
-                        <option value="Volaris">Volaris</option>
-                    </select>
-                    <input type="text" id="fauna_report-aerolinea-other" name="fauna_report_aerolinea_other" placeholder="Especifique otra aerolinea" style="display:none; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
+                    <input type="text" id="fauna_report-aerolinea" name="fauna_report_aerolinea" list="fauna_report-aerolinea-options" title="Seleccionar Aerolinea" placeholder="Escribe código IATA o nombre de aerolínea" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; margin-top:6px;" autocomplete="off" />
+                    <datalist id="fauna_report-aerolinea-options"></datalist>
+                    <small id="fauna_report-aerolinea-top" style="display:block; margin-top:6px; color:#64748b;"></small>
 
-                    <h3>📍 Ubicación</h3>
+                    <div id="fauna_impacto_parte_avion_wrap">
+                        <h3>🛩️ Parte del avión impactada</h3>
+                        <select id="fauna_report-parte-avion" name="fauna_report_parte_avion" title="Seleccionar Parte del Avión" disabled style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                            <option value="">-- Seleccionar Parte del Avión --</option>
+                        </select>
+                        <small id="fauna_report-parte-avion-hint" style="display:block; margin-top:6px; color:#64748b;">
+                            Selecciona primero el evento "Impacto" para habilitar este campo.
+                        </small>
+                    </div>
+
+                    <h3>📍 Zona</h3>
                     <select id="fauna_report-ubicacion" name="fauna_report_ubicacion" title="Seleccionar Ubicación" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                        <option value="">-- Seleccionar Ubicación --</option>
+                        <option value="">-- Seleccionar Zona --</option>
                         <optgroup label="Sector A">
                             <option value="A3 - A5">A3 - A5</option>
                             <option value="A5 - A6">A5 - A6</option>
@@ -2473,10 +2457,9 @@
 
                     <h3>🦁 Informe de Impacto</h3>
 
-                    <input type="checkbox" id="fauna_avistamiento" name="fauna_tipo_reporte" value="Avistamiento de Aves">
-                    <label for="fauna_avistamiento">Avistamiento de Aves</label>
-                    <br>
-                    <div class="item-details" id="fauna_details_avistamiento" style="display:none; margin-left:18px; margin-bottom:10px; padding:12px; background:#f9fafb; border-left:3px solid #3b82f6; border-radius:6px;">
+                    <input type="checkbox" id="fauna_avistamiento" name="fauna_tipo_reporte" value="Otro evento" checked style="display:none;">
+                    <label for="fauna_avistamiento" style="display:none;">Otro evento</label>
+                    <div class="item-details" id="fauna_details_avistamiento" style="display:block; margin-left:0; margin-bottom:10px; padding:12px; background:#f9fafb; border-left:3px solid #3b82f6; border-radius:6px;">
                         <label>Ubicación: <input type="text" name="fauna_details[avistamiento][lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
                         <label>Especie:
                             <select name="fauna_details[avistamiento][especie]" class="fauna-especie-select">
@@ -2535,66 +2518,6 @@
                             <button type="button" id="update_fauna_avistamiento" class="item-update" style="display:none;">↻ Update</button>
                             <button type="button" id="dup_fauna_avistamiento" class="item-duplicate" style="display:none; width:44px; height:44px;">➕</button>
                             <button type="button" id="clear_fauna_avistamiento" class="item-done item-clear" style="display:none; background:#ef4444;">🗑️ Clear</button>
-                        </div>
-                    </div>
-
-                    <input type="checkbox" id="fauna_presencia" name="fauna_tipo_reporte" value="Presencia de Animales">
-                    <label for="fauna_presencia">Presencia de Animales</label>
-                    <br>
-                    <div class="item-details" id="fauna_details_presencia" style="display:none; margin-left:18px; margin-bottom:10px; padding:12px; background:#f9fafb; border-left:3px solid #10b981; border-radius:6px;">
-                        <label>Ubicación: <input type="text" name="fauna_details[presencia][lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
-                        <label>Tipo de Animal: <input type="text" name="fauna_details[presencia][tipo_animal]"></label><br>
-                        <label>Riesgo/Amenaza:
-                            <select name="fauna_details[presencia][riesgo]">
-                                <option value="">--</option>
-                                <option>Bajo</option>
-                                <option>Medio</option>
-                                <option>Alto</option>
-                            </select>
-                        </label><br>
-                        <label>Observaciones:<br><textarea name="fauna_details[presencia][observaciones]" rows="3" style="width:100%; max-width:420px;"></textarea></label><br>
-                        <p style="font-size:13px; font-weight:600; margin-top:12px; margin-bottom:8px;">📸 Evidencia Fotográfica <span style="font-size:11px; color:#6b7280; font-weight:400;">(opcional)</span></p>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-                            <button type="button" class="fauna-fotos-galeria-btn" data-fauna="presencia" style="flex:1; min-width:150px; padding:10px; background:#f0f9ff; border:2px dashed #3b82f6; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:#1e40af;">📁 Archivo</button>
-                            <button type="button" class="fauna-fotos-camara-btn" data-fauna="presencia" style="flex:1; min-width:150px; padding:10px; background:#f0fdf4; border:2px dashed #10b981; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:#065f46;">📷 Foto</button>
-                            <input type="file" class="fauna-fotos-input" data-fauna="presencia" multiple accept="image/*" style="display:none;">
-                        </div>
-                        <div class="fauna-fotos-preview" data-fauna="presencia" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;"></div>
-                        <div style="margin-top:14px; padding-top:12px; border-top:1px solid #d1d5db; display:flex; gap:8px; justify-content:flex-end;">
-                            <button type="button" id="done_fauna_presencia" class="item-done" style="display:none;">✓ Done</button>
-                            <button type="button" id="update_fauna_presencia" class="item-update" style="display:none;">↻ Update</button>
-                            <button type="button" id="dup_fauna_presencia" class="item-duplicate" style="display:none; width:44px; height:44px;">➕</button>
-                            <button type="button" id="clear_fauna_presencia" class="item-done item-clear" style="display:none; background:#ef4444;">🗑️ Clear</button>
-                        </div>
-                    </div>
-
-                    <input type="checkbox" id="fauna_daino" name="fauna_tipo_reporte" value="Daño a Infraestructura">
-                    <label for="fauna_daino">Daño a Infraestructura</label>
-                    <br>
-                    <div class="item-details" id="fauna_details_daino" style="display:none; margin-left:18px; margin-bottom:10px; padding:12px; background:#f9fafb; border-left:3px solid #f59e0b; border-radius:6px;">
-                        <label>Ubicación: <input type="text" name="fauna_details[daino][lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
-                        <label>Descripción del Daño: <input type="text" name="fauna_details[daino][descripcion]"></label><br>
-                        <label>Severidad:
-                            <select name="fauna_details[daino][severidad]">
-                                <option value="">--</option>
-                                <option>Leve</option>
-                                <option>Moderada</option>
-                                <option>Severa</option>
-                            </select>
-                        </label><br>
-                        <label>Observaciones:<br><textarea name="fauna_details[daino][observaciones]" rows="3" style="width:100%; max-width:420px;"></textarea></label><br>
-                        <p style="font-size:13px; font-weight:600; margin-top:12px; margin-bottom:8px;">📸 Evidencia Fotográfica <span style="font-size:11px; color:#6b7280; font-weight:400;">(opcional)</span></p>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-                            <button type="button" class="fauna-fotos-galeria-btn" data-fauna="daino" style="flex:1; min-width:150px; padding:10px; background:#f0f9ff; border:2px dashed #3b82f6; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:#1e40af;">📁 Archivo</button>
-                            <button type="button" class="fauna-fotos-camara-btn" data-fauna="daino" style="flex:1; min-width:150px; padding:10px; background:#f0fdf4; border:2px dashed #10b981; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:#065f46;">📷 Foto</button>
-                            <input type="file" class="fauna-fotos-input" data-fauna="daino" multiple accept="image/*" style="display:none;">
-                        </div>
-                        <div class="fauna-fotos-preview" data-fauna="daino" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;"></div>
-                        <div style="margin-top:14px; padding-top:12px; border-top:1px solid #d1d5db; display:flex; gap:8px; justify-content:flex-end;">
-                            <button type="button" id="done_fauna_daino" class="item-done" style="display:none;">✓ Done</button>
-                            <button type="button" id="update_fauna_daino" class="item-update" style="display:none;">↻ Update</button>
-                            <button type="button" id="dup_fauna_daino" class="item-duplicate" style="display:none; width:44px; height:44px;">➕</button>
-                            <button type="button" id="clear_fauna_daino" class="item-done item-clear" style="display:none; background:#ef4444;">🗑️ Clear</button>
                         </div>
                     </div>
                 </div>
@@ -3770,7 +3693,7 @@
         (function () {
             // Gestión de items de Fauna Impacto con botones Done/Update/Duplicate/Clear
             var counters = {};
-            var faunaItemIds = ['fauna_avistamiento', 'fauna_presencia', 'fauna_daino'];
+            var faunaItemIds = ['fauna_avistamiento'];
 
             function setupFaunaItemControlsFor(id) {
                 var chk = document.getElementById(id);
@@ -3784,9 +3707,20 @@
                 if (!chk || !det) {
                     return;
                 }
+                var isPrimaryAvistamiento = (id === 'fauna_avistamiento');
+                if (isPrimaryAvistamiento) {
+                    chk.checked = true;
+                    det.style.display = 'block';
+                }
 
                 // Mostrar/ocultar detalles cuando cambia el checkbox
                 chk.addEventListener('change', function () {
+                    if (isPrimaryAvistamiento) {
+                        chk.checked = true;
+                        det.style.display = 'block';
+                        refresh();
+                        return;
+                    }
                     det.style.display = chk.checked ? 'block' : 'none';
                     refresh();
                 });
@@ -3840,9 +3774,9 @@
                     clearBtn.addEventListener('click', function (e) {
                         e.preventDefault();
                         // Desmarcar el checkbox
-                        chk.checked = false;
+                        chk.checked = isPrimaryAvistamiento ? true : false;
                         chk.disabled = false;
-                        det.style.display = 'none';
+                        det.style.display = isPrimaryAvistamiento ? 'block' : 'none';
                         // Limpiar todos los campos
                         try {
                             var inputs = det.querySelectorAll('input, textarea, select');
@@ -3879,6 +3813,10 @@
                         if (updateBtn) updateBtn.style.display = 'none';
                         if (dupBtn) dupBtn.style.display = 'none';
                         if (clearBtn) clearBtn.style.display = 'none';
+                    }
+                    if (isPrimaryAvistamiento) {
+                        chk.checked = true;
+                        det.style.display = 'block';
                     }
                 }
 
@@ -3990,6 +3928,7 @@
          */
         function injectPhotoField(det) {
             if (!det || det.querySelector('.photo-upload-area')) return; // ya existe
+            if (det.id && det.id.indexOf('fauna_details_') === 0) return; // fauna ya tiene su propio bloque de evidencias
             var condSelect = det.querySelector('.condicion-select');
             if (!condSelect) return;
 
@@ -6910,7 +6849,8 @@
                             var responsable = responsableSelect ? responsableSelect.value : '';
                             var cargoSelect = document.getElementById('fauna_report-role');
                             var cargo = cargoSelect ? cargoSelect.value : '';
-                            var aerolinea = faunaForm.querySelector('select[name="fauna_report_aerolinea"]')?.value || '';
+                            var aerolinea = faunaForm.querySelector('input[name="fauna_report_aerolinea"]')?.value || '';
+                            var parteAvion = faunaForm.querySelector('select[name="fauna_report_parte_avion"]')?.value || '';
                             var zona = faunaForm.querySelector('select[name="fauna_report_ubicacion"]')?.value || '';
 
                             var impactPayload = {
@@ -6922,6 +6862,7 @@
                                 responsable: responsable,
                                 cargo: cargo,
                                 aerolinea: aerolinea,
+                                parte_avion: parteAvion,
                                 zona: zona,
                                 ubicacion_texto: null,
                                 ubicacion_lat: null,
@@ -7034,7 +6975,11 @@
                                 '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (aerolinea || '-') + '</td>' +
                                 '</tr>';
                             impactoHtml += '<tr>' +
-                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;background:#f5f8fc">Ubicación</td>' +
+                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;background:#f5f8fc">Parte del avión</td>' +
+                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (parteAvion || '-') + '</td>' +
+                                '</tr>';
+                            impactoHtml += '<tr>' +
+                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;background:#f5f8fc">Zona</td>' +
                                 '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (zona || '-') + '</td>' +
                                 '</tr>';
                             impactoHtml += '</tbody></table>';
@@ -7044,13 +6989,12 @@
                             
                             // Recopilar items de fauna completados
                             var faunaItems = [];
-                            var faunaCheckboxes = faunaForm.querySelectorAll('input[type="checkbox"][name="fauna_tipo_reporte"]:checked');
-                            
-                            faunaCheckboxes.forEach(function(chk) {
-                                var itemValue = chk.value; // ej: "Avistamiento de Aves"
-                                var itemId = chk.id; // ej: "fauna_avistamiento"
-                                var detailsId = 'fauna_details_' + itemId.replace('fauna_', ''); // fauna_details_avistamiento
-                                var detailsDiv = document.getElementById(detailsId);
+                            [{
+                                value: 'Otro evento',
+                                detailsId: 'fauna_details_avistamiento'
+                            }].forEach(function (itemCfg) {
+                                var itemValue = itemCfg.value;
+                                var detailsDiv = document.getElementById(itemCfg.detailsId);
                                 
                                 if (detailsDiv) {
                                     var itemFields = [];
@@ -9510,14 +9454,23 @@
 
             // Manejar checkboxes de items en fauna form (similar a revision form)
             (function () {
-                var itemIds = ['fauna_avistamiento', 'fauna_presencia', 'fauna_daino'];
+                var itemIds = ['fauna_avistamiento'];
                 
                 itemIds.forEach(function (id) {
                     var chk = faunaForm.querySelector('input#' + id);
                     var det = faunaForm.querySelector('div#' + id.replace(/^fauna_/, 'fauna_details_'));
                     if (!chk || !det) return;
+                    if (id === 'fauna_avistamiento') {
+                        chk.checked = true;
+                        det.style.display = 'block';
+                    }
                     
                     chk.addEventListener('change', function () {
+                        if (id === 'fauna_avistamiento') {
+                            chk.checked = true;
+                            det.style.display = 'block';
+                            return;
+                        }
                         if (chk.checked) { det.style.display = 'block'; }
                         else {
                             det.style.display = 'none';
@@ -9598,23 +9551,171 @@
                 });
             })();
 
-            // Manejar aerolinea - mostrar/ocultar campo "Otra"
+            // Combo inteligente de aerolíneas (catálogo + frecuencia histórica)
             (function () {
-                var aerolineaSelect = faunaForm.querySelector('#fauna_report-aerolinea');
-                var aerolineaOtherInput = faunaForm.querySelector('#fauna_report-aerolinea-other');
-                if (!aerolineaSelect || !aerolineaOtherInput) return;
-                
-                function updateAerolineaVisibility() {
-                    if (aerolineaSelect.value === 'Otra') {
-                        aerolineaOtherInput.style.display = 'block';
-                    } else {
-                        aerolineaOtherInput.style.display = 'none';
-                        aerolineaOtherInput.value = '';
+                var aerolineaInput = faunaForm.querySelector('#fauna_report-aerolinea');
+                var aerolineaDataList = faunaForm.querySelector('#fauna_report-aerolinea-options');
+                var aerolineaTopHint = faunaForm.querySelector('#fauna_report-aerolinea-top');
+                if (!aerolineaInput || !aerolineaDataList) return;
+
+                function normalizeText(v) {
+                    return (v || '')
+                        .toString()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .trim()
+                        .toLowerCase();
+                }
+
+                async function loadAirlineSmartOptions() {
+                    var client = window.supabaseClient;
+                    if (!client) return;
+                    var airlinesMap = new Map(); // key: nombre normalizado
+                    var frequencyMap = new Map(); // key: nombre normalizado
+
+                    function splitCodeAndName(rawValue) {
+                        var raw = (rawValue || '').trim();
+                        var match = raw.match(/^([A-Z0-9]{2,3})\s*-\s*(.+)$/i);
+                        if (match) {
+                            return { code: match[1].toUpperCase(), name: match[2].trim() };
+                        }
+                        return { code: '', name: raw };
+                    }
+
+                    function upsertAirline(rawValue, preferredCode) {
+                        var parts = splitCodeAndName(rawValue);
+                        var name = parts.name;
+                        if (!name) return;
+                        var key = normalizeText(name);
+                        var current = airlinesMap.get(key);
+                        var code = (preferredCode || parts.code || '').trim().toUpperCase();
+                        if (!current) {
+                            airlinesMap.set(key, { key: key, name: name, code: code });
+                            return;
+                        }
+                        if (!current.code && code) {
+                            current.code = code;
+                        }
+                    }
+
+                    var catalogResp = await client
+                        .from('catalogo_aerolineas')
+                        .select('codigo_iata,nombre_aerolinea')
+                        .order('nombre_aerolinea', { ascending: true });
+                    if (!catalogResp.error && Array.isArray(catalogResp.data)) {
+                        catalogResp.data.forEach(function (row) {
+                            var code = (row.codigo_iata || '').trim();
+                            var name = (row.nombre_aerolinea || '').trim();
+                            upsertAirline(name, code);
+                        });
+                    }
+
+                    var usageResp = await client.from('fauna_reports').select('aerolinea').limit(5000);
+                    if (!usageResp.error && Array.isArray(usageResp.data)) {
+                        usageResp.data.forEach(function (row) {
+                            var rawAirline = (row.aerolinea || '').trim();
+                            var parsed = splitCodeAndName(rawAirline);
+                            var freqKey = normalizeText(parsed.name);
+                            if (!freqKey) return;
+                            frequencyMap.set(freqKey, (frequencyMap.get(freqKey) || 0) + 1);
+                            upsertAirline(rawAirline, parsed.code);
+                        });
+                    }
+
+                    var items = Array.from(airlinesMap.values()).map(function (item) {
+                        var label = item.code ? (item.code + ' - ' + item.name) : item.name;
+                        return { label: label, key: item.key };
+                    });
+                    items.sort(function (a, b) {
+                        var aFreq = frequencyMap.get(a.key) || 0;
+                        var bFreq = frequencyMap.get(b.key) || 0;
+                        if (bFreq !== aFreq) return bFreq - aFreq;
+                        return a.label.localeCompare(b.label, 'es');
+                    });
+
+                    aerolineaDataList.innerHTML = '';
+                    items.forEach(function (item) {
+                        var option = document.createElement('option');
+                        option.value = item.label;
+                        aerolineaDataList.appendChild(option);
+                    });
+
+                    var topAirlines = items.slice(0, 5).map(function (item) { return item.label; });
+                    if (aerolineaTopHint) {
+                        aerolineaTopHint.textContent = topAirlines.length
+                            ? ('Más usadas: ' + topAirlines.join(' · '))
+                            : 'Sin historial de frecuencia todavía.';
                     }
                 }
-                
-                aerolineaSelect.addEventListener('change', updateAerolineaVisibility);
-                updateAerolineaVisibility();
+
+                loadAirlineSmartOptions().catch(function (err) {
+                    console.warn('No se pudo cargar el combo inteligente de aerolíneas:', err);
+                });
+
+                aerolineaInput.addEventListener('input', function () {
+                    var typed = normalizeText(aerolineaInput.value);
+                    if (!typed) return;
+                    var options = Array.from(aerolineaDataList.options || []);
+                    var match = options.some(function (opt) {
+                        return normalizeText(opt.value).includes(typed);
+                    });
+                    if (!match && aerolineaTopHint) {
+                        aerolineaTopHint.textContent = 'Sin coincidencias exactas, puedes capturar una nueva aerolínea.';
+                    }
+                });
+            })();
+
+            // Parte del avión impactada (solo para evento = Impacto)
+            (function () {
+                var eventoInputs = faunaForm.querySelectorAll('input[name="fauna_report_evento"]');
+                var parteWrap = document.getElementById('fauna_impacto_parte_avion_wrap');
+                var parteSelect = document.getElementById('fauna_report-parte-avion');
+                var parteHint = document.getElementById('fauna_report-parte-avion-hint');
+                if (!eventoInputs.length || !parteWrap || !parteSelect) return;
+
+                function getEventoValue() {
+                    var checked = faunaForm.querySelector('input[name="fauna_report_evento"]:checked');
+                    return checked ? checked.value : '';
+                }
+
+                function updateParteVisibility() {
+                    var show = getEventoValue() === 'Impacto';
+                    parteSelect.disabled = !show;
+                    parteSelect.style.opacity = show ? '1' : '0.65';
+                    if (parteHint) {
+                        parteHint.textContent = show
+                            ? 'Selecciona la parte del avión afectada.'
+                            : 'Selecciona primero el evento "Impacto" para habilitar este campo.';
+                    }
+                    if (!show) parteSelect.value = '';
+                }
+
+                async function loadPartesAvion() {
+                    var client = window.supabaseClient;
+                    if (!client) return;
+                    var resp = await client
+                        .from('catalogo_partes_avion')
+                        .select('nombre,orden')
+                        .eq('activo', true)
+                        .order('orden', { ascending: true });
+                    if (resp.error || !Array.isArray(resp.data)) return;
+                    resp.data.forEach(function (row) {
+                        var nombre = (row.nombre || '').trim();
+                        if (!nombre) return;
+                        var opt = document.createElement('option');
+                        opt.value = nombre;
+                        opt.textContent = nombre;
+                        parteSelect.appendChild(opt);
+                    });
+                }
+
+                eventoInputs.forEach(function (radio) {
+                    radio.addEventListener('change', updateParteVisibility);
+                });
+                updateParteVisibility();
+                loadPartesAvion().catch(function (err) {
+                    console.warn('No se pudo cargar catálogo de partes de avión:', err);
+                });
             })();
         });
 
