@@ -9591,8 +9591,33 @@
                 async function loadAirlineSmartOptions() {
                     var client = window.supabaseClient;
                     if (!client) return;
-                    var catalogMap = new Map();
-                    var frequencyMap = new Map();
+                    var airlinesMap = new Map(); // key: nombre normalizado
+                    var frequencyMap = new Map(); // key: nombre normalizado
+
+                    function splitCodeAndName(rawValue) {
+                        var raw = (rawValue || '').trim();
+                        var match = raw.match(/^([A-Z0-9]{2,3})\s*-\s*(.+)$/i);
+                        if (match) {
+                            return { code: match[1].toUpperCase(), name: match[2].trim() };
+                        }
+                        return { code: '', name: raw };
+                    }
+
+                    function upsertAirline(rawValue, preferredCode) {
+                        var parts = splitCodeAndName(rawValue);
+                        var name = parts.name;
+                        if (!name) return;
+                        var key = normalizeText(name);
+                        var current = airlinesMap.get(key);
+                        var code = (preferredCode || parts.code || '').trim().toUpperCase();
+                        if (!current) {
+                            airlinesMap.set(key, { key: key, name: name, code: code });
+                            return;
+                        }
+                        if (!current.code && code) {
+                            current.code = code;
+                        }
+                    }
 
                     var catalogResp = await client
                         .from('catalogo_aerolineas')
@@ -9602,28 +9627,29 @@
                         catalogResp.data.forEach(function (row) {
                             var code = (row.codigo_iata || '').trim();
                             var name = (row.nombre_aerolinea || '').trim();
-                            if (!name) return;
-                            var label = code ? (code + ' - ' + name) : name;
-                            catalogMap.set(label, { label: label, name: name, code: code });
+                            upsertAirline(name, code);
                         });
                     }
 
                     var usageResp = await client.from('fauna_reports').select('aerolinea').limit(5000);
                     if (!usageResp.error && Array.isArray(usageResp.data)) {
                         usageResp.data.forEach(function (row) {
-                            var key = (row.aerolinea || '').trim();
-                            if (!key) return;
-                            frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
-                            if (!catalogMap.has(key)) {
-                                catalogMap.set(key, { label: key, name: key, code: '' });
-                            }
+                            var rawAirline = (row.aerolinea || '').trim();
+                            var parsed = splitCodeAndName(rawAirline);
+                            var freqKey = normalizeText(parsed.name);
+                            if (!freqKey) return;
+                            frequencyMap.set(freqKey, (frequencyMap.get(freqKey) || 0) + 1);
+                            upsertAirline(rawAirline, parsed.code);
                         });
                     }
 
-                    var items = Array.from(catalogMap.values());
+                    var items = Array.from(airlinesMap.values()).map(function (item) {
+                        var label = item.code ? (item.code + ' - ' + item.name) : item.name;
+                        return { label: label, key: item.key };
+                    });
                     items.sort(function (a, b) {
-                        var aFreq = frequencyMap.get(a.label) || frequencyMap.get(a.name) || 0;
-                        var bFreq = frequencyMap.get(b.label) || frequencyMap.get(b.name) || 0;
+                        var aFreq = frequencyMap.get(a.key) || 0;
+                        var bFreq = frequencyMap.get(b.key) || 0;
                         if (bFreq !== aFreq) return bFreq - aFreq;
                         return a.label.localeCompare(b.label, 'es');
                     });
