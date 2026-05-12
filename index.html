@@ -2428,9 +2428,16 @@
                     <datalist id="fauna_report-aerolinea-options"></datalist>
                     <small id="fauna_report-aerolinea-top" style="display:block; margin-top:6px; color:#64748b;"></small>
 
-                    <h3>📍 Ubicación</h3>
+                    <div id="fauna_impacto_parte_avion_wrap" style="display:none;">
+                        <h3>🛩️ Parte del avión impactada</h3>
+                        <select id="fauna_report-parte-avion" name="fauna_report_parte_avion" title="Seleccionar Parte del Avión" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                            <option value="">-- Seleccionar Parte del Avión --</option>
+                        </select>
+                    </div>
+
+                    <h3>📍 Zona</h3>
                     <select id="fauna_report-ubicacion" name="fauna_report_ubicacion" title="Seleccionar Ubicación" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                        <option value="">-- Seleccionar Ubicación --</option>
+                        <option value="">-- Seleccionar Zona --</option>
                         <optgroup label="Sector A">
                             <option value="A3 - A5">A3 - A5</option>
                             <option value="A5 - A6">A5 - A6</option>
@@ -6885,6 +6892,7 @@
                             var cargoSelect = document.getElementById('fauna_report-role');
                             var cargo = cargoSelect ? cargoSelect.value : '';
                             var aerolinea = faunaForm.querySelector('input[name="fauna_report_aerolinea"]')?.value || '';
+                            var parteAvion = faunaForm.querySelector('select[name="fauna_report_parte_avion"]')?.value || '';
                             var zona = faunaForm.querySelector('select[name="fauna_report_ubicacion"]')?.value || '';
 
                             var impactPayload = {
@@ -6896,6 +6904,7 @@
                                 responsable: responsable,
                                 cargo: cargo,
                                 aerolinea: aerolinea,
+                                parte_avion: parteAvion,
                                 zona: zona,
                                 ubicacion_texto: null,
                                 ubicacion_lat: null,
@@ -7008,7 +7017,11 @@
                                 '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (aerolinea || '-') + '</td>' +
                                 '</tr>';
                             impactoHtml += '<tr>' +
-                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;background:#f5f8fc">Ubicación</td>' +
+                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;background:#f5f8fc">Parte del avión</td>' +
+                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (parteAvion || '-') + '</td>' +
+                                '</tr>';
+                            impactoHtml += '<tr>' +
+                                '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;background:#f5f8fc">Zona</td>' +
                                 '<td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (zona || '-') + '</td>' +
                                 '</tr>';
                             impactoHtml += '</tbody></table>';
@@ -9683,6 +9696,52 @@
                     if (!match && aerolineaTopHint) {
                         aerolineaTopHint.textContent = 'Sin coincidencias exactas, puedes capturar una nueva aerolínea.';
                     }
+                });
+            })();
+
+            // Parte del avión impactada (solo para evento = Impacto)
+            (function () {
+                var eventoInputs = faunaForm.querySelectorAll('input[name="fauna_report_evento"]');
+                var parteWrap = document.getElementById('fauna_impacto_parte_avion_wrap');
+                var parteSelect = document.getElementById('fauna_report-parte-avion');
+                if (!eventoInputs.length || !parteWrap || !parteSelect) return;
+
+                function getEventoValue() {
+                    var checked = faunaForm.querySelector('input[name="fauna_report_evento"]:checked');
+                    return checked ? checked.value : '';
+                }
+
+                function updateParteVisibility() {
+                    var show = getEventoValue() === 'Impacto';
+                    parteWrap.style.display = show ? 'block' : 'none';
+                    if (!show) parteSelect.value = '';
+                }
+
+                async function loadPartesAvion() {
+                    var client = window.supabaseClient;
+                    if (!client) return;
+                    var resp = await client
+                        .from('catalogo_partes_avion')
+                        .select('nombre,orden')
+                        .eq('activo', true)
+                        .order('orden', { ascending: true });
+                    if (resp.error || !Array.isArray(resp.data)) return;
+                    resp.data.forEach(function (row) {
+                        var nombre = (row.nombre || '').trim();
+                        if (!nombre) return;
+                        var opt = document.createElement('option');
+                        opt.value = nombre;
+                        opt.textContent = nombre;
+                        parteSelect.appendChild(opt);
+                    });
+                }
+
+                eventoInputs.forEach(function (radio) {
+                    radio.addEventListener('change', updateParteVisibility);
+                });
+                updateParteVisibility();
+                loadPartesAvion().catch(function (err) {
+                    console.warn('No se pudo cargar catálogo de partes de avión:', err);
                 });
             })();
         });
