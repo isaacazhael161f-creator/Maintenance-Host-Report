@@ -2428,11 +2428,14 @@
                     <datalist id="fauna_report-aerolinea-options"></datalist>
                     <small id="fauna_report-aerolinea-top" style="display:block; margin-top:6px; color:#64748b;"></small>
 
-                    <div id="fauna_impacto_parte_avion_wrap" style="display:none;">
+                    <div id="fauna_impacto_parte_avion_wrap">
                         <h3>🛩️ Parte del avión impactada</h3>
-                        <select id="fauna_report-parte-avion" name="fauna_report_parte_avion" title="Seleccionar Parte del Avión" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                        <select id="fauna_report-parte-avion" name="fauna_report_parte_avion" title="Seleccionar Parte del Avión" disabled style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
                             <option value="">-- Seleccionar Parte del Avión --</option>
                         </select>
+                        <small id="fauna_report-parte-avion-hint" style="display:block; margin-top:6px; color:#64748b;">
+                            Selecciona primero el evento "Impacto" para habilitar este campo.
+                        </small>
                     </div>
 
                     <h3>📍 Zona</h3>
@@ -9704,6 +9707,7 @@
                 var eventoInputs = faunaForm.querySelectorAll('input[name="fauna_report_evento"]');
                 var parteWrap = document.getElementById('fauna_impacto_parte_avion_wrap');
                 var parteSelect = document.getElementById('fauna_report-parte-avion');
+                var parteHint = document.getElementById('fauna_report-parte-avion-hint');
                 if (!eventoInputs.length || !parteWrap || !parteSelect) return;
 
                 function getEventoValue() {
@@ -9713,7 +9717,13 @@
 
                 function updateParteVisibility() {
                     var show = getEventoValue() === 'Impacto';
-                    parteWrap.style.display = show ? 'block' : 'none';
+                    parteSelect.disabled = !show;
+                    parteSelect.style.opacity = show ? '1' : '0.65';
+                    if (parteHint) {
+                        parteHint.textContent = show
+                            ? 'Selecciona la parte del avión afectada.'
+                            : 'Selecciona primero el evento "Impacto" para habilitar este campo.';
+                    }
                     if (!show) parteSelect.value = '';
                 }
 
