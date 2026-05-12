@@ -2424,35 +2424,9 @@
                     <input type="text" id="fauna_report-afac-name" name="fauna_report_afac_name" placeholder="Nombre del representante AFAC" style="margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
 
                     <h3>✈️ Aerolinea</h3>
-                    <select id="fauna_report-aerolinea" name="fauna_report_aerolinea" title="Seleccionar Aerolinea" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; margin-top:6px;">
-                        <option value="">-- Seleccionar Aerolinea --</option>
-                        <option value="Aeromexico">Aeromexico</option>
-                        <option value="Aerounion">Aerounion</option>
-                        <option value="Aerus">Aerus</option>
-                        <option value="Air Canada">Air Canada</option>
-                        <option value="Air China">Air China</option>
-                        <option value="Air France">Air France</option>
-                        <option value="AM Costera">AM Costera</option>
-                        <option value="Arajet">Arajet</option>
-                        <option value="Atlas Air">Atlas Air</option>
-                        <option value="Cargojet">Cargojet</option>
-                        <option value="Cathay Pacific">Cathay Pacific</option>
-                        <option value="China Southern">China Southern</option>
-                        <option value="DHL Guatemala">DHL Guatemala</option>
-                        <option value="Emirates">Emirates</option>
-                        <option value="Estafeta">Estafeta</option>
-                        <option value="Ethiopian">Ethiopian</option>
-                        <option value="Kalitta Air">Kalitta Air</option>
-                        <option value="Lufthansa">Lufthansa</option>
-                        <option value="Mas Air">Mas Air</option>
-                        <option value="Mexicana">Mexicana</option>
-                        <option value="Otra">Otra</option>
-                        <option value="Qatar Airways">Qatar Airways</option>
-                        <option value="UPS">UPS</option>
-                        <option value="Viva">Viva</option>
-                        <option value="Volaris">Volaris</option>
-                    </select>
-                    <input type="text" id="fauna_report-aerolinea-other" name="fauna_report_aerolinea_other" placeholder="Especifique otra aerolinea" style="display:none; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
+                    <input type="text" id="fauna_report-aerolinea" name="fauna_report_aerolinea" list="fauna_report-aerolinea-options" title="Seleccionar Aerolinea" placeholder="Escribe código IATA o nombre de aerolínea" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; margin-top:6px;" autocomplete="off" />
+                    <datalist id="fauna_report-aerolinea-options"></datalist>
+                    <small id="fauna_report-aerolinea-top" style="display:block; margin-top:6px; color:#64748b;"></small>
 
                     <h3>📍 Ubicación</h3>
                     <select id="fauna_report-ubicacion" name="fauna_report_ubicacion" title="Seleccionar Ubicación" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
@@ -6910,7 +6884,7 @@
                             var responsable = responsableSelect ? responsableSelect.value : '';
                             var cargoSelect = document.getElementById('fauna_report-role');
                             var cargo = cargoSelect ? cargoSelect.value : '';
-                            var aerolinea = faunaForm.querySelector('select[name="fauna_report_aerolinea"]')?.value || '';
+                            var aerolinea = faunaForm.querySelector('input[name="fauna_report_aerolinea"]')?.value || '';
                             var zona = faunaForm.querySelector('select[name="fauna_report_ubicacion"]')?.value || '';
 
                             var impactPayload = {
@@ -9598,23 +9572,118 @@
                 });
             })();
 
-            // Manejar aerolinea - mostrar/ocultar campo "Otra"
+            // Combo inteligente de aerolíneas (catálogo + frecuencia histórica)
             (function () {
-                var aerolineaSelect = faunaForm.querySelector('#fauna_report-aerolinea');
-                var aerolineaOtherInput = faunaForm.querySelector('#fauna_report-aerolinea-other');
-                if (!aerolineaSelect || !aerolineaOtherInput) return;
-                
-                function updateAerolineaVisibility() {
-                    if (aerolineaSelect.value === 'Otra') {
-                        aerolineaOtherInput.style.display = 'block';
-                    } else {
-                        aerolineaOtherInput.style.display = 'none';
-                        aerolineaOtherInput.value = '';
+                var aerolineaInput = faunaForm.querySelector('#fauna_report-aerolinea');
+                var aerolineaDataList = faunaForm.querySelector('#fauna_report-aerolinea-options');
+                var aerolineaTopHint = faunaForm.querySelector('#fauna_report-aerolinea-top');
+                if (!aerolineaInput || !aerolineaDataList) return;
+
+                function normalizeText(v) {
+                    return (v || '')
+                        .toString()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .trim()
+                        .toLowerCase();
+                }
+
+                async function loadAirlineSmartOptions() {
+                    var client = window.supabaseClient;
+                    if (!client) return;
+                    var airlinesMap = new Map(); // key: nombre normalizado
+                    var frequencyMap = new Map(); // key: nombre normalizado
+
+                    function splitCodeAndName(rawValue) {
+                        var raw = (rawValue || '').trim();
+                        var match = raw.match(/^([A-Z0-9]{2,3})\s*-\s*(.+)$/i);
+                        if (match) {
+                            return { code: match[1].toUpperCase(), name: match[2].trim() };
+                        }
+                        return { code: '', name: raw };
+                    }
+
+                    function upsertAirline(rawValue, preferredCode) {
+                        var parts = splitCodeAndName(rawValue);
+                        var name = parts.name;
+                        if (!name) return;
+                        var key = normalizeText(name);
+                        var current = airlinesMap.get(key);
+                        var code = (preferredCode || parts.code || '').trim().toUpperCase();
+                        if (!current) {
+                            airlinesMap.set(key, { key: key, name: name, code: code });
+                            return;
+                        }
+                        if (!current.code && code) {
+                            current.code = code;
+                        }
+                    }
+
+                    var catalogResp = await client
+                        .from('catalogo_aerolineas')
+                        .select('codigo_iata,nombre_aerolinea')
+                        .order('nombre_aerolinea', { ascending: true });
+                    if (!catalogResp.error && Array.isArray(catalogResp.data)) {
+                        catalogResp.data.forEach(function (row) {
+                            var code = (row.codigo_iata || '').trim();
+                            var name = (row.nombre_aerolinea || '').trim();
+                            upsertAirline(name, code);
+                        });
+                    }
+
+                    var usageResp = await client.from('fauna_reports').select('aerolinea').limit(5000);
+                    if (!usageResp.error && Array.isArray(usageResp.data)) {
+                        usageResp.data.forEach(function (row) {
+                            var rawAirline = (row.aerolinea || '').trim();
+                            var parsed = splitCodeAndName(rawAirline);
+                            var freqKey = normalizeText(parsed.name);
+                            if (!freqKey) return;
+                            frequencyMap.set(freqKey, (frequencyMap.get(freqKey) || 0) + 1);
+                            upsertAirline(rawAirline, parsed.code);
+                        });
+                    }
+
+                    var items = Array.from(airlinesMap.values()).map(function (item) {
+                        var label = item.code ? (item.code + ' - ' + item.name) : item.name;
+                        return { label: label, key: item.key };
+                    });
+                    items.sort(function (a, b) {
+                        var aFreq = frequencyMap.get(a.key) || 0;
+                        var bFreq = frequencyMap.get(b.key) || 0;
+                        if (bFreq !== aFreq) return bFreq - aFreq;
+                        return a.label.localeCompare(b.label, 'es');
+                    });
+
+                    aerolineaDataList.innerHTML = '';
+                    items.forEach(function (item) {
+                        var option = document.createElement('option');
+                        option.value = item.label;
+                        aerolineaDataList.appendChild(option);
+                    });
+
+                    var topAirlines = items.slice(0, 5).map(function (item) { return item.label; });
+                    if (aerolineaTopHint) {
+                        aerolineaTopHint.textContent = topAirlines.length
+                            ? ('Más usadas: ' + topAirlines.join(' · '))
+                            : 'Sin historial de frecuencia todavía.';
                     }
                 }
-                
-                aerolineaSelect.addEventListener('change', updateAerolineaVisibility);
-                updateAerolineaVisibility();
+
+                loadAirlineSmartOptions().catch(function (err) {
+                    console.warn('No se pudo cargar el combo inteligente de aerolíneas:', err);
+                });
+
+                aerolineaInput.addEventListener('input', function () {
+                    var typed = normalizeText(aerolineaInput.value);
+                    if (!typed) return;
+                    var options = Array.from(aerolineaDataList.options || []);
+                    var match = options.some(function (opt) {
+                        return normalizeText(opt.value).includes(typed);
+                    });
+                    if (!match && aerolineaTopHint) {
+                        aerolineaTopHint.textContent = 'Sin coincidencias exactas, puedes capturar una nueva aerolínea.';
+                    }
+                });
             })();
         });
 
