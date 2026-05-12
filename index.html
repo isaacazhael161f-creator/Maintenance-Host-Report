@@ -2457,7 +2457,8 @@
 
                     <h3>🦁 Informe de Impacto</h3>
 
-                    <input type="checkbox" id="fauna_avistamiento" name="fauna_tipo_reporte" value="Avistamiento de Aves" checked style="display:none;">
+                    <input type="checkbox" id="fauna_avistamiento" name="fauna_tipo_reporte" value="Otro evento" checked style="display:none;">
+                    <label for="fauna_avistamiento" style="display:none;">Otro evento</label>
                     <div class="item-details" id="fauna_details_avistamiento" style="display:block; margin-left:0; margin-bottom:10px; padding:12px; background:#f9fafb; border-left:3px solid #3b82f6; border-radius:6px;">
                         <label>Ubicación: <input type="text" name="fauna_details[avistamiento][lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
                         <label>Especie:
@@ -3912,6 +3913,7 @@
          */
         function injectPhotoField(det) {
             if (!det || det.querySelector('.photo-upload-area')) return; // ya existe
+            if (det.id && det.id.indexOf('fauna_details_') === 0) return; // fauna ya tiene su propio bloque de evidencias
             var condSelect = det.querySelector('.condicion-select');
             if (!condSelect) return;
 
@@ -6973,7 +6975,7 @@
                             // Recopilar items de fauna completados
                             var faunaItems = [];
                             [{
-                                value: 'Avistamiento de Aves',
+                                value: 'Otro evento',
                                 detailsId: 'fauna_details_avistamiento'
                             }].forEach(function (itemCfg) {
                                 var itemValue = itemCfg.value;
