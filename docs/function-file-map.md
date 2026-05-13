@@ -49,3 +49,9 @@
 ## `index.html` (pendiente de extracción)
 - Orquestación principal de páginas, listeners globales, flujos PDF, offline sync y render tabular.
 - Persisten funciones legacy de alto acoplamiento DOM que se migrarán en R2/R3.
+
+## `js/services/fauna-catalog-service.js`
+- `getCatalogoActivo(client, tabla, filtros)`: consulta catálogos activos en Supabase con filtros opcionales.
+- `cargarCatalogoSelect(client, tabla, selectElement, placeholder, filtros)`: renderiza opciones en `<select>` con deduplicación por texto normalizado.
+- `cargarEspeciesPorClase(client, selectClase, selectEspecie, placeholder)`: filtra especies por clase seleccionada.
+- `normalizarTextoCatalogo(valor)` / `getCatalogoCacheKey(tabla, filtros)`: helpers de normalización y cache para evitar queries repetidas.

@@ -67,3 +67,9 @@
 - **R1 avance adicional:** en guardado principal de revisión se delegaron también `report_items`, carga de fotos a bucket `photos` e inserción masiva en `item_photos` hacia `MHRReportService`.
 - **R1 avance adicional:** se delegó también upload de PDF bucket `reports` y upload/public URL de fotos (`photos`) en `MHRReportService`.
 - **Documentación nueva:** `docs/function-file-map.md` con mapeo de funciones por archivo y responsabilidad.
+
+## Fase R2-R3 (ejecución consolidada)
+- **Servicio nuevo:** `js/services/fauna-catalog-service.js` para centralizar consultas de catálogos Fauna (`catalogo_clase`, `catalogo_especie`, `catalogo_destino`) y deduplicación/normalización de opciones.
+- **Index simplificado:** se removió bloque inline de utilidades de catálogo (`getCatalogoActivo`, cache-key, normalización, wiring clase→especie) y se delegó a `window.MHRFaunaCatalogService`.
+- **Compatibilidad mantenida:** se conserva `window.faunaCatalogosCache` y los mismos IDs de selects/filtros (`fauna_rescate_clase`, `fauna_rescate_especie`, `filter-fauna-clase`, `filter-fauna-especie`).
+- **Resultado:** menor acoplamiento en `index.html` y centralización de acceso a datos de catálogos en servicio reutilizable.

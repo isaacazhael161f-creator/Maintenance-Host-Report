@@ -2487,6 +2487,7 @@
     <script src="./js/ui/signature-manager.js"></script>
     <script src="./js/pages/fauna-form-page.js"></script>
     <script src="./js/services/fauna-report-service.js"></script>
+    <script src="./js/services/fauna-catalog-service.js"></script>
     <script src="./js/services/catalog-service.js"></script>
     <script src="./js/services/user-service.js"></script>
     <script src="./js/services/report-service.js"></script>
@@ -6057,140 +6058,40 @@
                 });
             })();
 
-            window.faunaCatalogosCache = window.faunaCatalogosCache || {};
+            async function cargarCatalogosFauna() {
+                var client = window.supabaseClient;
+                var svc = window.MHRFaunaCatalogService;
+                if (!client || !svc) return;
 
-            async function getCatalogoActivo(tabla, filtros) {
-                const client = window.supabaseClient;
-                if (!client) {
-                    console.error('Supabase client not ready for catalog lookup:', tabla);
-                    return [];
-                }
+                await Promise.all([
+                    svc.cargarCatalogoSelect(client, 'catalogo_clase', document.getElementById('fauna_rescate_clase'), '-- Seleccionar Clase --'),
+                    svc.cargarCatalogoSelect(client, 'catalogo_destino', document.getElementById('fauna_rescate_sitio_reubicacion'), '-- Seleccionar Sitio de Reubicación --'),
+                    svc.cargarCatalogoSelect(client, 'catalogo_clase', document.getElementById('filter-fauna-clase'), 'Todas las clases'),
+                    svc.cargarCatalogoSelect(client, 'catalogo_especie', document.getElementById('filter-fauna-especie'), 'Todas las especies')
+                ]);
 
-                var query = client
-                    .from(tabla)
-                    .select('id, nombre')
-                    .eq('activo', true)
-                    .order('orden', { ascending: true });
+                await Promise.all([
+                    svc.cargarEspeciesPorClase(client, document.getElementById('fauna_rescate_clase'), document.getElementById('fauna_rescate_especie'), '-- Seleccionar Especie --'),
+                    svc.cargarEspeciesPorClase(client, document.getElementById('filter-fauna-clase'), document.getElementById('filter-fauna-especie'), 'Todas las especies')
+                ]);
 
-                if (filtros && typeof filtros === 'object') {
-                    Object.keys(filtros).forEach(function(campo){
-                        if (filtros[campo] !== undefined && filtros[campo] !== null && filtros[campo] !== '') {
-                            query = query.eq(campo, filtros[campo]);
-                        }
+                var claseSelectRescate = document.getElementById('fauna_rescate_clase');
+                var especieSelectRescate = document.getElementById('fauna_rescate_especie');
+                if (claseSelectRescate && especieSelectRescate && claseSelectRescate.dataset.catalogoWired !== '1') {
+                    claseSelectRescate.dataset.catalogoWired = '1';
+                    claseSelectRescate.addEventListener('change', function () {
+                        svc.cargarEspeciesPorClase(client, claseSelectRescate, especieSelectRescate, '-- Seleccionar Especie --');
                     });
                 }
 
-                const { data, error } = await query;
-
-                if (error) {
-                    console.error('Error loading catalog from Supabase:', { tabla: tabla, error: error });
-                    return [];
+                var claseSelectFiltro = document.getElementById('filter-fauna-clase');
+                var especieSelectFiltro = document.getElementById('filter-fauna-especie');
+                if (claseSelectFiltro && especieSelectFiltro && claseSelectFiltro.dataset.catalogoWired !== '1') {
+                    claseSelectFiltro.dataset.catalogoWired = '1';
+                    claseSelectFiltro.addEventListener('change', function () {
+                        svc.cargarEspeciesPorClase(client, claseSelectFiltro, especieSelectFiltro, 'Todas las especies');
+                    });
                 }
-
-                return data || [];
-            }
-
-            function getCatalogoCacheKey(tabla, filtros) {
-                var key = tabla;
-                if (filtros && typeof filtros === 'object') {
-                    var parts = Object.keys(filtros).sort().map(function(k){ return k + ':' + filtros[k]; });
-                    if (parts.length) key += '|' + parts.join('|');
-                }
-                return key;
-            }
-
-            function normalizarTextoCatalogo(valor) {
-                return (valor || '')
-                    .toString()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .toLowerCase()
-                    .trim();
-            }
-
-            async function cargarCatalogoSelect(tabla, selectElement, placeholder, filtros) {
-                if (!selectElement) return;
-
-                var valorActual = selectElement.value;
-                selectElement.innerHTML = '';
-                var placeholderOption = document.createElement('option');
-                placeholderOption.value = '';
-                placeholderOption.textContent = placeholder;
-                selectElement.appendChild(placeholderOption);
-
-                var cacheKey = getCatalogoCacheKey(tabla, filtros);
-                var catalogo = window.faunaCatalogosCache[cacheKey];
-                if (!catalogo) {
-                    catalogo = await getCatalogoActivo(tabla, filtros);
-                    window.faunaCatalogosCache[cacheKey] = catalogo;
-                }
-
-                var vistos = new Set();
-                catalogo.forEach(function(item) {
-                    var nombre = (item && item.nombre ? item.nombre : '').toString().trim();
-                    if (!nombre) return;
-                    var key = normalizarTextoCatalogo(nombre);
-                    if (vistos.has(key)) return;
-                    vistos.add(key);
-
-                    var option = document.createElement('option');
-                    option.value = nombre; // Compatibilidad: guardar texto, no id
-                    option.textContent = nombre;
-                    selectElement.appendChild(option);
-                });
-
-                if (valorActual && Array.prototype.some.call(selectElement.options, function(opt) { return opt.value === valorActual; })) {
-                    selectElement.value = valorActual;
-                }
-            }
-
-            async function cargarEspeciesPorClase(selectClase, selectEspecie, placeholder) {
-                if (!selectEspecie) return;
-
-                var claseNombre = selectClase && selectClase.value ? selectClase.value : '';
-                if (!claseNombre) {
-                    await cargarCatalogoSelect('catalogo_especie', selectEspecie, placeholder);
-                    return;
-                }
-
-                var clases = window.faunaCatalogosCache['catalogo_clase'] || await getCatalogoActivo('catalogo_clase');
-                window.faunaCatalogosCache['catalogo_clase'] = clases;
-
-                var claseNombreNorm = normalizarTextoCatalogo(claseNombre);
-                var clase = clases.find(function(item){
-                    return normalizarTextoCatalogo(item.nombre) === claseNombreNorm;
-                });
-                if (!clase || !clase.id) {
-                    await cargarCatalogoSelect('catalogo_especie', selectEspecie, placeholder);
-                    return;
-                }
-
-                await cargarCatalogoSelect('catalogo_especie', selectEspecie, placeholder, { clase_id: clase.id });
-            }
-
-            function wireFaunaClaseEspecie(selectClaseId, selectEspecieId, placeholderEspecie) {
-                var claseSelect = document.getElementById(selectClaseId);
-                var especieSelect = document.getElementById(selectEspecieId);
-                if (!claseSelect || !especieSelect || claseSelect.dataset.catalogoWired === '1') return;
-                claseSelect.dataset.catalogoWired = '1';
-                claseSelect.addEventListener('change', function () {
-                    cargarEspeciesPorClase(claseSelect, especieSelect, placeholderEspecie);
-                });
-            }
-
-            async function cargarCatalogosFauna() {
-                await Promise.all([
-                    cargarCatalogoSelect('catalogo_clase', document.getElementById('fauna_rescate_clase'), '-- Seleccionar Clase --'),
-                    cargarCatalogoSelect('catalogo_destino', document.getElementById('fauna_rescate_sitio_reubicacion'), '-- Seleccionar Sitio de Reubicación --'),
-                    cargarCatalogoSelect('catalogo_clase', document.getElementById('filter-fauna-clase'), 'Todas las clases'),
-                    cargarCatalogoSelect('catalogo_especie', document.getElementById('filter-fauna-especie'), 'Todas las especies')
-                ]);
-                await Promise.all([
-                    cargarEspeciesPorClase(document.getElementById('fauna_rescate_clase'), document.getElementById('fauna_rescate_especie'), '-- Seleccionar Especie --'),
-                    cargarEspeciesPorClase(document.getElementById('filter-fauna-clase'), document.getElementById('filter-fauna-especie'), 'Todas las especies')
-                ]);
-                wireFaunaClaseEspecie('fauna_rescate_clase', 'fauna_rescate_especie', '-- Seleccionar Especie --');
-                wireFaunaClaseEspecie('filter-fauna-clase', 'filter-fauna-especie', 'Todas las especies');
             }
 
             // Función para cargar estadísticas
