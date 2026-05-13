@@ -2485,6 +2485,7 @@
 
     <!-- Script: Captura de Firmas en Canvas -->
     <script src="./js/ui/signature-manager.js"></script>
+    <script src="./js/pages/fauna-form-page.js"></script>
 
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
@@ -4483,63 +4484,20 @@
         </div>
     </div>
 
+    <script src="./js/supabase-client.js"></script>
+
     <!-- Supabase Logic -->
     <script>
         (function () {
-            // Configuración de Supabase (solo cliente público, sin service role en frontend)
-            var RUNTIME_CONFIG = window.__MHR_CONFIG || {};
-            var APP_CONFIG = {
-                supabaseUrl: RUNTIME_CONFIG.supabaseUrl || 'https://fgstncvuuhpgyzmjceyr.supabase.co',
-                supabaseAnonKey: RUNTIME_CONFIG.supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnc3RuY3Z1dWhwZ3l6bWpjZXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzQ0NDQsImV4cCI6MjA4MTQ1MDQ0NH0.YEDIKuWt5iKUEI0BAvidINUz0aZBvQM0h6XRJ-uslB8',
-                // Opcional para producción: Edge Function que devuelva { signedUrl }
-                signedUrlFunction: RUNTIME_CONFIG.signedUrlFunction || 'mhr-signed-url',
-                signedUrlExpiresIn: Number(RUNTIME_CONFIG.signedUrlExpiresIn || 3600)
-            };
+            var supabase = window.supabaseClient;
+            var helpers = window.MHRSupabaseHelpers || {};
+            var APP_CONFIG = helpers.APP_CONFIG || {};
+            var isSafeStoragePath = helpers.isSafeStoragePath || function(path){ return !!path; };
+            var resolvePdfUrl = helpers.resolvePdfUrl || (async function(){ return null; });
 
-            var supabase = null;
-            try {
-                supabase = window.supabase.createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseAnonKey);
-                window.supabaseClient = supabase; // Exponer cliente globalmente
-            } catch (e) {
-                console.error('Error inicializando Supabase:', e);
+            if (!supabase) {
+                console.error('Error inicializando Supabase: window.supabaseClient no disponible');
                 return;
-            }
-
-            function isSafeStoragePath(path) {
-                if (!path || typeof path !== 'string') return false;
-                if (path.includes('..') || path.includes('\\') || path.startsWith('/')) return false;
-                return true;
-            }
-
-            async function resolvePdfUrl(bucketName, filePath, ttlSeconds) {
-                if (!filePath || !isSafeStoragePath(filePath)) return null;
-
-                var expiresIn = Number(ttlSeconds || APP_CONFIG.signedUrlExpiresIn || 3600);
-                if (!Number.isFinite(expiresIn) || expiresIn <= 0) expiresIn = 3600;
-
-                // 1) Estrategia recomendada: Edge Function (backend) para generar signed URLs.
-                try {
-                    if (APP_CONFIG.signedUrlFunction) {
-                        var fnResp = await supabase.functions.invoke(APP_CONFIG.signedUrlFunction, {
-                            body: { bucket: bucketName, path: filePath, expiresIn: expiresIn }
-                        });
-                        if (!fnResp.error && fnResp.data && fnResp.data.signedUrl) return fnResp.data.signedUrl;
-                    }
-                } catch (e) { }
-
-                // 2) Fallback: Signed URL con cliente autenticado (requiere políticas RLS adecuadas).
-                try {
-                    var signedResp = await supabase.storage.from(bucketName).createSignedUrl(filePath, expiresIn);
-                    if (!signedResp.error && signedResp.data && signedResp.data.signedUrl) return signedResp.data.signedUrl;
-                } catch (e) { }
-
-                // 3) Último fallback: URL pública si el bucket es público.
-                try {
-                    var publicResp = supabase.storage.from(bucketName).getPublicUrl(filePath);
-                    if (publicResp && publicResp.data && publicResp.data.publicUrl) return publicResp.data.publicUrl;
-                } catch (e) { }
-
-                return null;
             }
 
                 var loginModal = document.getElementById('login-modal');
@@ -7421,56 +7379,10 @@
             if (!faunaForm) return;
 
             // Manejar fauna tipo reporte (similar a pista en revision form) con bloqueo de selecciones
-            (function () {
-                var faunaRadios = Array.prototype.slice.call(faunaForm.querySelectorAll('input[name="fauna_tipo_reporte_inspeccion"]'));
-                var faunaChangeBtn = document.getElementById('fauna_tipo_reporte-change-btn');
-                
-                function updateFaunaReporteState() {
-                    try {
-                        var checked = faunaRadios.find(function (r) { return r.checked; });
-                        if (checked) {
-                            // Bloquear todos los radios
-                            faunaRadios.forEach(function (r) {
-                                r.disabled = true;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Marcar el seleccionado
-                            var lbl = checked.closest('label');
-                            if (lbl) lbl.classList.add('selected');
-                            // Mostrar botón para cambiar
-                            if (faunaChangeBtn) faunaChangeBtn.style.display = 'inline-block';
-                        } else {
-                            // Desbloquear todos
-                            faunaRadios.forEach(function (r) {
-                                r.disabled = false;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Ocultar botón
-                            if (faunaChangeBtn) faunaChangeBtn.style.display = 'none';
-                        }
-                    } catch (e) { }
-                }
+            if (window.MHRFaunaPage && typeof window.MHRFaunaPage.initTipoReporteLock === "function") {
+                window.MHRFaunaPage.initTipoReporteLock(faunaForm);
+            }
 
-                faunaRadios.forEach(function (r) {
-                    r.addEventListener('change', function () { updateFaunaReporteState(); });
-                });
-
-                // Botón para cambiar tipo de reporte
-                if (faunaChangeBtn) {
-                    faunaChangeBtn.addEventListener('click', function () {
-                        faunaRadios.forEach(function (r) { r.disabled = false; r.checked = false; });
-                        faunaChangeBtn.style.display = 'none';
-                        faunaRadios.forEach(function (r) {
-                            var lbl = r.closest('label');
-                            if (lbl) lbl.classList.remove('selected');
-                        });
-                    });
-                }
-
-                updateFaunaReporteState();
-            })();
 
             // Mostrar/ocultar Turno cuando se seleccione tipo de reporte
             (function () {
