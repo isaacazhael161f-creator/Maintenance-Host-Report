@@ -63,3 +63,4 @@
 - **Movido:** consultas base de fauna para estadísticas/listado general (`getAllFaunaReports`, `getFaunaReportsByFilters`).
 - **Origen:** `loadFaunaStatistics` y `loadFaunaReports` en `index.html`.
 - **Destino:** `js/services/fauna-report-service.js`.
+- **R1 avance adicional:** inserciones de `fauna_reports` movidas a `MHRFaunaReportService.insertFaunaReport`, y consulta ordenada de `reports` para estadísticas movida a `MHRReportService.getReportsOrdered`.

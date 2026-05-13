@@ -5483,12 +5483,10 @@
                                     impactPayload.pdf_url = pdfUrl;
                                     console.log('💾 Guardando reporte en fauna_reports con pdf_url:', pdfUrl);
 
-                                    var { data: impactData, error: impactError } = await client
-                                        .from('fauna_reports')
-                                        .insert([impactPayload])
-                                        .select();
-
-                                    if (impactError) {
+                                    var impactData;
+                                    try {
+                                        impactData = await window.MHRFaunaReportService.insertFaunaReport(client, impactPayload);
+                                    } catch (impactError) {
                                         console.error('❌ Error guardando impacto en BD:', impactError);
                                         alert('❌ Error al guardar reporte: ' + impactError.message);
                                         submitBtn.disabled = false;
@@ -5784,12 +5782,10 @@
                                     pdf_url: pdfUrl
                                 };
 
-                                var { data: rescateData, error: rescateError } = await client
-                                    .from('fauna_reports')
-                                    .insert([rescatePayload])
-                                    .select();
-
-                                if (rescateError) {
+                                var rescateData;
+                                try {
+                                    rescateData = await window.MHRFaunaReportService.insertFaunaReport(client, rescatePayload);
+                                } catch (rescateError) {
                                     console.error('Error guardando rescate:', rescateError);
                                     alert('Error: ' + rescateError.message);
                                     if (submitBtn) {
@@ -6221,12 +6217,10 @@
                 });
 
                 try {
-                    const { data: reports, error } = await client
-                        .from('reports')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-
-                    if (error) {
+                    let reports;
+                    try {
+                        reports = await window.MHRReportService.getReportsOrdered(client);
+                    } catch (error) {
                         console.error('Error loading statistics:', error);
                         ['inspection-types-chart','monthly-reports-chart'].forEach(function(id){
                             var el = document.getElementById(id);

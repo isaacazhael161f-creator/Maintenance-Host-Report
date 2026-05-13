@@ -1,5 +1,10 @@
 (function(){
   window.MHRFaunaReportService = {
+    async insertFaunaReport(client, payload){
+      var resp = await client.from('fauna_reports').insert([payload]).select();
+      if (resp.error) throw resp.error;
+      return resp.data || [];
+    },
     async getHallazgosYears(client){
       var resp = await client
         .from('fauna_reports')
