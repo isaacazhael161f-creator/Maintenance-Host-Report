@@ -52,3 +52,9 @@
 - **Origen:** funciones `loadRevisionResponsibleOptions`, `loginWithUsuariosTable` y obtención de rol post-login en `index.html`.
 - **Destino:** `js/services/user-service.js`.
 - **Compatibilidad mantenida:** el flujo actual de login y carga de responsables se conserva; solo se delega acceso a datos en `window.MHRUserService`.
+
+## Fase 4.7 - Servicio de reportes (inicio)
+- **Movido:** operaciones de inserción para `reports`, `report_items` e `item_photos`.
+- **Origen:** flujo inline de guardado principal y sincronización offline en `index.html`.
+- **Destino:** `js/services/report-service.js`.
+- **Compatibilidad mantenida:** se conserva el payload actual y manejo de errores/reintentos; la UI mantiene el mismo flujo y mensajes.

@@ -2489,6 +2489,7 @@
     <script src="./js/services/fauna-report-service.js"></script>
     <script src="./js/services/catalog-service.js"></script>
     <script src="./js/services/user-service.js"></script>
+    <script src="./js/services/report-service.js"></script>
 
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
@@ -2888,10 +2889,7 @@
                         };
                         console.log('Insertando reporte:', reportPayload);
 
-                        var { data: reportData, error: reportError } = await window.supabaseClient
-                            .from('reports')
-                            .insert([reportPayload])
-                            .select();
+                        var { data: reportData, error: reportError } = await window.MHRReportService.insertReport(window.supabaseClient, reportPayload);
                         
                         // Si falla porque las columnas no existen, intentar sin ellas
                         if (reportError && reportError.message && (reportError.message.includes('area_representante') || reportError.message.includes('schema'))) {
@@ -2907,10 +2905,7 @@
                                 cargo: cargo,
                                 pdf_url: pdfUrl || null
                             };
-                            var result = await window.supabaseClient
-                                .from('reports')
-                                .insert([reportPayloadBasic])
-                                .select();
+                            var result = await window.MHRReportService.insertReport(window.supabaseClient, reportPayloadBasic);
                             reportData = result.data;
                             reportError = result.error;
                         }
@@ -7212,7 +7207,7 @@
                 user_id:         userId,
                 pdf_url:         null
             };
-            var { data: reportData, error: reportError } = await sc.from('reports').insert([reportPayload]).select().single();
+            var { data: reportData, error: reportError } = await window.MHRReportService.insertReportSingle(sc, reportPayload);
             
             // Si falla porque las columnas no existen, intentar sin ellas
             if (reportError && reportError.message && (reportError.message.includes('area_representante') || reportError.message.includes('schema'))) {
@@ -7228,7 +7223,7 @@
                     user_id:         userId,
                     pdf_url:         null
                 };
-                var result = await sc.from('reports').insert([reportPayloadBasic]).select().single();
+                var result = await window.MHRReportService.insertReportSingle(sc, reportPayloadBasic);
                 reportData = result.data;
                 reportError = result.error;
             }
@@ -7245,7 +7240,7 @@
                         fields:    JSON.stringify(it.fields)
                     };
                 });
-                var { error: itemsError } = await sc.from('report_items').insert(itemsPayload);
+                var { error: itemsError } = await window.MHRReportService.insertReportItems(sc, itemsPayload);
                 if (itemsError) console.warn('Error insertando items offline:', itemsError);
             }
 
@@ -7269,12 +7264,12 @@
                         var { data: urlData } = sc.storage.from('photos').getPublicUrl(fileName);
                         var photoUrl = urlData ? urlData.publicUrl : null;
                         if (photoUrl) {
-                            await sc.from('item_photos').insert([{
+                            await window.MHRReportService.insertItemPhoto(sc, {
                                 report_id:  reportId,
                                 item_id:    itemId,
                                 photo_url:  photoUrl,
                                 photo_name: ph.name
-                            }]);
+                            });
                         }
                     } catch (photoErr) {
                         console.warn('Error procesando foto offline:', photoErr);
