@@ -46,3 +46,9 @@
 - **Origen:** funciones inline `loadAirlineSmartOptions` y `loadPartesAvion` en `index.html`.
 - **Destino:** `js/services/catalog-service.js`.
 - **Compatibilidad mantenida:** la UI sigue armando datalist/select en los mismos elementos; solo se delega el acceso a datos en `window.MHRCatalogService`.
+
+## Fase 4.6 - Servicio de usuarios/autenticación (inicio)
+- **Movido:** consultas a `vw_app_usuarios`, `usuarios` y `user_roles` desde el bloque inline de login/autores.
+- **Origen:** funciones `loadRevisionResponsibleOptions`, `loginWithUsuariosTable` y obtención de rol post-login en `index.html`.
+- **Destino:** `js/services/user-service.js`.
+- **Compatibilidad mantenida:** el flujo actual de login y carga de responsables se conserva; solo se delega acceso a datos en `window.MHRUserService`.

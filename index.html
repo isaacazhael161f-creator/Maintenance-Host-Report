@@ -2488,6 +2488,7 @@
     <script src="./js/pages/fauna-form-page.js"></script>
     <script src="./js/services/fauna-report-service.js"></script>
     <script src="./js/services/catalog-service.js"></script>
+    <script src="./js/services/user-service.js"></script>
 
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
@@ -4661,12 +4662,9 @@
                     var select = document.getElementById('report-authors-select');
                     if (!select || !supabase) return;
                     try {
-                        var { data, error } = await supabase
-                            .from('vw_app_usuarios')
-                            .select('*');
-                        if (error) throw error;
+                        var usuarios = await window.MHRUserService.fetchAppUsuarios(supabase);
 
-                        var usuariosFiltrados = (data || []).filter(function (u) {
+                        var usuariosFiltrados = (usuarios || []).filter(function (u) {
                             return belongsToGsoPath(u.pertenece) && hasRevisionCrearPermission(u.permisos_extra);
                         }).map(function (u) {
                             return (
@@ -4701,21 +4699,11 @@
                         throw new Error('Captura usuario y contraseña.');
                     }
                 
-                    var { data, error } = await supabase
-                        .from('usuarios')
-                        .select('*')
-                        .or('username.eq.' + userValue + ',email.eq.' + userValue)
-                        .limit(1);
-                
-                    if (error) {
-                        throw error;
-                    }
-                
-                    if (!data || data.length === 0) {
+                    var user = await window.MHRUserService.findUsuarioByUsernameOrEmail(supabase, userValue);
+
+                    if (!user) {
                         throw new Error('Usuario no encontrado.');
                     }
-                
-                    var user = data[0];
                 
                     if (user.estatus && String(user.estatus).toLowerCase() === 'baja') {
                         throw new Error('El usuario está dado de baja.');
@@ -4770,14 +4758,9 @@
                             let role = 'viewer';
                 
                             try {
-                                const { data: roleData } = await supabase
-                                    .from('user_roles')
-                                    .select('role')
-                                    .eq('user_id', data.user.id)
-                                    .single();
-                
-                                if (roleData && roleData.role) {
-                                    role = roleData.role;
+                                const userRole = await window.MHRUserService.getUserRole(supabase, data.user.id);
+                                if (userRole) {
+                                    role = userRole;
                                 }
                 
                             } catch (_) {}
