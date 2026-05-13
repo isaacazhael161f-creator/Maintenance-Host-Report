@@ -127,4 +127,57 @@
             
     };
 
+    window.MHRFaunaPage.initFaseVueloLock = function(faunaForm){
+
+                var faunaFaseVueloRadios = Array.prototype.slice.call(faunaForm.querySelectorAll('input[name="fauna_fase_vuelo"]'));
+                var faunaFaseVueloChangeBtn = document.getElementById('fauna_fase_vuelo-change-btn');
+                
+                function updateFaunaFaseVueloState() {
+                    try {
+                        var checked = faunaFaseVueloRadios.find(function (r) { return r.checked; });
+                        if (checked) {
+                            // Bloquear todos los radios
+                            faunaFaseVueloRadios.forEach(function (r) {
+                                r.disabled = true;
+                                var lbl = r.closest('label');
+                                if (lbl) lbl.classList.remove('selected');
+                            });
+                            // Marcar el seleccionado
+                            var lbl = checked.closest('label');
+                            if (lbl) lbl.classList.add('selected');
+                            // Mostrar botón para cambiar
+                            if (faunaFaseVueloChangeBtn) faunaFaseVueloChangeBtn.style.display = 'inline-block';
+                        } else {
+                            // Desbloquear todos
+                            faunaFaseVueloRadios.forEach(function (r) {
+                                r.disabled = false;
+                                var lbl = r.closest('label');
+                                if (lbl) lbl.classList.remove('selected');
+                            });
+                            // Ocultar botón
+                            if (faunaFaseVueloChangeBtn) faunaFaseVueloChangeBtn.style.display = 'none';
+                        }
+                    } catch (e) { }
+                }
+
+                faunaFaseVueloRadios.forEach(function (r) {
+                    r.addEventListener('change', function () { updateFaunaFaseVueloState(); });
+                });
+
+                // Botón para cambiar fase de vuelo
+                if (faunaFaseVueloChangeBtn) {
+                    faunaFaseVueloChangeBtn.addEventListener('click', function () {
+                        faunaFaseVueloRadios.forEach(function (r) { r.disabled = false; r.checked = false; });
+                        faunaFaseVueloChangeBtn.style.display = 'none';
+                        faunaFaseVueloRadios.forEach(function (r) {
+                            var lbl = r.closest('label');
+                            if (lbl) lbl.classList.remove('selected');
+                        });
+                    });
+                }
+
+                updateFaunaFaseVueloState();
+            
+    };
+
 })();
