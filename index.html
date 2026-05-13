@@ -2487,6 +2487,7 @@
     <script src="./js/ui/signature-manager.js"></script>
     <script src="./js/pages/fauna-form-page.js"></script>
     <script src="./js/services/fauna-report-service.js"></script>
+    <script src="./js/services/catalog-service.js"></script>
 
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
@@ -7528,21 +7529,18 @@
                         }
                     }
 
-                    var catalogResp = await client
-                        .from('catalogo_aerolineas')
-                        .select('codigo_iata,nombre_aerolinea')
-                        .order('nombre_aerolinea', { ascending: true });
-                    if (!catalogResp.error && Array.isArray(catalogResp.data)) {
-                        catalogResp.data.forEach(function (row) {
+                    var catalogRows = await window.MHRCatalogService.getCatalogoAerolineas(client);
+                    if (Array.isArray(catalogRows)) {
+                        catalogRows.forEach(function (row) {
                             var code = (row.codigo_iata || '').trim();
                             var name = (row.nombre_aerolinea || '').trim();
                             upsertAirline(name, code);
                         });
                     }
 
-                    var usageResp = await client.from('fauna_reports').select('aerolinea').limit(5000);
-                    if (!usageResp.error && Array.isArray(usageResp.data)) {
-                        usageResp.data.forEach(function (row) {
+                    var usageRows = await window.MHRCatalogService.getUsoAerolineas(client);
+                    if (Array.isArray(usageRows)) {
+                        usageRows.forEach(function (row) {
                             var rawAirline = (row.aerolinea || '').trim();
                             var parsed = splitCodeAndName(rawAirline);
                             var freqKey = normalizeText(parsed.name);
@@ -7623,13 +7621,9 @@
                 async function loadPartesAvion() {
                     var client = window.supabaseClient;
                     if (!client) return;
-                    var resp = await client
-                        .from('catalogo_partes_avion')
-                        .select('nombre,orden')
-                        .eq('activo', true)
-                        .order('orden', { ascending: true });
-                    if (resp.error || !Array.isArray(resp.data)) return;
-                    resp.data.forEach(function (row) {
+                    var rows = await window.MHRCatalogService.getPartesAvionActivas(client);
+                    if (!Array.isArray(rows)) return;
+                    rows.forEach(function (row) {
                         var nombre = (row.nombre || '').trim();
                         if (!nombre) return;
                         var opt = document.createElement('option');

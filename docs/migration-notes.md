@@ -40,3 +40,9 @@
 - **Origen:** funciones `loadFaunaHallazgosYears` y `loadFaunaHallazgosMapData` en `index.html`.
 - **Destino:** `js/services/fauna-report-service.js`.
 - **Compatibilidad mantenida:** las funciones de pantalla conservan su flujo; solo delegan consultas en `window.MHRFaunaReportService`.
+
+## Fase 5 - Catálogos (inicio acelerado)
+- **Movido:** consultas de catálogos de aerolíneas y partes de avión, más historial de uso de aerolíneas.
+- **Origen:** funciones inline `loadAirlineSmartOptions` y `loadPartesAvion` en `index.html`.
+- **Destino:** `js/services/catalog-service.js`.
+- **Compatibilidad mantenida:** la UI sigue armando datalist/select en los mismos elementos; solo se delega el acceso a datos en `window.MHRCatalogService`.
