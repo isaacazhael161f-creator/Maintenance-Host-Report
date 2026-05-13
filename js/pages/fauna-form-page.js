@@ -52,4 +52,26 @@
                 updateFaunaReporteState();
             
     };
+    window.MHRFaunaPage.initTurnoVisibility = function(faunaForm){
+
+                var faunaTypeRadios = faunaForm.querySelectorAll('input[name="fauna_tipo_reporte_inspeccion"]');
+                var turnoSection = faunaForm.querySelector('#fauna_turno-section');
+                if (!faunaTypeRadios || !turnoSection) return;
+                
+                function updateTurnoVisibility() {
+                    var anyChecked = Array.prototype.slice.call(faunaTypeRadios).some(function (r) { return r.checked; });
+                    turnoSection.style.display = anyChecked ? 'block' : 'none';
+                    if (!anyChecked) {
+                        var turnoInputs = faunaForm.querySelectorAll('input[name="fauna_turno"]');
+                        Array.prototype.slice.call(turnoInputs).forEach(function (r) { r.checked = false; });
+                    }
+                }
+                
+                Array.prototype.slice.call(faunaTypeRadios).forEach(function (r) {
+                    r.addEventListener('change', updateTurnoVisibility);
+                });
+                updateTurnoVisibility();
+            
+    };
+
 })();

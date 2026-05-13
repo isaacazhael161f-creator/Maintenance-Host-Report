@@ -31,3 +31,4 @@
 - **Origen:** bloque inline dentro del `DOMContentLoaded` de `index.html`.
 - **Destino:** `js/pages/fauna-form-page.js` (`window.MHRFaunaPage.initTipoReporteLock`).
 - **Compatibilidad mantenida:** el `DOMContentLoaded` original sigue orquestando la inicialización, ahora delegando al módulo de página.
+- **Extensión Fase 4:** también se movió la lógica de visibilidad de sección `fauna_turno-section` a `window.MHRFaunaPage.initTurnoVisibility(faunaForm)` en `js/pages/fauna-form-page.js`.
