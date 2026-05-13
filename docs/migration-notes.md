@@ -58,3 +58,8 @@
 - **Origen:** flujo inline de guardado principal y sincronización offline en `index.html`.
 - **Destino:** `js/services/report-service.js`.
 - **Compatibilidad mantenida:** se conserva el payload actual y manejo de errores/reintentos; la UI mantiene el mismo flujo y mensajes.
+
+## Fase R1 (de 3 restantes) - Inicio
+- **Movido:** consultas base de fauna para estadísticas/listado general (`getAllFaunaReports`, `getFaunaReportsByFilters`).
+- **Origen:** `loadFaunaStatistics` y `loadFaunaReports` en `index.html`.
+- **Destino:** `js/services/fauna-report-service.js`.

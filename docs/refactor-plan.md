@@ -70,3 +70,8 @@ Reducir `index.html` y separar responsabilidades en módulos con nombres funcion
 
 ## Criterio de avance
 No avanzar a extracción masiva de lógica (Fase 2+) hasta cerrar revisión del mapa de dependencias y validar alcance/riesgos.
+
+## Ajuste solicitado: cierre en 3 fases restantes
+- **Fase R1 (actual, iniciada):** completar separación de servicios de datos (`report-service`, `user-service`, `catalog-service`, `fauna-report-service`) y eliminar queries directas críticas desde `index.html`.
+- **Fase R2:** separar render/UI reutilizable (`table-renderer`, `notifications`, `modal-manager`, `form-renderer`) y reducir bloques inline de pantalla.
+- **Fase R3:** limpieza final de `index.html` + documentación final (`README` y cierre de `migration-notes`).

@@ -14,6 +14,25 @@
       }).filter(Boolean)));
     },
 
+
+
+    async getAllFaunaReports(client){
+      var resp = await client.from('fauna_reports').select('*');
+      if (resp.error) throw resp.error;
+      return resp.data || [];
+    },
+
+    async getFaunaReportsByFilters(client, filters){
+      filters = filters || {};
+      var q = client.from('fauna_reports').select('*');
+      if (filters.fechaDesde) q = q.gte('fecha_reporte', filters.fechaDesde);
+      if (filters.fechaHasta) q = q.lte('fecha_reporte', filters.fechaHasta);
+      if (filters.clase) q = q.eq('clase', filters.clase);
+      if (filters.especie) q = q.eq('especie', filters.especie);
+      var resp = await q.order('created_at', { ascending: false });
+      if (resp.error) throw resp.error;
+      return resp.data || [];
+    },
     async getHallazgosMapData(client, filters){
       filters = filters || {};
       var query = client

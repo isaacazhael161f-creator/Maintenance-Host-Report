@@ -6471,14 +6471,7 @@
                 });
 
                 try {
-                    const { data: faunaData, error: faunaError } = await client
-                        .from('fauna_reports')
-                        .select('*');
-
-                    if (faunaError) {
-                        console.error('Error loading fauna statistics:', { faunaError });
-                        return;
-                    }
+                    const faunaData = await window.MHRFaunaReportService.getAllFaunaReports(client);
 
                     var impactData = (faunaData || []).filter(function(r){ return r.tipo_reporte !== 'Rescate'; });
                     var rescateData = (faunaData || []).filter(function(r){ return r.tipo_reporte === 'Rescate'; });
@@ -6613,21 +6606,12 @@
                 }
 
                 try {
-                    let faunaQuery = client.from('fauna_reports').select('*');
-                    if (filters.fechaDesde) faunaQuery = faunaQuery.gte('fecha_reporte', filters.fechaDesde);
-                    if (filters.fechaHasta) faunaQuery = faunaQuery.lte('fecha_reporte', filters.fechaHasta);
-                    if (filters.clase && filters.clase !== '') faunaQuery = faunaQuery.eq('clase', filters.clase);
-                    if (filters.especie && filters.especie !== '') faunaQuery = faunaQuery.eq('especie', filters.especie);
-
-                    const { data: faunaData, error: faunaError } = await faunaQuery.order('created_at', { ascending: false });
-
-                    if (faunaError) {
-                        console.error('Error loading fauna reports:', { faunaError });
-                        if (reportsList) {
-                            reportsList.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#ef4444;">Error al cargar reportes</td></tr>';
-                        }
-                        return;
-                    }
+                    const faunaData = await window.MHRFaunaReportService.getFaunaReportsByFilters(client, {
+                        fechaDesde: filters.fechaDesde,
+                        fechaHasta: filters.fechaHasta,
+                        clase: filters.clase && filters.clase !== '' ? filters.clase : '',
+                        especie: filters.especie && filters.especie !== '' ? filters.especie : ''
+                    });
 
                     // Combinar reportes según filtro de tipo
                     let allReports = (faunaData || []).filter(function(report) {
