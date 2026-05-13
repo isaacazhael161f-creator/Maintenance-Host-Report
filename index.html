@@ -2493,6 +2493,16 @@
     <script src="./js/services/user-service.js"></script>
     <script src="./js/services/report-service.js"></script>
 
+    <!-- Script: Captura de Firmas en Canvas -->
+    <script src="./js/ui/signature-manager.js"></script>
+    <script src="./js/pages/fauna-form-page.js"></script>
+    <script src="./js/pages/fauna-interactions-page.js"></script>
+    <script src="./js/services/fauna-report-service.js"></script>
+    <script src="./js/services/fauna-catalog-service.js"></script>
+    <script src="./js/services/catalog-service.js"></script>
+    <script src="./js/services/user-service.js"></script>
+    <script src="./js/services/report-service.js"></script>
+
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
         style="display:none; padding:18px; background:#fff; max-width:900px; margin:0 auto; border-radius:6px;"></div>
@@ -7209,165 +7219,6 @@
                 window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna: cargarCatalogosFauna });
             }
 
-            // Combo inteligente de aerolíneas (catálogo + frecuencia histórica)
-            (function () {
-                var aerolineaInput = faunaForm.querySelector('#fauna_report-aerolinea');
-                var aerolineaDataList = faunaForm.querySelector('#fauna_report-aerolinea-options');
-                var aerolineaTopHint = faunaForm.querySelector('#fauna_report-aerolinea-top');
-                if (!aerolineaInput || !aerolineaDataList) return;
-
-                function normalizeText(v) {
-                    return (v || '')
-                        .toString()
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .trim()
-                        .toLowerCase();
-                }
-
-                async function loadAirlineSmartOptions() {
-                    var client = window.supabaseClient;
-                    if (!client) return;
-                    var airlinesMap = new Map(); // key: nombre normalizado
-                    var frequencyMap = new Map(); // key: nombre normalizado
-
-                    function splitCodeAndName(rawValue) {
-                        var raw = (rawValue || '').trim();
-                        var match = raw.match(/^([A-Z0-9]{2,3})\s*-\s*(.+)$/i);
-                        if (match) {
-                            return { code: match[1].toUpperCase(), name: match[2].trim() };
-                        }
-                        return { code: '', name: raw };
-                    }
-
-                    function upsertAirline(rawValue, preferredCode) {
-                        var parts = splitCodeAndName(rawValue);
-                        var name = parts.name;
-                        if (!name) return;
-                        var key = normalizeText(name);
-                        var current = airlinesMap.get(key);
-                        var code = (preferredCode || parts.code || '').trim().toUpperCase();
-                        if (!current) {
-                            airlinesMap.set(key, { key: key, name: name, code: code });
-                            return;
-                        }
-                        if (!current.code && code) {
-                            current.code = code;
-                        }
-                    }
-
-                    var catalogRows = await window.MHRCatalogService.getCatalogoAerolineas(client);
-                    if (Array.isArray(catalogRows)) {
-                        catalogRows.forEach(function (row) {
-                            var code = (row.codigo_iata || '').trim();
-                            var name = (row.nombre_aerolinea || '').trim();
-                            upsertAirline(name, code);
-                        });
-                    }
-
-                    var usageRows = await window.MHRCatalogService.getUsoAerolineas(client);
-                    if (Array.isArray(usageRows)) {
-                        usageRows.forEach(function (row) {
-                            var rawAirline = (row.aerolinea || '').trim();
-                            var parsed = splitCodeAndName(rawAirline);
-                            var freqKey = normalizeText(parsed.name);
-                            if (!freqKey) return;
-                            frequencyMap.set(freqKey, (frequencyMap.get(freqKey) || 0) + 1);
-                            upsertAirline(rawAirline, parsed.code);
-                        });
-                    }
-
-                    var items = Array.from(airlinesMap.values()).map(function (item) {
-                        var label = item.code ? (item.code + ' - ' + item.name) : item.name;
-                        return { label: label, key: item.key };
-                    });
-                    items.sort(function (a, b) {
-                        var aFreq = frequencyMap.get(a.key) || 0;
-                        var bFreq = frequencyMap.get(b.key) || 0;
-                        if (bFreq !== aFreq) return bFreq - aFreq;
-                        return a.label.localeCompare(b.label, 'es');
-                    });
-
-                    aerolineaDataList.innerHTML = '';
-                    items.forEach(function (item) {
-                        var option = document.createElement('option');
-                        option.value = item.label;
-                        aerolineaDataList.appendChild(option);
-                    });
-
-                    var topAirlines = items.slice(0, 5).map(function (item) { return item.label; });
-                    if (aerolineaTopHint) {
-                        aerolineaTopHint.textContent = topAirlines.length
-                            ? ('Más usadas: ' + topAirlines.join(' · '))
-                            : 'Sin historial de frecuencia todavía.';
-                    }
-                }
-
-                loadAirlineSmartOptions().catch(function (err) {
-                    console.warn('No se pudo cargar el combo inteligente de aerolíneas:', err);
-                });
-
-                aerolineaInput.addEventListener('input', function () {
-                    var typed = normalizeText(aerolineaInput.value);
-                    if (!typed) return;
-                    var options = Array.from(aerolineaDataList.options || []);
-                    var match = options.some(function (opt) {
-                        return normalizeText(opt.value).includes(typed);
-                    });
-                    if (!match && aerolineaTopHint) {
-                        aerolineaTopHint.textContent = 'Sin coincidencias exactas, puedes capturar una nueva aerolínea.';
-                    }
-                });
-            })();
-
-            // Parte del avión impactada (solo para evento = Impacto)
-            (function () {
-                var eventoInputs = faunaForm.querySelectorAll('input[name="fauna_report_evento"]');
-                var parteWrap = document.getElementById('fauna_impacto_parte_avion_wrap');
-                var parteSelect = document.getElementById('fauna_report-parte-avion');
-                var parteHint = document.getElementById('fauna_report-parte-avion-hint');
-                if (!eventoInputs.length || !parteWrap || !parteSelect) return;
-
-                function getEventoValue() {
-                    var checked = faunaForm.querySelector('input[name="fauna_report_evento"]:checked');
-                    return checked ? checked.value : '';
-                }
-
-                function updateParteVisibility() {
-                    var show = getEventoValue() === 'Impacto';
-                    parteSelect.disabled = !show;
-                    parteSelect.style.opacity = show ? '1' : '0.65';
-                    if (parteHint) {
-                        parteHint.textContent = show
-                            ? 'Selecciona la parte del avión afectada.'
-                            : 'Selecciona primero el evento "Impacto" para habilitar este campo.';
-                    }
-                    if (!show) parteSelect.value = '';
-                }
-
-                async function loadPartesAvion() {
-                    var client = window.supabaseClient;
-                    if (!client) return;
-                    var rows = await window.MHRCatalogService.getPartesAvionActivas(client);
-                    if (!Array.isArray(rows)) return;
-                    rows.forEach(function (row) {
-                        var nombre = (row.nombre || '').trim();
-                        if (!nombre) return;
-                        var opt = document.createElement('option');
-                        opt.value = nombre;
-                        opt.textContent = nombre;
-                        parteSelect.appendChild(opt);
-                    });
-                }
-
-                eventoInputs.forEach(function (radio) {
-                    radio.addEventListener('change', updateParteVisibility);
-                });
-                updateParteVisibility();
-                loadPartesAvion().catch(function (err) {
-                    console.warn('No se pudo cargar catálogo de partes de avión:', err);
-                });
-            })();
         });
 
         document.addEventListener('DOMContentLoaded', function () {

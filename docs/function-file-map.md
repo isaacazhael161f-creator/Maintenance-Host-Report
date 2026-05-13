@@ -48,7 +48,7 @@
 
 ## `index.html` (pendiente de extracción)
 - Orquestación principal de páginas, listeners globales, flujos PDF, offline sync y render tabular.
-- Persisten funciones legacy de alto acoplamiento DOM que se migrarán en R2/R3.
+- Pendiente principal: separar orquestación global de revisión/offline/PDF en módulos de página adicionales.
 
 ## `js/services/fauna-catalog-service.js`
 - `getCatalogoActivo(client, tabla, filtros)`: consulta catálogos activos en Supabase con filtros opcionales.
@@ -57,4 +57,4 @@
 - `normalizarTextoCatalogo(valor)` / `getCatalogoCacheKey(tabla, filtros)`: helpers de normalización y cache para evitar queries repetidas.
 
 ## `js/pages/fauna-interactions-page.js`
-- `window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna })`: inicializa interacciones de UI de formulario Fauna (locks de selección, limpieza de detalle, estilos de prioridad/condición, wiring de mapa y visibilidad de especie "Otra").
+- `window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna })`: inicializa interacciones de UI de formulario Fauna (locks de selección, limpieza de detalle, estilos de prioridad/condición, wiring de mapa, visibilidad de especie "Otra", combo inteligente de aerolíneas y parte de avión impactada).

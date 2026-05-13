@@ -74,3 +74,5 @@
 - **Compatibilidad mantenida:** se conserva `window.faunaCatalogosCache` y los mismos IDs de selects/filtros (`fauna_rescate_clase`, `fauna_rescate_especie`, `filter-fauna-clase`, `filter-fauna-especie`).
 - **Resultado:** menor acoplamiento en `index.html` y centralización de acceso a datos de catálogos en servicio reutilizable.
 - **Resto de migración aplicado:** se movió el bloque de inicialización de interacciones Fauna (locks, visibilidad, limpieza de ítems, colorización, wiring de mapa y control especie "Otra") a `js/pages/fauna-interactions-page.js`, dejando en `index.html` solo la llamada de arranque.
+
+- **Cierre adicional:** también se migraron al mismo módulo `js/pages/fauna-interactions-page.js` el combo inteligente de aerolíneas y la lógica de parte de avión impactada, eliminando ese bloque inline en `index.html`.
