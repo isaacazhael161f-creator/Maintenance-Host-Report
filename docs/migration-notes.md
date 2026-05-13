@@ -73,3 +73,4 @@
 - **Index simplificado:** se removió bloque inline de utilidades de catálogo (`getCatalogoActivo`, cache-key, normalización, wiring clase→especie) y se delegó a `window.MHRFaunaCatalogService`.
 - **Compatibilidad mantenida:** se conserva `window.faunaCatalogosCache` y los mismos IDs de selects/filtros (`fauna_rescate_clase`, `fauna_rescate_especie`, `filter-fauna-clase`, `filter-fauna-especie`).
 - **Resultado:** menor acoplamiento en `index.html` y centralización de acceso a datos de catálogos en servicio reutilizable.
+- **Resto de migración aplicado:** se movió el bloque de inicialización de interacciones Fauna (locks, visibilidad, limpieza de ítems, colorización, wiring de mapa y control especie "Otra") a `js/pages/fauna-interactions-page.js`, dejando en `index.html` solo la llamada de arranque.

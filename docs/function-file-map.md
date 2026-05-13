@@ -55,3 +55,6 @@
 - `cargarCatalogoSelect(client, tabla, selectElement, placeholder, filtros)`: renderiza opciones en `<select>` con deduplicación por texto normalizado.
 - `cargarEspeciesPorClase(client, selectClase, selectEspecie, placeholder)`: filtra especies por clase seleccionada.
 - `normalizarTextoCatalogo(valor)` / `getCatalogoCacheKey(tabla, filtros)`: helpers de normalización y cache para evitar queries repetidas.
+
+## `js/pages/fauna-interactions-page.js`
+- `window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna })`: inicializa interacciones de UI de formulario Fauna (locks de selección, limpieza de detalle, estilos de prioridad/condición, wiring de mapa y visibilidad de especie "Otra").
