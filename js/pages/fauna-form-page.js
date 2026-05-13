@@ -74,4 +74,57 @@
             
     };
 
+    window.MHRFaunaPage.initPistaLock = function(faunaForm){
+
+                var faunaPistaRadios = Array.prototype.slice.call(faunaForm.querySelectorAll('input[name="fauna_pista"]'));
+                var faunaPistaChangeBtn = document.getElementById('fauna_pista-change-btn');
+                
+                function updateFaunaPistaState() {
+                    try {
+                        var checked = faunaPistaRadios.find(function (r) { return r.checked; });
+                        if (checked) {
+                            // Bloquear todos los radios
+                            faunaPistaRadios.forEach(function (r) {
+                                r.disabled = true;
+                                var lbl = r.closest('label');
+                                if (lbl) lbl.classList.remove('selected');
+                            });
+                            // Marcar el seleccionado
+                            var lbl = checked.closest('label');
+                            if (lbl) lbl.classList.add('selected');
+                            // Mostrar botón para cambiar
+                            if (faunaPistaChangeBtn) faunaPistaChangeBtn.style.display = 'inline-block';
+                        } else {
+                            // Desbloquear todos
+                            faunaPistaRadios.forEach(function (r) {
+                                r.disabled = false;
+                                var lbl = r.closest('label');
+                                if (lbl) lbl.classList.remove('selected');
+                            });
+                            // Ocultar botón
+                            if (faunaPistaChangeBtn) faunaPistaChangeBtn.style.display = 'none';
+                        }
+                    } catch (e) { }
+                }
+
+                faunaPistaRadios.forEach(function (r) {
+                    r.addEventListener('change', function () { updateFaunaPistaState(); });
+                });
+
+                // Botón para cambiar pista
+                if (faunaPistaChangeBtn) {
+                    faunaPistaChangeBtn.addEventListener('click', function () {
+                        faunaPistaRadios.forEach(function (r) { r.disabled = false; r.checked = false; });
+                        faunaPistaChangeBtn.style.display = 'none';
+                        faunaPistaRadios.forEach(function (r) {
+                            var lbl = r.closest('label');
+                            if (lbl) lbl.classList.remove('selected');
+                        });
+                    });
+                }
+
+                updateFaunaPistaState();
+            
+    };
+
 })();
