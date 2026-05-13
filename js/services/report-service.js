@@ -16,6 +16,12 @@
     },
     async insertItemPhoto(client, payload){
       return await client.from('item_photos').insert([payload]);
+    },
+    async insertItemPhotosBulk(client, payloads){
+      return await client.from('item_photos').insert(payloads);
+    },
+    async uploadToBucket(client, bucket, filename, blob, options){
+      return await client.storage.from(bucket).upload(filename, blob, options || {});
     }
   };
 })();

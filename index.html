@@ -2955,9 +2955,7 @@
                         console.log('Insertando items:', itemsToInsert);
 
                         // 3. Insertar items
-                        var { error: itemsError } = await window.supabaseClient
-                            .from('report_items')
-                            .insert(itemsToInsert);
+                        var { error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
 
                         if (itemsError) {
                             console.error('Error guardando items:', itemsError);
@@ -2990,9 +2988,7 @@
                                         var photoFilename = 'photos/' + folio + '_item' + (fi + 1) + '_' + pi + '_' + Date.now() + '.' + ext;
 
                                         // Subir al bucket 'photos'
-                                        var { data: photoData, error: photoUploadErr } = await window.supabaseClient
-                                            .storage.from('photos')
-                                            .upload(photoFilename, photoBlob, { cacheControl: '3600', upsert: false });
+                                        var { data: photoData, error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'photos', photoFilename, photoBlob, { cacheControl: '3600', upsert: false });
 
                                         if (photoUploadErr) {
                                             console.warn('Error subiendo foto:', photoUploadErr);
@@ -3013,9 +3009,7 @@
                             }
 
                             if (photosToInsert.length > 0) {
-                                var { error: photosDbErr } = await window.supabaseClient
-                                    .from('item_photos')
-                                    .insert(photosToInsert);
+                                var { error: photosDbErr } = await window.MHRReportService.insertItemPhotosBulk(window.supabaseClient, photosToInsert);
                                 if (photosDbErr) {
                                     console.warn('Error guardando referencias de fotos en DB:', photosDbErr);
                                 } else {

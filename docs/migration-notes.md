@@ -64,3 +64,4 @@
 - **Origen:** `loadFaunaStatistics` y `loadFaunaReports` en `index.html`.
 - **Destino:** `js/services/fauna-report-service.js`.
 - **R1 avance adicional:** inserciones de `fauna_reports` movidas a `MHRFaunaReportService.insertFaunaReport`, y consulta ordenada de `reports` para estadísticas movida a `MHRReportService.getReportsOrdered`.
+- **R1 avance adicional:** en guardado principal de revisión se delegaron también `report_items`, carga de fotos a bucket `photos` e inserción masiva en `item_photos` hacia `MHRReportService`.
