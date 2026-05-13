@@ -2487,16 +2487,7 @@
     <script src="./js/ui/signature-manager.js"></script>
     <script src="./js/pages/fauna-form-page.js"></script>
     <script src="./js/pages/fauna-interactions-page.js"></script>
-    <script src="./js/services/fauna-report-service.js"></script>
-    <script src="./js/services/fauna-catalog-service.js"></script>
-    <script src="./js/services/catalog-service.js"></script>
-    <script src="./js/services/user-service.js"></script>
-    <script src="./js/services/report-service.js"></script>
-
-    <!-- Script: Captura de Firmas en Canvas -->
-    <script src="./js/ui/signature-manager.js"></script>
-    <script src="./js/pages/fauna-form-page.js"></script>
-    <script src="./js/pages/fauna-interactions-page.js"></script>
+    <script src="./js/pages/offline-sync-page.js"></script>
     <script src="./js/services/fauna-report-service.js"></script>
     <script src="./js/services/fauna-catalog-service.js"></script>
     <script src="./js/services/catalog-service.js"></script>
@@ -7203,37 +7194,18 @@
             }
         };
 
-        /* ── 7. Listeners de conectividad e inicialización ──────── */
-        window.addEventListener('online', function () {
-            hideOfflineBanner();
-            window.syncPendingReports();
-        });
-
-        window.addEventListener('offline', function () {
-            showOfflineBanner('📡 Sin conexión a Internet', 'offline');
-        });
-
         // ─── Handler para Fauna Form (migrado a módulo de página) ───
         document.addEventListener('DOMContentLoaded', function () {
             if (window.MHRFaunaInteractionsPage && typeof window.MHRFaunaInteractionsPage.init === "function") {
                 window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna: cargarCatalogosFauna });
             }
 
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            if (!navigator.onLine) {
-                showOfflineBanner('📡 Sin conexión — los reportes se guardarán localmente', 'offline');
-            }
-            window.updatePendingBadge();
-            // Si hay pendientes y hay conexión, sincronizar automáticamente al abrir
-            if (navigator.onLine) {
-                getPendingReports().then(function (list) {
-                    if (list && list.length > 0) {
-                        // Esperar 0.8 s para que Supabase termine de inicializarse
-                        setTimeout(window.syncPendingReports, 800);
-                    }
-                }).catch(function () {});
+            if (window.MHROfflineSyncPage && typeof window.MHROfflineSyncPage.init === "function") {
+                window.MHROfflineSyncPage.init({
+                    showOfflineBanner: showOfflineBanner,
+                    hideOfflineBanner: hideOfflineBanner,
+                    getPendingReports: getPendingReports
+                });
             }
         });
 

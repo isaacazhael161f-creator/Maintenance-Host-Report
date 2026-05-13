@@ -58,3 +58,6 @@
 
 ## `js/pages/fauna-interactions-page.js`
 - `window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna })`: inicializa interacciones de UI de formulario Fauna (locks de selección, limpieza de detalle, estilos de prioridad/condición, wiring de mapa, visibilidad de especie "Otra", combo inteligente de aerolíneas y parte de avión impactada).
+
+## `js/pages/offline-sync-page.js`
+- `window.MHROfflineSyncPage.init({ showOfflineBanner, hideOfflineBanner, getPendingReports })`: encapsula listeners online/offline, badge inicial y sincronización automática de pendientes al cargar.
