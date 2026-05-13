@@ -65,3 +65,5 @@
 - **Destino:** `js/services/fauna-report-service.js`.
 - **R1 avance adicional:** inserciones de `fauna_reports` movidas a `MHRFaunaReportService.insertFaunaReport`, y consulta ordenada de `reports` para estadísticas movida a `MHRReportService.getReportsOrdered`.
 - **R1 avance adicional:** en guardado principal de revisión se delegaron también `report_items`, carga de fotos a bucket `photos` e inserción masiva en `item_photos` hacia `MHRReportService`.
+- **R1 avance adicional:** se delegó también upload de PDF bucket `reports` y upload/public URL de fotos (`photos`) en `MHRReportService`.
+- **Documentación nueva:** `docs/function-file-map.md` con mapeo de funciones por archivo y responsabilidad.

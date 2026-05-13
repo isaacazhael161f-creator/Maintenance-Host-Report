@@ -3037,10 +3037,7 @@
                         if (!session) return null;
 
                         var filename = 'report_' + folio + '_' + new Date().getTime() + '.pdf';
-                        var { data, error } = await window.supabaseClient
-                            .storage
-                            .from('reports')
-                            .upload(filename, blob, {
+                        var { data, error } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'reports', filename, blob, {
                                 cacheControl: '3600',
                                 upsert: false
                             });
@@ -7231,9 +7228,9 @@
                         var blob     = new Blob([byteArr], { type: mime });
                         var ext      = (ph.name || 'foto.jpg').split('.').pop() || 'jpg';
                         var fileName = reportId + '/' + itemId + '_' + Date.now() + '_' + pi + '.' + ext;
-                        var { error: upError } = await sc.storage.from('photos').upload(fileName, blob, { upsert: false, contentType: mime });
+                        var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'photos', fileName, blob, { upsert: false, contentType: mime });
                         if (upError) { console.warn('Error subiendo foto:', upError); continue; }
-                        var { data: urlData } = sc.storage.from('photos').getPublicUrl(fileName);
+                        var { data: urlData } = window.MHRReportService.getPublicUrl(sc, 'photos', fileName);
                         var photoUrl = urlData ? urlData.publicUrl : null;
                         if (photoUrl) {
                             await window.MHRReportService.insertItemPhoto(sc, {

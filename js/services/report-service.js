@@ -22,6 +22,9 @@
     },
     async uploadToBucket(client, bucket, filename, blob, options){
       return await client.storage.from(bucket).upload(filename, blob, options || {});
+    },
+    getPublicUrl(client, bucket, filePath){
+      return client.storage.from(bucket).getPublicUrl(filePath);
     }
   };
 })();
