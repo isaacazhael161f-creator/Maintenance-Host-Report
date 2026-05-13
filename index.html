@@ -3020,50 +3020,6 @@
     <script>
         // Variable global para almacenar logo en base64
         window.logoBase64 = null;
-        window.MHRUtils = window.MHRUtils || (function () {
-            function toArray(nodes) { return Array.prototype.slice.call(nodes || []); }
-            function pad2(n) { return n.toString().padStart(2, '0'); }
-
-            function bindLockSelect(selectEl, resetBtn, opts) {
-                if (!selectEl || !resetBtn) return;
-                if (selectEl.dataset.mhrLockBound === '1') return;
-                var options = opts || {};
-                var clearOnReset = !!options.clearOnReset;
-
-                selectEl.addEventListener('change', function () {
-                    if (!selectEl.value) return;
-                    selectEl.disabled = true;
-                    resetBtn.style.display = 'inline-block';
-                });
-
-                resetBtn.addEventListener('click', function () {
-                    selectEl.disabled = false;
-                    if (clearOnReset) selectEl.value = '';
-                    resetBtn.style.display = 'none';
-                });
-                selectEl.dataset.mhrLockBound = '1';
-            }
-
-            function bindTurnoVisibility(tipoName, sectionId, turnoName) {
-                var tipoEls = toArray(document.getElementsByName(tipoName));
-                var turnoSection = document.getElementById(sectionId);
-                if (!tipoEls.length || !turnoSection) return;
-                if (turnoSection.dataset.mhrTurnoBound === '1') return;
-
-                function update() {
-                    var anyChecked = tipoEls.some(function (i) { return !!i.checked; });
-                    turnoSection.style.display = anyChecked ? 'block' : 'none';
-                    if (!anyChecked && turnoName) {
-                        toArray(document.getElementsByName(turnoName)).forEach(function (r) { r.checked = false; });
-                    }
-                }
-                tipoEls.forEach(function (el) { el.addEventListener('change', update); });
-                update();
-                turnoSection.dataset.mhrTurnoBound = '1';
-            }
-
-            return { pad2: pad2, bindLockSelect: bindLockSelect, bindTurnoVisibility: bindTurnoVisibility };
-        })();
         
         document.addEventListener('DOMContentLoaded', function () {
             var utils = window.MHRUtils || {
