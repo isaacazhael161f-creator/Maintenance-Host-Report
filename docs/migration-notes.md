@@ -34,3 +34,9 @@
 - **Extensión Fase 4:** también se movió la lógica de visibilidad de sección `fauna_turno-section` a `window.MHRFaunaPage.initTurnoVisibility(faunaForm)` en `js/pages/fauna-form-page.js`.
 - **Extensión Fase 4:** se movió además la lógica de bloqueo/cambio para `fauna_pista` a `window.MHRFaunaPage.initPistaLock(faunaForm)`.
 - **Extensión Fase 4:** se movió también la lógica de bloqueo/cambio para `fauna_fase_vuelo` a `window.MHRFaunaPage.initFaseVueloLock(faunaForm)`.
+
+## Fase 4.5 - Servicios de datos Fauna (inicio acelerado)
+- **Movido:** consultas de hallazgos Fauna (años y dataset de mapa) desde lógica inline.
+- **Origen:** funciones `loadFaunaHallazgosYears` y `loadFaunaHallazgosMapData` en `index.html`.
+- **Destino:** `js/services/fauna-report-service.js`.
+- **Compatibilidad mantenida:** las funciones de pantalla conservan su flujo; solo delegan consultas en `window.MHRFaunaReportService`.

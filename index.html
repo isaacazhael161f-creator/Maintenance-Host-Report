@@ -2486,6 +2486,7 @@
     <!-- Script: Captura de Firmas en Canvas -->
     <script src="./js/ui/signature-manager.js"></script>
     <script src="./js/pages/fauna-form-page.js"></script>
+    <script src="./js/services/fauna-report-service.js"></script>
 
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
@@ -6830,17 +6831,7 @@
 
             async function loadFaunaHallazgosYears() {
                 if (!window.supabaseClient || !faunaYearSelect) return;
-                var { data, error } = await window.supabaseClient
-                    .from('fauna_reports')
-                    .select('fecha_reporte')
-                    .eq('tipo_reporte', 'Rescate')
-                    .not('ubicacion_lat', 'is', null)
-                    .not('ubicacion_lng', 'is', null)
-                    .order('fecha_reporte', { ascending: false });
-                if (error) throw error;
-                var years = Array.from(new Set((data || []).map(function (r) {
-                    return (r.fecha_reporte || '').toString().slice(0, 4);
-                }).filter(Boolean)));
+                var years = await window.MHRFaunaReportService.getHallazgosYears(window.supabaseClient);
                 faunaHallazgosYears = years;
                 faunaYearSelect.innerHTML = '';
                 var allOption = document.createElement('option');
@@ -6884,23 +6875,12 @@
                 var selectedClase = faunaClaseSelect ? faunaClaseSelect.value : '';
                 var selectedEspecie = faunaEspecieSelect ? faunaEspecieSelect.value : '';
 
-                var query = window.supabaseClient
-                    .from('fauna_reports')
-                    .select('id, folio, fecha_reporte, clase, especie, tipo_reporte, ubicacion_lat, ubicacion_lng, ubicacion_texto')
-                    .eq('tipo_reporte', 'Rescate')
-                    .not('ubicacion_lat', 'is', null)
-                    .not('ubicacion_lng', 'is', null)
-                    .order('fecha_reporte', { ascending: false });
-                if (selectedYear) query = query.gte('fecha_reporte', selectedYear + '-01-01').lte('fecha_reporte', selectedYear + '-12-31');
-                if (selectedMonth && selectedYear) {
-                    var start = selectedYear + '-' + selectedMonth + '-01';
-                    var end = selectedYear + '-' + selectedMonth + '-31';
-                    query = query.gte('fecha_reporte', start).lte('fecha_reporte', end);
-                }
-                if (selectedClase) query = query.eq('clase', selectedClase);
-                if (selectedEspecie) query = query.eq('especie', selectedEspecie);
-                var { data, error } = await query;
-                if (error) throw error;
+                var data = await window.MHRFaunaReportService.getHallazgosMapData(window.supabaseClient, {
+                    year: selectedYear,
+                    month: selectedMonth,
+                    clase: selectedClase,
+                    especie: selectedEspecie
+                });
 
                 if (!faunaHallazgosMarkersLayer) faunaHallazgosMarkersLayer = L.layerGroup().addTo(faunaHallazgosMap);
                 faunaHallazgosMarkersLayer.clearLayers();
