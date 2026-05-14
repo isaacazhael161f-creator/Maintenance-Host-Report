@@ -77,3 +77,4 @@
 
 - **Cierre adicional:** también se migraron al mismo módulo `js/pages/fauna-interactions-page.js` el combo inteligente de aerolíneas y la lógica de parte de avión impactada, eliminando ese bloque inline en `index.html`.
 - **Siguiente fase aplicada:** listeners de conectividad y bootstrap de sincronización offline movidos a `js/pages/offline-sync-page.js`; `index.html` conserva solo el arranque del módulo con callbacks existentes.
+- **Siguiente fase aplicada:** persistencia/restauración de estado del formulario (`saveFormState`/`restoreFormState`, counters de duplicados, listeners de guardado) extraída de `index.html` a `js/pages/form-state-page.js`.

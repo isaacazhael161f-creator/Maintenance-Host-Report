@@ -61,3 +61,6 @@
 
 ## `js/pages/offline-sync-page.js`
 - `window.MHROfflineSyncPage.init({ showOfflineBanner, hideOfflineBanner, getPendingReports })`: encapsula listeners online/offline, badge inicial y sincronización automática de pendientes al cargar.
+
+## `js/pages/form-state-page.js`
+- Gestiona guardado/restauración de estado en `localStorage` (incluye counters de ítems duplicados), y expone `window.saveFormState` + `window.restoreFormState` por compatibilidad.
