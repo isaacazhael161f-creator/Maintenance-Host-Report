@@ -23,1574 +23,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@0.16.2/togeojson.js"></script>
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* ===== PROFESSIONAL AVIATION THEME ===== */
-        :root {
-            --bg: #e8eef6;
-            --card: #ffffff;
-            --navy: #0c1e3e;
-            --blue: #1d4ed8;
-            --blue-mid: #3b82f6;
-            --gold: #d4a017;
-            --muted: #64748b;
-            --primary: #1d4ed8;
-            --accent: #0c1e3e;
-            --border: #d1dbe9;
-            --shadow: 0 2px 16px rgba(12, 30, 62, 0.08);
-            --shadow-lg: 0 8px 36px rgba(12, 30, 62, 0.14);
-        }
+    <link rel="stylesheet" href="./assets/css/main.css">
 
-        html, body { height: 100%; }
-
-        body {
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-            /* Subtle grid-dot texture */
-            background-color: #dde5f0;
-            background-image:
-                radial-gradient(circle, rgba(29, 78, 216, 0.08) 1px, transparent 1px),
-                linear-gradient(160deg, #dde5f0 0%, #cdd9ee 100%);
-            background-size: 32px 32px, 100% 100%;
-            color: #0f172a;
-            margin: 0;
-            padding: 28px;
-        }
-
-        /* ===== REPORT HEADER ===== */
-        .report-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 18px;
-            padding: 16px 24px;
-            background: linear-gradient(135deg, var(--navy) 0%, #1a2f50 100%);
-            border-radius: 14px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .report-header .left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .report-header img {
-            height: 140px;
-            width: auto;
-            object-fit: contain;
-            border-radius: 10px;
-            background: #ffffff;
-            padding: 4px 8px;
-            box-shadow: 0 2px 14px rgba(55, 65, 241, 0.25);
-        }
-
-        .report-header .meta {
-            text-align: right;
-            font-size: 12px;
-            color: rgba(255,255,255,0.65);
-            line-height: 1.6;
-        }
-
-        .report-header .meta .title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.3px;
-        }
-
-        /* ===== MAIN TITLE ===== */
-        .header-center {
-            flex: 1;
-            text-align: center;
-            padding: 0 16px;
-        }
-
-        #main-title {
-            text-align: center;
-            margin: 0;
-            font-weight: 800;
-            font-size: 20px;
-            color: #fff;
-            letter-spacing: -0.3px;
-            line-height: 1.3;
-            text-shadow: 0 2px 12px rgba(0,0,0,0.3);
-        }
-
-        /* ===== FORM CARD ===== */
-        #report-form,
-        #fauna-form {
-            background: var(--card);
-            padding: 32px 36px;
-            border-radius: 18px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border);
-            border-top: 4px solid var(--blue);
-            max-width: 760px;
-            margin: 0 auto;
-        }
-
-        /* ===== FAUNA TABS ===== */
-        .fauna-tabs {
-            display: flex;
-            gap: 0;
-            border-bottom: 2px solid var(--border);
-            margin-bottom: 32px;
-            margin-left: -36px;
-            margin-right: -36px;
-            margin-top: 0;
-            padding: 0 36px;
-            background: linear-gradient(135deg, rgba(29, 78, 216, 0.04) 0%, rgba(248, 250, 252, 0.8) 100%);
-            border-radius: 18px 18px 0 0;
-            border-top: 1px solid rgba(29, 78, 216, 0.1);
-        }
-
-        .fauna-tab {
-            flex: 1;
-            padding: 16px 24px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--muted);
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
-            letter-spacing: 0.3px;
-            position: relative;
-            user-select: none;
-        }
-
-        .fauna-tab:hover {
-            color: var(--blue);
-            background: rgba(29, 78, 216, 0.05);
-        }
-
-        .fauna-tab.active {
-            color: var(--blue);
-            border-bottom-color: var(--blue);
-            background: rgba(29, 78, 216, 0.12);
-            font-weight: 700;
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.15);
-        }
-
-        .fauna-tab-content {
-            display: none;
-        }
-
-        .fauna-tab-content.active {
-            display: block;
-        }
-
-        /* ===== SECTION HEADERS ===== */
-        h3 {
-            font-size: 11px;
-            font-weight: 700;
-            margin-top: 28px;
-            margin-bottom: 14px;
-            color: var(--navy);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        h3::before {
-            content: '';
-            display: inline-block;
-            width: 3px;
-            height: 18px;
-            background: linear-gradient(180deg, var(--blue), var(--blue-mid));
-            border-radius: 2px;
-            flex-shrink: 0;
-        }
-
-        /* ===== LABELS ===== */
-        label {
-            display: block;
-            margin-bottom: 6px;
-            color: #334155;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        /* ===== PISTA SELECT BAR ===== */
-        .pista-options {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .pista-option {
-            flex: 1;
-            border: 1px solid rgba(100, 116, 139, 0.35);
-            border-radius: 999px;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            font-size: 14px;
-            color: #0f172a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            transition: background 0.2s, border-color 0.2s;
-        }
-        .pista-option input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .pista-option:has(input:checked) {
-            background: rgba(29, 78, 216, 0.18);
-            border-color: rgba(29, 78, 216, 0.8);
-            font-weight: 600;
-        }
-        .pista-option:hover {
-            background: rgba(255, 255, 255, 0.85);
-        }
-        .pista-option.selected {
-            background: rgba(29, 78, 216, 0.18);
-            border-color: rgba(29, 78, 216, 0.8);
-            font-weight: 600;
-        }
-
-        /* ===== TEXT INPUTS, SELECTS, TEXTAREAS ===== */
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1.5px solid #c8d8ee;
-            background: #f5f8fc;
-            box-sizing: border-box;
-            font-size: 14px;
-            color: #0f172a;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-        }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        textarea:focus,
-        select:focus {
-            border-color: var(--blue);
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
-        }
-
-        /* Filtros multi-select: oculto hasta ser activado */
-        .filter-multi {
-            position: relative;
-        }
-
-        .filter-multi .filter-multi-toggle {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(100,116,139,0.35);
-            background: #f5f8fc;
-            cursor: pointer;
-            color: #0f172a;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .filter-multi .filter-multi-toggle:focus {
-            outline: 2px solid var(--blue);
-        }
-
-        .filter-multi .filter-multi-select {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            max-height: 220px;
-            overflow-y: auto;
-            margin-top: 6px;
-            background: #fff;
-            z-index: 30;
-        }
-
-        .filter-multi.open .filter-multi-select {
-            display: block;
-        }
-
-        textarea {
-            min-height: 84px;
-            resize: vertical;
-        }
-
-        /* ===== CUSTOM CHECKBOXES ===== */
-        input[type="checkbox"] {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border: 2px solid #c5d4e8;
-            border-radius: 5px;
-            background: #fff;
-            cursor: pointer;
-            vertical-align: middle;
-            position: relative;
-            transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-            flex-shrink: 0;
-            margin-right: 8px;
-        }
-
-        input[type="checkbox"]:checked {
-            background: var(--blue);
-            border-color: var(--blue);
-            box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
-        }
-
-        input[type="checkbox"]:checked::after {
-            content: '';
-            position: absolute;
-            left: 4px;
-            top: 1px;
-            width: 6px;
-            height: 10px;
-            border: 2px solid #fff;
-            border-top: none;
-            border-left: none;
-            transform: rotate(45deg);
-        }
-
-        input[type="checkbox"]:hover:not(:disabled) {
-            border-color: var(--blue);
-        }
-
-        /* ===== CUSTOM RADIO BUTTONS ===== */
-        input[type="radio"] {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border: 2px solid #c5d4e8;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
-            vertical-align: middle;
-            position: relative;
-            transition: border-color 0.15s;
-            flex-shrink: 0;
-            margin-right: 8px;
-        }
-
-        input[type="radio"]:checked {
-            border-color: var(--blue);
-            border-width: 2px;
-        }
-
-        input[type="radio"]:checked::after {
-            content: '';
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--blue);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        input[type="radio"]:hover:not(:disabled) {
-            border-color: var(--blue);
-        }
-
-        /* ===== ITEM DETAILS CARDS ===== */
-        .item-details {
-            background: linear-gradient(135deg, #f0f6ff 0%, #f8faff 100%);
-            border: 1px solid #c7d9f5;
-            border-left: 4px solid var(--blue);
-            padding: 16px 18px;
-            border-radius: 0 10px 10px 0;
-            margin-bottom: 12px;
-            margin-top: 8px;
-        }
-
-        .item-details small {
-            color: var(--muted);
-        }
-
-        /* ===== BUTTONS ===== */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 16px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            transition: all 0.2s ease;
-            letter-spacing: 0.2px;
-        }
-
-        input[type="submit"],
-        .btn-primary {
-            background: linear-gradient(135deg, #1e3a8a, var(--blue));
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(29, 78, 216, 0.3);
-        }
-
-        input[type="submit"]:hover,
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #1e40af, #2563eb);
-            box-shadow: 0 6px 18px rgba(29, 78, 216, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--primary);
-            border: 1.5px solid var(--border);
-        }
-
-        .btn-ghost:hover {
-            background: #eff4ff;
-            border-color: var(--blue);
-        }
-
-        .item-done,
-        .item-update {
-            padding: 5px 10px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-            transition: all 0.15s ease;
-        }
-
-        .item-done {
-            background: linear-gradient(135deg, #1e3a8a, var(--blue));
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(29, 78, 216, 0.25);
-        }
-
-        .item-done:hover {
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .item-update {
-            background: transparent;
-            color: var(--primary);
-            border: 1.5px solid var(--border);
-        }
-
-        .item-update:hover {
-            background: #eff4ff;
-            border-color: var(--blue);
-        }
-
-        .item-duplicate {
-            background: var(--blue);
-            color: #fff;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .item-duplicate:hover {
-            background: #1e40af;
-            transform: scale(1.1);
-        }
-
-        .item-clear {
-            float: right;
-            margin-left: 12px;
-        }
-
-        /* ===== AUTHOR SELECT ===== */
-        #report-authors-select {
-            max-width: 420px;
-        }
-
-        /* ===== FIRMA PAD ===== */
-        .firma-section {
-            background: linear-gradient(135deg, #f0f6ff 0%, #f8faff 100%);
-            border: 1px solid #c7d9f5;
-            padding: 16px 18px;
-            border-radius: 10px;
-            margin-top: 16px;
-            margin-bottom: 16px;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-            transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
-        }
-        
-        .firma-section.visible {
-            max-height: 1000px;
-            opacity: 1;
-            padding: 16px 18px;
-        }
-        
-        .firma-toggle-btn {
-            padding: 9px 16px;
-            margin: 16px 0;
-            background: linear-gradient(135deg, #0f766e, #14b8a6);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .firma-toggle-btn:hover {
-            background: linear-gradient(135deg, #0d665c, #15a896);
-            box-shadow: 0 6px 18px rgba(15, 118, 110, 0.4);
-            transform: translateY(-1px);
-        }
-        
-        .firma-toggle-btn:active {
-            transform: translateY(0);
-        }
-        
-        .firma-container {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .firma-pad {
-            flex: 1;
-            min-width: 200px;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            background: white;
-            cursor: crosshair;
-            display: block;
-            touch-action: none;
-        }
-        
-        .firma-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--navy);
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .firma-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-        
-        .firma-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1.5px solid var(--border);
-            background: #f5f8fc;
-            color: var(--primary);
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.15s ease;
-        }
-        
-        .firma-btn:hover {
-            background: #eff4ff;
-            border-color: var(--blue);
-        }
-        
-        .firma-btn-clear {
-            background: #fef2f2;
-            border-color: #fecaca;
-            color: #dc2626;
-        }
-        
-        .firma-btn-clear:hover {
-            background: #fee2e2;
-        }
-
-        /* ===== PDF PREVIEW ===== */
-        #pdf-preview-container {
-            position: fixed;
-            right: 18px;
-            top: 120px;
-            width: 36%;
-            height: 68%;
-            background: var(--card);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-lg);
-            display: none;
-            flex-direction: column;
-            z-index: 9999;
-            padding: 8px;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        #pdf-preview-actions {
-            height: 40px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            align-items: center;
-        }
-
-        #pdf-preview-frame {
-            width: 100%;
-            height: calc(100% - 48px);
-            border: none;
-            display: block;
-        }
-
-        #pdf-preview-close {
-            background: #ef4444;
-            color: #fff;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        #pdf-download-btn {
-            background: linear-gradient(135deg, #1e3a8a, var(--blue));
-            color: #fff;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        /* ===== SPINNER ===== */
-        #pdf-spinner {
-            position: absolute;
-            left: 8px;
-            right: 8px;
-            top: 56px;
-            bottom: 8px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.88);
-            z-index: 12;
-            border-radius: 8px;
-        }
-
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 5px solid #dce8f8;
-            border-top-color: var(--blue);
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ===== ADMIN PANEL ===== */
-        #admin-panel {
-            background: var(--card);
-            padding: 28px;
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border);
-            border-top: 4px solid var(--blue);
-            margin: 20px auto;
-            max-width: 900px;
-        }
-
-        #admin-panel h2 {
-            margin-top: 0;
-            color: var(--navy);
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 12px;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        #admin-reports-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-
-        #admin-reports-table th,
-        #admin-reports-table td {
-            padding: 12px 14px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-            font-size: 14px;
-        }
-
-        #admin-reports-table th {
-            background: #f1f5fb;
-            font-weight: 700;
-            color: var(--navy);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-
-        #admin-reports-table tr:hover {
-            background: #f5f9ff;
-        }
-
-        .admin-btn-view {
-            color: var(--blue);
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .admin-btn-view:hover {
-            text-decoration: underline;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width:1000px) {
-            #pdf-preview-container {
-                position: fixed;
-                left: 12px;
-                right: 12px;
-                bottom: 12px;
-                top: auto;
-                width: auto;
-                height: 40%;
-            }
-
-            #report-header,
-            #main-title {
-                padding-right: 12px;
-            }
-
-            #report-form,
-            #fauna-form {
-                max-width: 100%;
-                padding-bottom: 120px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 0;
-            }
-
-            .main-content {
-                padding: 20px;
-            }
-
-            #pdf-preview-container {
-                left: 10px;
-                right: 10px;
-            }
-        }
-
-        @media print {
-            body { padding: 10mm; }
-            .report-header { page-break-after: avoid; }
-            #pdf-preview-container { display: none; }
-        }
-
-        /* ===== CLEAR ALL BUTTON ===== */
-        .clear-all-btn {
-            position: fixed;
-            right: 18px;
-            bottom: 18px;
-            z-index: 10050;
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            color: #fff;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 13px;
-            box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35);
-            cursor: pointer;
-            display: inline-block;
-            transition: all 0.2s ease;
-        }
-
-        .clear-all-btn:hover {
-            box-shadow: 0 10px 28px rgba(220, 38, 38, 0.5);
-            transform: translateY(-1px);
-        }
-
-        .clear-all-btn:active {
-            transform: translateY(1px);
-        }
-
-        @media (max-width:640px) {
-            .clear-all-btn {
-                left: 12px;
-                right: 12px;
-                bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
-                width: auto;
-                display: block;
-                margin: 0 auto;
-                border-radius: 12px;
-                text-align: center;
-            }
-        }
-
-        /* ===== MAP MODAL ===== */
-        #map-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.65);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(3px);
-        }
-
-        #map-modal.open {
-            display: flex;
-        }
-
-        #map-modal-content {
-            background: #fff;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 900px;
-            height: 90%;
-            max-height: 700px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
-            z-index: 10001;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #map-modal-header {
-            padding: 18px 24px;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            background: var(--navy);
-        }
-
-        #map-modal-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #fff;
-            margin: 0;
-        }
-
-        #map-modal-close {
-            background: rgba(255,255,255,0.12);
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #fff;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            transition: background 0.15s;
-        }
-
-        #map-modal-close:hover {
-            background: rgba(255,255,255,0.22);
-        }
-
-        #map-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-
-        #map-info {
-            padding: 12px 18px;
-            background: #f9fafb;
-            border-top: 1px solid #e5e7eb;
-            font-size: 13px;
-            color: #374151;
-            flex-shrink: 0;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-        }
-
-        #map-modal-actions {
-            padding: 14px 20px;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            flex-shrink: 0;
-            background: #f9fafb;
-            border-radius: 0 0 16px 16px;
-        }
-
-        #map-modal-confirm {
-            background: linear-gradient(135deg, #1e3a8a, var(--blue));
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(29, 78, 216, 0.3);
-            z-index: 10002;
-            position: relative;
-        }
-
-        #map-modal-confirm:hover {
-            box-shadow: 0 6px 20px rgba(29, 78, 216, 0.45);
-            transform: translateY(-1px);
-        }
-
-        #map-modal-confirm:active {
-            transform: translateY(1px);
-        }
-
-        #map-gps-btn {
-            background: #fff;
-            color: #0f766e;
-            border: 2px solid #0f766e;
-            padding: 11px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            transition: all 0.2s ease;
-            z-index: 10002;
-            position: relative;
-        }
-
-        #map-gps-btn:hover {
-            background: #0f766e;
-            color: #fff;
-        }
-
-        #map-gps-btn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        /* Estilo para etiquetas del mapa en PDF */
-        .map-label-icon {
-            background: #d9534f;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 24px;
-            font-weight: bold;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            font-size: 12px;
-        }
-
-        /* Evidencias fotográficas */
-        .photo-upload-area {
-            margin: 8px 0;
-        }
-        .photo-upload-btns {
-            display: flex;
-            gap: 8px;
-            max-width: 420px;
-            flex-wrap: wrap;
-        }
-        .photo-upload-label {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-            background: #f0f6ff;
-            border: 2px dashed #93c5fd;
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-size: 13px;
-            color: #1e40af;
-            transition: background 0.2s, border-color 0.2s;
-            flex: 1;
-            min-width: 140px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        .photo-upload-label:hover {
-            background: #dbeafe;
-            border-color: #3b82f6;
-        }
-        .photo-camera-label {
-            background: #f0fdf4;
-            border-color: #6ee7b7;
-            color: #065f46;
-        }
-        .photo-camera-label:hover {
-            background: #dcfce7;
-            border-color: #34d399;
-        }
-        .photo-upload-input {
-            display: none;
-        }
-        .photo-previews {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-            max-width: 420px;
-        }
-        .photo-thumb-wrapper {
-            position: relative;
-            width: 80px;
-            height: 80px;
-        }
-        .photo-thumb {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #e5e7eb;
-            display: block;
-        }
-        .photo-thumb-remove {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 13px;
-            line-height: 1;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-        }
-
-        /* Login Modal - Aviation Theme */
-        /* ===== LOGIN MODAL — SPLIT SCREEN ===== */
-        #login-modal {
-            display: flex;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 20000;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        /* LEFT PANEL — Image */
-        #login-panel-left {
-            flex: 1 1 55%;
-            position: relative;
-            background: url('Imágenes/Whisky_1.jpg') center center / cover no-repeat;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            overflow: hidden;
-        }
-        #login-panel-left::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                to bottom,
-                rgba(0,0,0,0.15) 0%,
-                rgba(5,15,40,0.55) 60%,
-                rgba(5,15,40,0.85) 100%
-            );
-        }
-        #login-brand {
-            position: relative;
-            z-index: 1;
-            padding: 40px 48px;
-            color: #fff;
-        }
-        #login-brand .brand-badge {
-            display: inline-block;
-            background: rgba(255,255,255,0.15);
-            border: 1px solid rgba(255,255,255,0.3);
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px);
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            padding: 5px 14px;
-            border-radius: 20px;
-            margin-bottom: 18px;
-        }
-        #login-brand h1 {
-            font-size: clamp(22px, 3vw, 34px);
-            font-weight: 800;
-            line-height: 1.2;
-            margin: 0 0 12px 0;
-            text-shadow: 0 2px 12px rgba(0,0,0,0.4);
-        }
-        #login-brand p {
-            font-size: 14px;
-            color: rgba(255,255,255,0.75);
-            margin: 0 0 28px 0;
-            line-height: 1.5;
-        }
-        #login-brand .brand-footer {
-            font-size: 11px;
-            color: rgba(255,255,255,0.45);
-            letter-spacing: 1px;
-            border-top: 1px solid rgba(255,255,255,0.15);
-            padding-top: 18px;
-        }
-
-        /* RIGHT PANEL — Form */
-        #login-box {
-            flex: 0 0 420px;
-            background: #f8fafc;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 52px 48px;
-            box-shadow: -8px 0 40px rgba(0,0,0,0.18);
-            position: relative;
-            overflow-y: auto;
-        }
-        #login-box::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 4px; height: 100%;
-            background: linear-gradient(180deg, #007acc, #0055a5, #001f4d);
-        }
-        #login-icon {
-            font-size: 38px;
-            margin-bottom: 10px;
-            display: block;
-            line-height: 1;
-            animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float {
-            0%   { transform: translateY(0px); }
-            50%  { transform: translateY(-8px); }
-            100% { transform: translateY(0px); }
-        }
-        #login-box .login-eyebrow {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #007acc;
-            margin-bottom: 6px;
-        }
-        #login-box h2 {
-            margin: 0 0 6px 0;
-            color: #0f172a;
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-        #login-box > p {
-            color: #64748b;
-            font-size: 13px;
-            margin: 0 0 32px 0;
-            line-height: 1.5;
-        }
-        .input-group {
-            position: relative;
-            margin-bottom: 18px;
-            text-align: left;
-        }
-        .input-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 700;
-            color: #374151;
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        #login-box input {
-            width: 100%;
-            padding: 13px 16px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 14px;
-            background: #fff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
-            box-sizing: border-box;
-            color: #0f172a;
-        }
-        #login-box input::placeholder { color: #94a3b8; }
-        #login-box input:focus {
-            border-color: #007acc;
-            box-shadow: 0 0 0 4px rgba(0, 122, 204, 0.12);
-        }
-        #login-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #0055a5, #007acc);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 15px;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-            margin-top: 6px;
-            letter-spacing: 0.3px;
-            box-shadow: 0 4px 18px rgba(0, 85, 165, 0.35);
-        }
-        #login-btn:hover {
-            opacity: 0.92;
-            box-shadow: 0 6px 22px rgba(0, 85, 165, 0.45);
-        }
-        #login-btn:active { transform: scale(0.98); }
-        #login-error {
-            background: #fef2f2;
-            color: #991b1b;
-            padding: 11px 14px;
-            border-radius: 8px;
-            margin-top: 14px;
-            font-size: 13px;
-            display: none;
-            border: 1px solid #fecaca;
-        }
-        .login-footer-note {
-            margin-top: 28px;
-            font-size: 11px;
-            color: #94a3b8;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 20px;
-            line-height: 1.6;
-        }
-
-        /* Responsive: stack on small screens */
-        @media (max-width: 700px) {
-            #login-modal { flex-direction: column; }
-            #login-panel-left { flex: 0 0 220px; }
-            #login-box { flex: 1 1 auto; padding: 36px 28px; }
-        }
-
-        /* Hide main content initially */
-        body.loading-auth>*:not(#login-modal) {
-            filter: blur(5px);
-        }
-
-        /* ===== USER INFO BAR ===== */
-        #user-info {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: var(--navy);
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: 24px;
-            box-shadow: 0 4px 18px rgba(12, 30, 62, 0.32);
-            font-size: 12px;
-            z-index: 100;
-            display: none;
-            align-items: center;
-            gap: 8px;
-        }
-
-        #user-info #user-email {
-            color: rgba(255,255,255,0.8);
-        }
-
-        #user-info #user-role {
-            background: rgba(255,255,255,0.12) !important;
-            color: #fff !important;
-            padding: 2px 8px !important;
-            border-radius: 12px !important;
-            font-weight: 700 !important;
-            font-size: 11px !important;
-            letter-spacing: 0.5px !important;
-        }
-
-        #logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            transition: background 0.15s;
-        }
-
-        #logout-btn:hover {
-            background: #dc2626;
-        }
-
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 260px;
-            height: 100vh;
-            background: var(--navy);
-            border-right: none;
-            box-shadow: 4px 0 28px rgba(12, 30, 62, 0.25);
-            z-index: 50;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar::before {
-            content: '';
-            display: block;
-            height: 4px;
-            background: linear-gradient(90deg, var(--blue), var(--blue-mid), var(--blue));
-            background-size: 200% 100%;
-            animation: shimmer 3s linear infinite;
-            flex-shrink: 0;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .sidebar-tabs {
-            display: flex;
-            flex-direction: column;
-            padding: 20px 0;
-            flex: 1;
-        }
-
-        .sidebar-tab {
-            padding: 14px 24px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            text-align: left;
-            font-size: 14px;
-            font-weight: 500;
-            color: rgba(255,255,255,0.65);
-            border-left: 3px solid transparent;
-            transition: all 0.2s ease;
-            line-height: 1.4;
-            letter-spacing: 0.2px;
-        }
-
-        .sidebar-tab:hover {
-            background: rgba(255,255,255,0.07);
-            color: #fff;
-            border-left-color: rgba(96, 165, 250, 0.5);
-        }
-
-        .sidebar-tab.active {
-            background: rgba(29, 78, 216, 0.28);
-            color: #fff;
-            border-left-color: var(--blue-mid);
-            font-weight: 700;
-        }
-
-        /* ===== MAIN CONTENT AREA ===== */
-        .main-content {
-            margin-left: 260px;
-            padding: 28px;
-            min-height: 100vh;
-        }
-
-        .content-section {
-            display: none;
-        }
-
-        .content-section.active {
-            display: block;
-        }
-
-        /* ===== SIDEBAR HIDDEN STATE ===== */
-        body.sidebar-hidden .sidebar {
-            display: none;
-        }
-        body.sidebar-hidden .main-content {
-            margin-left: 0;
-        }
-        #menu-toggle-btn {
-            display: none;
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 200;
-            background: var(--navy);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 14px;
-            cursor: pointer;
-            font-size: 20px;
-            box-shadow: 0 4px 16px rgba(12, 30, 62, 0.3);
-            line-height: 1;
-            transition: background 0.15s;
-        }
-        #menu-toggle-btn:hover {
-            background: #1a2f50;
-        }
-        body.sidebar-hidden #menu-toggle-btn {
-            display: block;
-        }
-
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            flex-shrink: 0;
-        }
-
-        .sidebar-brand-icon {
-            font-size: 24px;
-            width: 40px;
-            height: 40px;
-            background: rgba(29, 78, 216, 0.35);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            border: 1px solid rgba(96, 165, 250, 0.3);
-        }
-
-        .sidebar-brand-title {
-            font-size: 14px;
-            font-weight: 800;
-            color: #fff;
-            letter-spacing: 0.3px;
-        }
-
-        .sidebar-brand-sub {
-            font-size: 10px;
-            color: rgba(255,255,255,0.5);
-            letter-spacing: 0.4px;
-            margin-top: 1px;
-        }
-
-        .sidebar-footer {
-            padding: 16px 24px;
-            font-size: 10px;
-            color: rgba(255,255,255,0.3);
-            letter-spacing: 0.5px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            flex-shrink: 0;
-        }
-
-        /* ===== RESPONSIVE SIDEBAR ===== */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                border-right: none;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-            }
-
-            .sidebar-tabs {
-                flex-direction: row;
-                padding: 10px;
-                overflow-x: auto;
-            }
-
-            .sidebar-tab {
-                padding: 10px 15px;
-                white-space: nowrap;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
-            }
-        }
-        /* Indicador Offline / Sincronización pendiente */
-        #offline-banner {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            background: #f59e0b;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            padding: 8px 16px;
-            z-index: 99999;
-            letter-spacing: 0.3px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        #offline-banner.offline { background: #ef4444; }
-        #offline-banner.syncing { background: #3b82f6; }
-        #offline-banner.synced  { background: #22c55e; }
-        #pending-badge {
-            display: none;
-            position: fixed;
-            bottom: 70px;
-            right: 18px;
-            background: #f59e0b;
-            color: #fff;
-            border-radius: 20px;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 700;
-            z-index: 10060;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            cursor: default;
-        }
-    </style>
 </head>
 
 <body>
@@ -4050,252 +2484,15 @@
     </script>
 
     <!-- Script: Captura de Firmas en Canvas -->
-    <script>
-        (function() {
-            // Variables globales para las firmas
-            window.firmaPads = {
-                area: null,
-                aifa: null,
-                afac: null,
-                fauna_aifa: null,
-                fauna_afac: null
-            };
-            window.firmaData = {
-                area: null,
-                aifa: null,
-                afac: null,
-                fauna_aifa: null,
-                fauna_afac: null
-            };
-            window.firmaGuardada = {
-                area: false,
-                aifa: false,
-                afac: false,
-                fauna_aifa: false,
-                fauna_afac: false
-            };
-
-            function initFirmaPad(padId) {
-                var canvas = document.getElementById('firma-' + padId);
-                if (!canvas) return;
-
-                var ctx = canvas.getContext('2d');
-                var drawing = false;
-                var lastX = 0, lastY = 0;
-
-                // Fondo blanco
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                canvas.addEventListener('mousedown', function(e) {
-                    drawing = true;
-                    var rect = canvas.getBoundingClientRect();
-                    lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
-                    lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
-                });
-
-                canvas.addEventListener('mousemove', function(e) {
-                    if (!drawing) return;
-                    var rect = canvas.getBoundingClientRect();
-                    var x = (e.clientX - rect.left) * (canvas.width / rect.width);
-                    var y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-                    ctx.strokeStyle = '#1d4ed8';
-                    ctx.lineWidth = 2;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(lastX, lastY);
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-
-                    lastX = x;
-                    lastY = y;
-                });
-
-                canvas.addEventListener('mouseup', function() {
-                    drawing = false;
-                });
-
-                canvas.addEventListener('mouseleave', function() {
-                    drawing = false;
-                });
-
-                // Soporte touch para móviles
-                canvas.addEventListener('touchstart', function(e) {
-                    e.preventDefault();
-                    drawing = true;
-                    var rect = canvas.getBoundingClientRect();
-                    var touch = e.touches[0];
-                    lastX = (touch.clientX - rect.left) * (canvas.width / rect.width);
-                    lastY = (touch.clientY - rect.top) * (canvas.height / rect.height);
-                });
-
-                canvas.addEventListener('touchmove', function(e) {
-                    e.preventDefault();
-                    if (!drawing) return;
-                    var rect = canvas.getBoundingClientRect();
-                    var touch = e.touches[0];
-                    var x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-                    var y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-
-                    ctx.strokeStyle = '#1d4ed8';
-                    ctx.lineWidth = 2;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(lastX, lastY);
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-
-                    lastX = x;
-                    lastY = y;
-                });
-
-                canvas.addEventListener('touchend', function() {
-                    drawing = false;
-                });
-
-                window.firmaPads[padId] = canvas;
-            }
-
-            // Función global para limpiar firma
-            window.limpiarFirma = function(padId) {
-                var canvas = window.firmaPads[padId];
-                if (!canvas) return;
-                var ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                window.firmaData[padId] = null;
-                window.firmaGuardada[padId] = false;
-                
-                // Ocultar indicador de guardado
-                var statusEl = document.getElementById('status-' + padId);
-                if (statusEl) {
-                    statusEl.style.display = 'none';
-                }
-            };
-
-            // Función global para guardar firma explícitamente
-            window.guardarFirma = function(padId) {
-                var canvas = window.firmaPads[padId];
-                if (!canvas) return;
-                
-                // Capturar el contenido del canvas
-                window.firmaData[padId] = canvas.toDataURL('image/png');
-                window.firmaGuardada[padId] = true;
-                
-                // Mostrar indicador de guardado
-                var statusEl = document.getElementById('status-' + padId);
-                if (statusEl) {
-                    statusEl.style.display = 'inline-block';
-                }
-                
-                console.log('Firma ' + padId + ' guardada');
-            };
-
-            // Obtener firmas para incluir en PDF
-            window.obtenerFirmas = function() {
-                return {
-                    area: window.firmaData.area,
-                    aifa: window.firmaData.aifa,
-                    afac: window.firmaData.afac
-                };
-            };
-
-            // Obtener firmas de fauna para incluir en PDF
-            window.obtenerFirmasFauna = function() {
-                return {
-                    aifa: window.firmaData.fauna_aifa,
-                    afac: window.firmaData.fauna_afac
-                };
-            };
-
-            // Función global para toggle la visibilidad de las firmas
-            window.toggleFirmas = function() {
-                var firmaSection = document.querySelector('#revision-section .firma-section');
-                var toggleBtn = document.getElementById('firma-toggle-btn');
-                
-                if (!firmaSection || !toggleBtn) return;
-                
-                firmaSection.classList.toggle('visible');
-                
-                // Cambiar el texto del botón
-                if (firmaSection.classList.contains('visible')) {
-                    toggleBtn.textContent = '📋 Ocultar Firmas';
-                } else {
-                    toggleBtn.textContent = '📝 Mostrar Firmas';
-                }
-            };
-
-            // Función global para toggle la visibilidad de las firmas de Fauna
-            window.toggleFirmasFauna = function() {
-                var firmaSection = document.querySelector('#fauna-section .firma-section');
-                var toggleBtn = document.getElementById('fauna_firma-toggle-btn');
-                
-                if (!firmaSection || !toggleBtn) return;
-                
-                firmaSection.classList.toggle('visible');
-                
-                // Cambiar el texto del botón
-                if (firmaSection.classList.contains('visible')) {
-                    toggleBtn.textContent = '📋 Ocultar Firmas';
-                } else {
-                    toggleBtn.textContent = '📝 Mostrar Firmas';
-                }
-            };
-
-            // Inicializar canvas al cargar
-            document.addEventListener('DOMContentLoaded', function() {
-                // Agregar event listener al botón de toggle
-                var toggleBtn = document.getElementById('firma-toggle-btn');
-                if (toggleBtn) {
-                    toggleBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        window.toggleFirmas();
-                    });
-                }
-
-                // Agregar event listener al botón de toggle de Fauna
-                var faunaTriggleBtn = document.getElementById('fauna_firma-toggle-btn');
-                if (faunaTriggleBtn) {
-                    faunaTriggleBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        window.toggleFirmasFauna();
-                    });
-                }
-                
-                setTimeout(function() {
-                    initFirmaPad('area');
-                    initFirmaPad('aifa');
-                    initFirmaPad('afac');
-                    initFirmaPad('fauna_aifa');
-                    initFirmaPad('fauna_afac');
-                }, 100);
-            });
-
-            // Si el DOM ya está cargado, inicializar directamente
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(function() {
-                        initFirmaPad('area');
-                        initFirmaPad('aifa');
-                        initFirmaPad('afac');
-                        initFirmaPad('fauna_aifa');
-                        initFirmaPad('fauna_afac');
-                    }, 100);
-                });
-            } else {
-                setTimeout(function() {
-                    initFirmaPad('area');
-                    initFirmaPad('aifa');
-                    initFirmaPad('afac');
-                    initFirmaPad('fauna_aifa');
-                    initFirmaPad('fauna_afac');
-                }, 100);
-            }
-        })();
-    </script>
+    <script src="./js/ui/signature-manager.js"></script>
+    <script src="./js/pages/fauna-form-page.js"></script>
+    <script src="./js/pages/fauna-interactions-page.js"></script>
+    <script src="./js/pages/offline-sync-page.js"></script>
+    <script src="./js/services/fauna-report-service.js"></script>
+    <script src="./js/services/fauna-catalog-service.js"></script>
+    <script src="./js/services/catalog-service.js"></script>
+    <script src="./js/services/user-service.js"></script>
+    <script src="./js/services/report-service.js"></script>
 
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
@@ -4695,10 +2892,7 @@
                         };
                         console.log('Insertando reporte:', reportPayload);
 
-                        var { data: reportData, error: reportError } = await window.supabaseClient
-                            .from('reports')
-                            .insert([reportPayload])
-                            .select();
+                        var { data: reportData, error: reportError } = await window.MHRReportService.insertReport(window.supabaseClient, reportPayload);
                         
                         // Si falla porque las columnas no existen, intentar sin ellas
                         if (reportError && reportError.message && (reportError.message.includes('area_representante') || reportError.message.includes('schema'))) {
@@ -4714,10 +2908,7 @@
                                 cargo: cargo,
                                 pdf_url: pdfUrl || null
                             };
-                            var result = await window.supabaseClient
-                                .from('reports')
-                                .insert([reportPayloadBasic])
-                                .select();
+                            var result = await window.MHRReportService.insertReport(window.supabaseClient, reportPayloadBasic);
                             reportData = result.data;
                             reportError = result.error;
                         }
@@ -4767,9 +2958,7 @@
                         console.log('Insertando items:', itemsToInsert);
 
                         // 3. Insertar items
-                        var { error: itemsError } = await window.supabaseClient
-                            .from('report_items')
-                            .insert(itemsToInsert);
+                        var { error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
 
                         if (itemsError) {
                             console.error('Error guardando items:', itemsError);
@@ -4802,9 +2991,7 @@
                                         var photoFilename = 'photos/' + folio + '_item' + (fi + 1) + '_' + pi + '_' + Date.now() + '.' + ext;
 
                                         // Subir al bucket 'photos'
-                                        var { data: photoData, error: photoUploadErr } = await window.supabaseClient
-                                            .storage.from('photos')
-                                            .upload(photoFilename, photoBlob, { cacheControl: '3600', upsert: false });
+                                        var { data: photoData, error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'photos', photoFilename, photoBlob, { cacheControl: '3600', upsert: false });
 
                                         if (photoUploadErr) {
                                             console.warn('Error subiendo foto:', photoUploadErr);
@@ -4825,9 +3012,7 @@
                             }
 
                             if (photosToInsert.length > 0) {
-                                var { error: photosDbErr } = await window.supabaseClient
-                                    .from('item_photos')
-                                    .insert(photosToInsert);
+                                var { error: photosDbErr } = await window.MHRReportService.insertItemPhotosBulk(window.supabaseClient, photosToInsert);
                                 if (photosDbErr) {
                                     console.warn('Error guardando referencias de fotos en DB:', photosDbErr);
                                 } else {
@@ -4855,10 +3040,7 @@
                         if (!session) return null;
 
                         var filename = 'report_' + folio + '_' + new Date().getTime() + '.pdf';
-                        var { data, error } = await window.supabaseClient
-                            .storage
-                            .from('reports')
-                            .upload(filename, blob, {
+                        var { data, error } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'reports', filename, blob, {
                                 cacheControl: '3600',
                                 upsert: false
                             });
@@ -5545,235 +3727,16 @@
         });
     </script>
 
-    <script>
-        (function () {
-            var STORAGE_KEY = 'mhr_form_state_v1';
-            var saveTimer = null;
-            function getFieldKey(el) {
-                if (el.id) return 'id::' + el.id;
-                if (el.name) return 'name::' + el.name;
-                return null;
-            }
+    <script src="./js/pages/form-state-page.js"></script>
 
-            function collectState() {
-                var state = { counters: {}, fields: {} };
-                // counters for duplicates (if available)
-                try { if (window.mhr && window.mhr.counters) { state.counters = Object.assign({}, window.mhr.counters); } } catch (e) { }
 
-                // store all inputs/selects/textareas
-                Array.prototype.slice.call(document.querySelectorAll('input,textarea,select')).forEach(function (el) {
-                    var key = getFieldKey(el);
-                    if (!key) return;
-                    var rec = { disabled: !!el.disabled };
-                    if (el.type === 'checkbox' || el.type === 'radio') rec.checked = !!el.checked;
-                    else rec.value = el.value;
-                    state.fields[key] = rec;
-                });
-                return state;
-            }
+    <script src="./js/pages/clear-saved-page.js"></script>
 
-            function saveState() {
-                try {
-                    var s = collectState();
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-                } catch (e) { console.error('Error guardando estado', e); }
-            }
 
-            function saveDebounced() { if (saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(saveState, 300); }
 
-            function restoreState() {
-                try {
-                    var raw = localStorage.getItem(STORAGE_KEY);
-                    if (!raw) return;
-                    var state = JSON.parse(raw);
-                    // recreate duplicates
-                    if (state.counters && window.mhr && typeof window.mhr.duplicateItem === 'function') {
-                        Object.keys(state.counters).forEach(function (origId) {
-                            var count = parseInt(state.counters[origId], 10) || 0;
-                            // Count existing clones in DOM for this origId (ids like origId_dup...)
-                            try {
-                                var existingNodes = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id^="' + origId + '_dup"]'));
-                                var existing = existingNodes.length;
-                                if (existing < count) {
-                                    var toCreate = Math.min(20, count - existing); // cap to avoid runaway
-                                    for (var i = 0; i < toCreate; i++) { try { window.mhr.duplicateItem(origId); } catch (e) { console.warn('dup failed', origId, e); } }
-                                } else if (existing > count) {
-                                    // remove extra clones (from the end)
-                                    var removeCount = existing - count;
-                                    for (var r = 0; r < removeCount; r++) {
-                                        var node = existingNodes.pop();
-                                        if (!node) break;
-                                        try {
-                                            // remove the checkbox, its label, buttons and details panel if present
-                                            var id = node.id;
-                                            var parent = node.parentNode;
-                                            // remove following label[for=id]
-                                            var lbl = document.querySelector('label[for="' + id + '"]');
-                                            if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl);
-                                            // remove buttons: done_, update_, dup_, clear_
-                                            ['done_', 'update_', 'dup_', 'clear_'].forEach(function (pref) { var b = document.getElementById(pref + id); if (b && b.parentNode) b.parentNode.removeChild(b); });
-                                            // remove details panel
-                                            var det = document.getElementById('details_' + id);
-                                            if (det && det.parentNode) det.parentNode.removeChild(det);
-                                            // finally remove the checkbox itself
-                                            if (node && node.parentNode) node.parentNode.removeChild(node);
-                                        } catch (e) { console.warn('error removing extra clone', e); }
-                                    }
-                                }
-                            } catch (e) { console.warn('error handling counters for', origId, e); }
-                        });
-                    }
+    <script src="./js/pages/role-selector-page.js"></script>
 
-                    // restore fields
-                    if (state.fields) {
-                        Object.keys(state.fields).forEach(function (k) {
-                            var rec = state.fields[k];
-                            if (k.indexOf('id::') === 0) {
-                                var id = k.slice(4);
-                                var el = document.getElementById(id);
-                                if (!el) return;
-                                try {
-                                    if ('checked' in rec) el.checked = !!rec.checked;
-                                    else if ('value' in rec) el.value = rec.value;
-                                    el.disabled = !!rec.disabled;
-                                    // trigger change events where relevant
-                                    var ev = new Event('change', { bubbles: true }); el.dispatchEvent(ev);
-                                } catch (e) { }
-                            } else if (k.indexOf('name::') === 0) {
-                                var name = k.slice(6);
-                                var nodeList = document.querySelectorAll('[name="' + name.replace(/"/g, '\"') + '"]');
-                                if (!nodeList || !nodeList.length) return;
-                                var el = nodeList[0];
-                                try {
-                                    if (el.type === 'checkbox' || el.type === 'radio') {
-                                        // set matching ones
-                                        Array.prototype.slice.call(nodeList).forEach(function (n) { n.checked = !!rec.checked; });
-                                    } else {
-                                        nodeList.forEach(function (n) { n.value = rec.value; });
-                                    }
-                                    Array.prototype.slice.call(nodeList).forEach(function (n) { n.disabled = !!rec.disabled; n.dispatchEvent(new Event('change', { bubbles: true })); });
-                                } catch (e) { }
-                            }
-                        });
-                    }
-                } catch (e) { console.error('Error restaurando estado', e); }
-            }
 
-            // wire save triggers
-            document.addEventListener('input', saveDebounced);
-            document.addEventListener('change', saveDebounced);
-            // capture clicks that change structure (duplicate, done, update)
-            document.addEventListener('click', function (e) {
-                var t = e.target;
-                if (!t) return;
-                if (t.classList && (t.classList.contains('item-duplicate') || t.classList.contains('item-done') || t.classList.contains('item-update'))) {
-                    // small delay to allow DOM updates
-                    setTimeout(saveState, 200);
-                }
-            });
-
-            // expose manual save (used by other scripts if needed)
-            try { window.saveFormState = saveState; window.restoreFormState = restoreState; } catch (e) { }
-
-            // restore on load (after a small delay to ensure duplicate API exposed)
-            document.addEventListener('DOMContentLoaded', function () { setTimeout(restoreState, 100); });
-        })();
-    </script>
-
-    <script>
-        // Botón para limpiar el estado guardado en localStorage
-        document.addEventListener('DOMContentLoaded', function () {
-            var btn = document.getElementById('clear-saved-btn');
-            if (!btn) return;
-            btn.addEventListener('click', function () {
-                if (!confirm('¿Borrar el estado guardado de la sección actual?')) return;
-                try {
-                    // Identificar qué sección está activa
-                    var revisionSection = document.getElementById('revision-section');
-                    var faunaSection = document.getElementById('fauna-section');
-                    var isRevisionActive = revisionSection && revisionSection.classList.contains('active');
-                    var isFaunaActive = faunaSection && faunaSection.classList.contains('active');
-                    
-                    if (isRevisionActive) {
-                        // Limpiar datos de revisión
-                        var form = document.getElementById('report-form');
-                        if (form) {
-                            Array.prototype.slice.call(form.querySelectorAll('input, textarea, select')).forEach(function (el) {
-                                try {
-                                    if (el.tagName === 'BUTTON' || (el.type && (el.type === 'submit' || el.type === 'button'))) return;
-                                    if (el.type === 'checkbox' || el.type === 'radio') {
-                                        el.checked = false;
-                                    } else {
-                                        el.value = '';
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                        // Limpiar items de inspección
-                        Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id^="tipo_"]')).forEach(function (chk) {
-                            chk.checked = false;
-                            var det = document.getElementById('details_' + chk.id);
-                            if (det) det.style.display = 'none';
-                        });
-                    } else if (isFaunaActive) {
-                        // Limpiar datos de fauna
-                        var faunaForm = document.getElementById('fauna-form');
-                        if (faunaForm) {
-                            Array.prototype.slice.call(faunaForm.querySelectorAll('input, textarea, select')).forEach(function (el) {
-                                try {
-                                    if (el.tagName === 'BUTTON' || (el.type && (el.type === 'submit' || el.type === 'button'))) return;
-                                    if (el.type === 'checkbox' || el.type === 'radio') {
-                                        el.checked = false;
-                                    } else {
-                                        el.value = '';
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                        // Limpiar fotos de rescate si existen
-                        window.faunaRescateFotos = [];
-                        var fotosPreview = document.getElementById('fauna_rescate_fotos_preview');
-                        if (fotosPreview) fotosPreview.innerHTML = '';
-                    }
-                    
-                    // Guardar estado limpio
-                    if (window.saveFormState) window.saveFormState();
-                    alert('Sección limpiada correctamente.');
-                } catch (e) {
-                    console.error('Error al limpiar', e);
-                    alert('Ocurrió un error al limpiar. Revisa la consola.');
-                }
-            });
-        });
-    </script>
-
-    <script>
-        (function () {
-            // Comportamiento para Cargo: botones estilo responsable
-            var roleBtns = document.querySelectorAll('.role-item');
-            var roleInput = document.getElementById('report-role-input');
-            var roleOther = document.getElementById('report-role-other');
-            var roleReset = document.getElementById('report-role-reset');
-            if (roleBtns && roleBtns.length && roleInput && roleReset) {
-                roleBtns.forEach(function (btn) {
-                    btn.addEventListener('click', function () {
-                        // ocultar los demás y marcar seleccionado
-                        roleBtns.forEach(function (b) { if (b !== btn) b.style.display = 'none'; else b.classList.add('selected'); });
-                        roleInput.value = btn.getAttribute('data-value') || btn.textContent.trim();
-                        roleReset.style.display = 'inline-block';
-                        if (roleInput.value === 'Otro') { roleOther.style.display = 'block'; }
-                        else { roleOther.style.display = 'none'; roleOther.value = ''; }
-                    });
-                });
-                roleReset.addEventListener('click', function () {
-                    roleBtns.forEach(function (b) { b.style.display = 'inline-block'; b.classList.remove('selected'); });
-                    roleInput.value = '';
-                    roleOther.style.display = 'none'; roleOther.value = '';
-                    roleReset.style.display = 'none';
-                });
-            }
-        })();
-    </script>
 
     <script>
         (function () {
@@ -6294,63 +4257,20 @@
         </div>
     </div>
 
+    <script src="./js/supabase-client.js"></script>
+
     <!-- Supabase Logic -->
     <script>
         (function () {
-            // Configuración de Supabase (solo cliente público, sin service role en frontend)
-            var RUNTIME_CONFIG = window.__MHR_CONFIG || {};
-            var APP_CONFIG = {
-                supabaseUrl: RUNTIME_CONFIG.supabaseUrl || 'https://fgstncvuuhpgyzmjceyr.supabase.co',
-                supabaseAnonKey: RUNTIME_CONFIG.supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnc3RuY3Z1dWhwZ3l6bWpjZXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzQ0NDQsImV4cCI6MjA4MTQ1MDQ0NH0.YEDIKuWt5iKUEI0BAvidINUz0aZBvQM0h6XRJ-uslB8',
-                // Opcional para producción: Edge Function que devuelva { signedUrl }
-                signedUrlFunction: RUNTIME_CONFIG.signedUrlFunction || 'mhr-signed-url',
-                signedUrlExpiresIn: Number(RUNTIME_CONFIG.signedUrlExpiresIn || 3600)
-            };
+            var supabase = window.supabaseClient;
+            var helpers = window.MHRSupabaseHelpers || {};
+            var APP_CONFIG = helpers.APP_CONFIG || {};
+            var isSafeStoragePath = helpers.isSafeStoragePath || function(path){ return !!path; };
+            var resolvePdfUrl = helpers.resolvePdfUrl || (async function(){ return null; });
 
-            var supabase = null;
-            try {
-                supabase = window.supabase.createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseAnonKey);
-                window.supabaseClient = supabase; // Exponer cliente globalmente
-            } catch (e) {
-                console.error('Error inicializando Supabase:', e);
+            if (!supabase) {
+                console.error('Error inicializando Supabase: window.supabaseClient no disponible');
                 return;
-            }
-
-            function isSafeStoragePath(path) {
-                if (!path || typeof path !== 'string') return false;
-                if (path.includes('..') || path.includes('\\') || path.startsWith('/')) return false;
-                return true;
-            }
-
-            async function resolvePdfUrl(bucketName, filePath, ttlSeconds) {
-                if (!filePath || !isSafeStoragePath(filePath)) return null;
-
-                var expiresIn = Number(ttlSeconds || APP_CONFIG.signedUrlExpiresIn || 3600);
-                if (!Number.isFinite(expiresIn) || expiresIn <= 0) expiresIn = 3600;
-
-                // 1) Estrategia recomendada: Edge Function (backend) para generar signed URLs.
-                try {
-                    if (APP_CONFIG.signedUrlFunction) {
-                        var fnResp = await supabase.functions.invoke(APP_CONFIG.signedUrlFunction, {
-                            body: { bucket: bucketName, path: filePath, expiresIn: expiresIn }
-                        });
-                        if (!fnResp.error && fnResp.data && fnResp.data.signedUrl) return fnResp.data.signedUrl;
-                    }
-                } catch (e) { }
-
-                // 2) Fallback: Signed URL con cliente autenticado (requiere políticas RLS adecuadas).
-                try {
-                    var signedResp = await supabase.storage.from(bucketName).createSignedUrl(filePath, expiresIn);
-                    if (!signedResp.error && signedResp.data && signedResp.data.signedUrl) return signedResp.data.signedUrl;
-                } catch (e) { }
-
-                // 3) Último fallback: URL pública si el bucket es público.
-                try {
-                    var publicResp = supabase.storage.from(bucketName).getPublicUrl(filePath);
-                    if (publicResp && publicResp.data && publicResp.data.publicUrl) return publicResp.data.publicUrl;
-                } catch (e) { }
-
-                return null;
             }
 
                 var loginModal = document.getElementById('login-modal');
@@ -6512,12 +4432,9 @@
                     var select = document.getElementById('report-authors-select');
                     if (!select || !supabase) return;
                     try {
-                        var { data, error } = await supabase
-                            .from('vw_app_usuarios')
-                            .select('*');
-                        if (error) throw error;
+                        var usuarios = await window.MHRUserService.fetchAppUsuarios(supabase);
 
-                        var usuariosFiltrados = (data || []).filter(function (u) {
+                        var usuariosFiltrados = (usuarios || []).filter(function (u) {
                             return belongsToGsoPath(u.pertenece) && hasRevisionCrearPermission(u.permisos_extra);
                         }).map(function (u) {
                             return (
@@ -6552,21 +4469,11 @@
                         throw new Error('Captura usuario y contraseña.');
                     }
                 
-                    var { data, error } = await supabase
-                        .from('usuarios')
-                        .select('*')
-                        .or('username.eq.' + userValue + ',email.eq.' + userValue)
-                        .limit(1);
-                
-                    if (error) {
-                        throw error;
-                    }
-                
-                    if (!data || data.length === 0) {
+                    var user = await window.MHRUserService.findUsuarioByUsernameOrEmail(supabase, userValue);
+
+                    if (!user) {
                         throw new Error('Usuario no encontrado.');
                     }
-                
-                    var user = data[0];
                 
                     if (user.estatus && String(user.estatus).toLowerCase() === 'baja') {
                         throw new Error('El usuario está dado de baja.');
@@ -6621,14 +4528,9 @@
                             let role = 'viewer';
                 
                             try {
-                                const { data: roleData } = await supabase
-                                    .from('user_roles')
-                                    .select('role')
-                                    .eq('user_id', data.user.id)
-                                    .single();
-                
-                                if (roleData && roleData.role) {
-                                    role = roleData.role;
+                                const userRole = await window.MHRUserService.getUserRole(supabase, data.user.id);
+                                if (userRole) {
+                                    role = userRole;
                                 }
                 
                             } catch (_) {}
@@ -7356,12 +5258,10 @@
                                     impactPayload.pdf_url = pdfUrl;
                                     console.log('💾 Guardando reporte en fauna_reports con pdf_url:', pdfUrl);
 
-                                    var { data: impactData, error: impactError } = await client
-                                        .from('fauna_reports')
-                                        .insert([impactPayload])
-                                        .select();
-
-                                    if (impactError) {
+                                    var impactData;
+                                    try {
+                                        impactData = await window.MHRFaunaReportService.insertFaunaReport(client, impactPayload);
+                                    } catch (impactError) {
                                         console.error('❌ Error guardando impacto en BD:', impactError);
                                         alert('❌ Error al guardar reporte: ' + impactError.message);
                                         submitBtn.disabled = false;
@@ -7657,12 +5557,10 @@
                                     pdf_url: pdfUrl
                                 };
 
-                                var { data: rescateData, error: rescateError } = await client
-                                    .from('fauna_reports')
-                                    .insert([rescatePayload])
-                                    .select();
-
-                                if (rescateError) {
+                                var rescateData;
+                                try {
+                                    rescateData = await window.MHRFaunaReportService.insertFaunaReport(client, rescatePayload);
+                                } catch (rescateError) {
                                     console.error('Error guardando rescate:', rescateError);
                                     alert('Error: ' + rescateError.message);
                                     if (submitBtn) {
@@ -7943,140 +5841,40 @@
                 });
             })();
 
-            window.faunaCatalogosCache = window.faunaCatalogosCache || {};
+            async function cargarCatalogosFauna() {
+                var client = window.supabaseClient;
+                var svc = window.MHRFaunaCatalogService;
+                if (!client || !svc) return;
 
-            async function getCatalogoActivo(tabla, filtros) {
-                const client = window.supabaseClient;
-                if (!client) {
-                    console.error('Supabase client not ready for catalog lookup:', tabla);
-                    return [];
-                }
+                await Promise.all([
+                    svc.cargarCatalogoSelect(client, 'catalogo_clase', document.getElementById('fauna_rescate_clase'), '-- Seleccionar Clase --'),
+                    svc.cargarCatalogoSelect(client, 'catalogo_destino', document.getElementById('fauna_rescate_sitio_reubicacion'), '-- Seleccionar Sitio de Reubicación --'),
+                    svc.cargarCatalogoSelect(client, 'catalogo_clase', document.getElementById('filter-fauna-clase'), 'Todas las clases'),
+                    svc.cargarCatalogoSelect(client, 'catalogo_especie', document.getElementById('filter-fauna-especie'), 'Todas las especies')
+                ]);
 
-                var query = client
-                    .from(tabla)
-                    .select('id, nombre')
-                    .eq('activo', true)
-                    .order('orden', { ascending: true });
+                await Promise.all([
+                    svc.cargarEspeciesPorClase(client, document.getElementById('fauna_rescate_clase'), document.getElementById('fauna_rescate_especie'), '-- Seleccionar Especie --'),
+                    svc.cargarEspeciesPorClase(client, document.getElementById('filter-fauna-clase'), document.getElementById('filter-fauna-especie'), 'Todas las especies')
+                ]);
 
-                if (filtros && typeof filtros === 'object') {
-                    Object.keys(filtros).forEach(function(campo){
-                        if (filtros[campo] !== undefined && filtros[campo] !== null && filtros[campo] !== '') {
-                            query = query.eq(campo, filtros[campo]);
-                        }
+                var claseSelectRescate = document.getElementById('fauna_rescate_clase');
+                var especieSelectRescate = document.getElementById('fauna_rescate_especie');
+                if (claseSelectRescate && especieSelectRescate && claseSelectRescate.dataset.catalogoWired !== '1') {
+                    claseSelectRescate.dataset.catalogoWired = '1';
+                    claseSelectRescate.addEventListener('change', function () {
+                        svc.cargarEspeciesPorClase(client, claseSelectRescate, especieSelectRescate, '-- Seleccionar Especie --');
                     });
                 }
 
-                const { data, error } = await query;
-
-                if (error) {
-                    console.error('Error loading catalog from Supabase:', { tabla: tabla, error: error });
-                    return [];
+                var claseSelectFiltro = document.getElementById('filter-fauna-clase');
+                var especieSelectFiltro = document.getElementById('filter-fauna-especie');
+                if (claseSelectFiltro && especieSelectFiltro && claseSelectFiltro.dataset.catalogoWired !== '1') {
+                    claseSelectFiltro.dataset.catalogoWired = '1';
+                    claseSelectFiltro.addEventListener('change', function () {
+                        svc.cargarEspeciesPorClase(client, claseSelectFiltro, especieSelectFiltro, 'Todas las especies');
+                    });
                 }
-
-                return data || [];
-            }
-
-            function getCatalogoCacheKey(tabla, filtros) {
-                var key = tabla;
-                if (filtros && typeof filtros === 'object') {
-                    var parts = Object.keys(filtros).sort().map(function(k){ return k + ':' + filtros[k]; });
-                    if (parts.length) key += '|' + parts.join('|');
-                }
-                return key;
-            }
-
-            function normalizarTextoCatalogo(valor) {
-                return (valor || '')
-                    .toString()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .toLowerCase()
-                    .trim();
-            }
-
-            async function cargarCatalogoSelect(tabla, selectElement, placeholder, filtros) {
-                if (!selectElement) return;
-
-                var valorActual = selectElement.value;
-                selectElement.innerHTML = '';
-                var placeholderOption = document.createElement('option');
-                placeholderOption.value = '';
-                placeholderOption.textContent = placeholder;
-                selectElement.appendChild(placeholderOption);
-
-                var cacheKey = getCatalogoCacheKey(tabla, filtros);
-                var catalogo = window.faunaCatalogosCache[cacheKey];
-                if (!catalogo) {
-                    catalogo = await getCatalogoActivo(tabla, filtros);
-                    window.faunaCatalogosCache[cacheKey] = catalogo;
-                }
-
-                var vistos = new Set();
-                catalogo.forEach(function(item) {
-                    var nombre = (item && item.nombre ? item.nombre : '').toString().trim();
-                    if (!nombre) return;
-                    var key = normalizarTextoCatalogo(nombre);
-                    if (vistos.has(key)) return;
-                    vistos.add(key);
-
-                    var option = document.createElement('option');
-                    option.value = nombre; // Compatibilidad: guardar texto, no id
-                    option.textContent = nombre;
-                    selectElement.appendChild(option);
-                });
-
-                if (valorActual && Array.prototype.some.call(selectElement.options, function(opt) { return opt.value === valorActual; })) {
-                    selectElement.value = valorActual;
-                }
-            }
-
-            async function cargarEspeciesPorClase(selectClase, selectEspecie, placeholder) {
-                if (!selectEspecie) return;
-
-                var claseNombre = selectClase && selectClase.value ? selectClase.value : '';
-                if (!claseNombre) {
-                    await cargarCatalogoSelect('catalogo_especie', selectEspecie, placeholder);
-                    return;
-                }
-
-                var clases = window.faunaCatalogosCache['catalogo_clase'] || await getCatalogoActivo('catalogo_clase');
-                window.faunaCatalogosCache['catalogo_clase'] = clases;
-
-                var claseNombreNorm = normalizarTextoCatalogo(claseNombre);
-                var clase = clases.find(function(item){
-                    return normalizarTextoCatalogo(item.nombre) === claseNombreNorm;
-                });
-                if (!clase || !clase.id) {
-                    await cargarCatalogoSelect('catalogo_especie', selectEspecie, placeholder);
-                    return;
-                }
-
-                await cargarCatalogoSelect('catalogo_especie', selectEspecie, placeholder, { clase_id: clase.id });
-            }
-
-            function wireFaunaClaseEspecie(selectClaseId, selectEspecieId, placeholderEspecie) {
-                var claseSelect = document.getElementById(selectClaseId);
-                var especieSelect = document.getElementById(selectEspecieId);
-                if (!claseSelect || !especieSelect || claseSelect.dataset.catalogoWired === '1') return;
-                claseSelect.dataset.catalogoWired = '1';
-                claseSelect.addEventListener('change', function () {
-                    cargarEspeciesPorClase(claseSelect, especieSelect, placeholderEspecie);
-                });
-            }
-
-            async function cargarCatalogosFauna() {
-                await Promise.all([
-                    cargarCatalogoSelect('catalogo_clase', document.getElementById('fauna_rescate_clase'), '-- Seleccionar Clase --'),
-                    cargarCatalogoSelect('catalogo_destino', document.getElementById('fauna_rescate_sitio_reubicacion'), '-- Seleccionar Sitio de Reubicación --'),
-                    cargarCatalogoSelect('catalogo_clase', document.getElementById('filter-fauna-clase'), 'Todas las clases'),
-                    cargarCatalogoSelect('catalogo_especie', document.getElementById('filter-fauna-especie'), 'Todas las especies')
-                ]);
-                await Promise.all([
-                    cargarEspeciesPorClase(document.getElementById('fauna_rescate_clase'), document.getElementById('fauna_rescate_especie'), '-- Seleccionar Especie --'),
-                    cargarEspeciesPorClase(document.getElementById('filter-fauna-clase'), document.getElementById('filter-fauna-especie'), 'Todas las especies')
-                ]);
-                wireFaunaClaseEspecie('fauna_rescate_clase', 'fauna_rescate_especie', '-- Seleccionar Especie --');
-                wireFaunaClaseEspecie('filter-fauna-clase', 'filter-fauna-especie', 'Todas las especies');
             }
 
             // Función para cargar estadísticas
@@ -8094,12 +5892,10 @@
                 });
 
                 try {
-                    const { data: reports, error } = await client
-                        .from('reports')
-                        .select('*')
-                        .order('created_at', { ascending: false });
-
-                    if (error) {
+                    let reports;
+                    try {
+                        reports = await window.MHRReportService.getReportsOrdered(client);
+                    } catch (error) {
                         console.error('Error loading statistics:', error);
                         ['inspection-types-chart','monthly-reports-chart'].forEach(function(id){
                             var el = document.getElementById(id);
@@ -8344,14 +6140,7 @@
                 });
 
                 try {
-                    const { data: faunaData, error: faunaError } = await client
-                        .from('fauna_reports')
-                        .select('*');
-
-                    if (faunaError) {
-                        console.error('Error loading fauna statistics:', { faunaError });
-                        return;
-                    }
+                    const faunaData = await window.MHRFaunaReportService.getAllFaunaReports(client);
 
                     var impactData = (faunaData || []).filter(function(r){ return r.tipo_reporte !== 'Rescate'; });
                     var rescateData = (faunaData || []).filter(function(r){ return r.tipo_reporte === 'Rescate'; });
@@ -8486,21 +6275,12 @@
                 }
 
                 try {
-                    let faunaQuery = client.from('fauna_reports').select('*');
-                    if (filters.fechaDesde) faunaQuery = faunaQuery.gte('fecha_reporte', filters.fechaDesde);
-                    if (filters.fechaHasta) faunaQuery = faunaQuery.lte('fecha_reporte', filters.fechaHasta);
-                    if (filters.clase && filters.clase !== '') faunaQuery = faunaQuery.eq('clase', filters.clase);
-                    if (filters.especie && filters.especie !== '') faunaQuery = faunaQuery.eq('especie', filters.especie);
-
-                    const { data: faunaData, error: faunaError } = await faunaQuery.order('created_at', { ascending: false });
-
-                    if (faunaError) {
-                        console.error('Error loading fauna reports:', { faunaError });
-                        if (reportsList) {
-                            reportsList.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#ef4444;">Error al cargar reportes</td></tr>';
-                        }
-                        return;
-                    }
+                    const faunaData = await window.MHRFaunaReportService.getFaunaReportsByFilters(client, {
+                        fechaDesde: filters.fechaDesde,
+                        fechaHasta: filters.fechaHasta,
+                        clase: filters.clase && filters.clase !== '' ? filters.clase : '',
+                        especie: filters.especie && filters.especie !== '' ? filters.especie : ''
+                    });
 
                     // Combinar reportes según filtro de tipo
                     let allReports = (faunaData || []).filter(function(report) {
@@ -8683,17 +6463,7 @@
 
             async function loadFaunaHallazgosYears() {
                 if (!window.supabaseClient || !faunaYearSelect) return;
-                var { data, error } = await window.supabaseClient
-                    .from('fauna_reports')
-                    .select('fecha_reporte')
-                    .eq('tipo_reporte', 'Rescate')
-                    .not('ubicacion_lat', 'is', null)
-                    .not('ubicacion_lng', 'is', null)
-                    .order('fecha_reporte', { ascending: false });
-                if (error) throw error;
-                var years = Array.from(new Set((data || []).map(function (r) {
-                    return (r.fecha_reporte || '').toString().slice(0, 4);
-                }).filter(Boolean)));
+                var years = await window.MHRFaunaReportService.getHallazgosYears(window.supabaseClient);
                 faunaHallazgosYears = years;
                 faunaYearSelect.innerHTML = '';
                 var allOption = document.createElement('option');
@@ -8737,23 +6507,12 @@
                 var selectedClase = faunaClaseSelect ? faunaClaseSelect.value : '';
                 var selectedEspecie = faunaEspecieSelect ? faunaEspecieSelect.value : '';
 
-                var query = window.supabaseClient
-                    .from('fauna_reports')
-                    .select('id, folio, fecha_reporte, clase, especie, tipo_reporte, ubicacion_lat, ubicacion_lng, ubicacion_texto')
-                    .eq('tipo_reporte', 'Rescate')
-                    .not('ubicacion_lat', 'is', null)
-                    .not('ubicacion_lng', 'is', null)
-                    .order('fecha_reporte', { ascending: false });
-                if (selectedYear) query = query.gte('fecha_reporte', selectedYear + '-01-01').lte('fecha_reporte', selectedYear + '-12-31');
-                if (selectedMonth && selectedYear) {
-                    var start = selectedYear + '-' + selectedMonth + '-01';
-                    var end = selectedYear + '-' + selectedMonth + '-31';
-                    query = query.gte('fecha_reporte', start).lte('fecha_reporte', end);
-                }
-                if (selectedClase) query = query.eq('clase', selectedClase);
-                if (selectedEspecie) query = query.eq('especie', selectedEspecie);
-                var { data, error } = await query;
-                if (error) throw error;
+                var data = await window.MHRFaunaReportService.getHallazgosMapData(window.supabaseClient, {
+                    year: selectedYear,
+                    month: selectedMonth,
+                    clase: selectedClase,
+                    especie: selectedEspecie
+                });
 
                 if (!faunaHallazgosMarkersLayer) faunaHallazgosMarkersLayer = L.layerGroup().addTo(faunaHallazgosMap);
                 faunaHallazgosMarkersLayer.clearLayers();
@@ -9101,7 +6860,7 @@
                 user_id:         userId,
                 pdf_url:         null
             };
-            var { data: reportData, error: reportError } = await sc.from('reports').insert([reportPayload]).select().single();
+            var { data: reportData, error: reportError } = await window.MHRReportService.insertReportSingle(sc, reportPayload);
             
             // Si falla porque las columnas no existen, intentar sin ellas
             if (reportError && reportError.message && (reportError.message.includes('area_representante') || reportError.message.includes('schema'))) {
@@ -9117,7 +6876,7 @@
                     user_id:         userId,
                     pdf_url:         null
                 };
-                var result = await sc.from('reports').insert([reportPayloadBasic]).select().single();
+                var result = await window.MHRReportService.insertReportSingle(sc, reportPayloadBasic);
                 reportData = result.data;
                 reportError = result.error;
             }
@@ -9134,7 +6893,7 @@
                         fields:    JSON.stringify(it.fields)
                     };
                 });
-                var { error: itemsError } = await sc.from('report_items').insert(itemsPayload);
+                var { error: itemsError } = await window.MHRReportService.insertReportItems(sc, itemsPayload);
                 if (itemsError) console.warn('Error insertando items offline:', itemsError);
             }
 
@@ -9153,17 +6912,17 @@
                         var blob     = new Blob([byteArr], { type: mime });
                         var ext      = (ph.name || 'foto.jpg').split('.').pop() || 'jpg';
                         var fileName = reportId + '/' + itemId + '_' + Date.now() + '_' + pi + '.' + ext;
-                        var { error: upError } = await sc.storage.from('photos').upload(fileName, blob, { upsert: false, contentType: mime });
+                        var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'photos', fileName, blob, { upsert: false, contentType: mime });
                         if (upError) { console.warn('Error subiendo foto:', upError); continue; }
-                        var { data: urlData } = sc.storage.from('photos').getPublicUrl(fileName);
+                        var { data: urlData } = window.MHRReportService.getPublicUrl(sc, 'photos', fileName);
                         var photoUrl = urlData ? urlData.publicUrl : null;
                         if (photoUrl) {
-                            await sc.from('item_photos').insert([{
+                            await window.MHRReportService.insertItemPhoto(sc, {
                                 report_id:  reportId,
                                 item_id:    itemId,
                                 photo_url:  photoUrl,
                                 photo_name: ph.name
-                            }]);
+                            });
                         }
                     } catch (photoErr) {
                         console.warn('Error procesando foto offline:', photoErr);
@@ -9216,478 +6975,18 @@
             }
         };
 
-        /* ── 7. Listeners de conectividad e inicialización ──────── */
-        window.addEventListener('online', function () {
-            hideOfflineBanner();
-            window.syncPendingReports();
-        });
-
-        window.addEventListener('offline', function () {
-            showOfflineBanner('📡 Sin conexión a Internet', 'offline');
-        });
-
-        // ─── Handler para Fauna Form ───
+        // ─── Handler para Fauna Form (migrado a módulo de página) ───
         document.addEventListener('DOMContentLoaded', function () {
-            var faunaForm = document.getElementById('fauna-form');
-            if (!faunaForm) return;
-
-            // Manejar fauna tipo reporte (similar a pista en revision form) con bloqueo de selecciones
-            (function () {
-                var faunaRadios = Array.prototype.slice.call(faunaForm.querySelectorAll('input[name="fauna_tipo_reporte_inspeccion"]'));
-                var faunaChangeBtn = document.getElementById('fauna_tipo_reporte-change-btn');
-                
-                function updateFaunaReporteState() {
-                    try {
-                        var checked = faunaRadios.find(function (r) { return r.checked; });
-                        if (checked) {
-                            // Bloquear todos los radios
-                            faunaRadios.forEach(function (r) {
-                                r.disabled = true;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Marcar el seleccionado
-                            var lbl = checked.closest('label');
-                            if (lbl) lbl.classList.add('selected');
-                            // Mostrar botón para cambiar
-                            if (faunaChangeBtn) faunaChangeBtn.style.display = 'inline-block';
-                        } else {
-                            // Desbloquear todos
-                            faunaRadios.forEach(function (r) {
-                                r.disabled = false;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Ocultar botón
-                            if (faunaChangeBtn) faunaChangeBtn.style.display = 'none';
-                        }
-                    } catch (e) { }
-                }
-
-                faunaRadios.forEach(function (r) {
-                    r.addEventListener('change', function () { updateFaunaReporteState(); });
-                });
-
-                // Botón para cambiar tipo de reporte
-                if (faunaChangeBtn) {
-                    faunaChangeBtn.addEventListener('click', function () {
-                        faunaRadios.forEach(function (r) { r.disabled = false; r.checked = false; });
-                        faunaChangeBtn.style.display = 'none';
-                        faunaRadios.forEach(function (r) {
-                            var lbl = r.closest('label');
-                            if (lbl) lbl.classList.remove('selected');
-                        });
-                    });
-                }
-
-                updateFaunaReporteState();
-            })();
-
-            // Mostrar/ocultar Turno cuando se seleccione tipo de reporte
-            (function () {
-                var faunaTypeRadios = faunaForm.querySelectorAll('input[name="fauna_tipo_reporte_inspeccion"]');
-                var turnoSection = faunaForm.querySelector('#fauna_turno-section');
-                if (!faunaTypeRadios || !turnoSection) return;
-                
-                function updateTurnoVisibility() {
-                    var anyChecked = Array.prototype.slice.call(faunaTypeRadios).some(function (r) { return r.checked; });
-                    turnoSection.style.display = anyChecked ? 'block' : 'none';
-                    if (!anyChecked) {
-                        var turnoInputs = faunaForm.querySelectorAll('input[name="fauna_turno"]');
-                        Array.prototype.slice.call(turnoInputs).forEach(function (r) { r.checked = false; });
-                    }
-                }
-                
-                Array.prototype.slice.call(faunaTypeRadios).forEach(function (r) {
-                    r.addEventListener('change', updateTurnoVisibility);
-                });
-                updateTurnoVisibility();
-            })();
-
-            // Manejar fauna pista con bloqueo de selección (similar a pista en revision form)
-            (function () {
-                var faunaPistaRadios = Array.prototype.slice.call(faunaForm.querySelectorAll('input[name="fauna_pista"]'));
-                var faunaPistaChangeBtn = document.getElementById('fauna_pista-change-btn');
-                
-                function updateFaunaPistaState() {
-                    try {
-                        var checked = faunaPistaRadios.find(function (r) { return r.checked; });
-                        if (checked) {
-                            // Bloquear todos los radios
-                            faunaPistaRadios.forEach(function (r) {
-                                r.disabled = true;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Marcar el seleccionado
-                            var lbl = checked.closest('label');
-                            if (lbl) lbl.classList.add('selected');
-                            // Mostrar botón para cambiar
-                            if (faunaPistaChangeBtn) faunaPistaChangeBtn.style.display = 'inline-block';
-                        } else {
-                            // Desbloquear todos
-                            faunaPistaRadios.forEach(function (r) {
-                                r.disabled = false;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Ocultar botón
-                            if (faunaPistaChangeBtn) faunaPistaChangeBtn.style.display = 'none';
-                        }
-                    } catch (e) { }
-                }
-
-                faunaPistaRadios.forEach(function (r) {
-                    r.addEventListener('change', function () { updateFaunaPistaState(); });
-                });
-
-                // Botón para cambiar pista
-                if (faunaPistaChangeBtn) {
-                    faunaPistaChangeBtn.addEventListener('click', function () {
-                        faunaPistaRadios.forEach(function (r) { r.disabled = false; r.checked = false; });
-                        faunaPistaChangeBtn.style.display = 'none';
-                        faunaPistaRadios.forEach(function (r) {
-                            var lbl = r.closest('label');
-                            if (lbl) lbl.classList.remove('selected');
-                        });
-                    });
-                }
-
-                updateFaunaPistaState();
-            })();
-
-            // Manejar fauna fase de vuelo con bloqueo de selección (similar a pista en revision form)
-            (function () {
-                var faunaFaseVueloRadios = Array.prototype.slice.call(faunaForm.querySelectorAll('input[name="fauna_fase_vuelo"]'));
-                var faunaFaseVueloChangeBtn = document.getElementById('fauna_fase_vuelo-change-btn');
-                
-                function updateFaunaFaseVueloState() {
-                    try {
-                        var checked = faunaFaseVueloRadios.find(function (r) { return r.checked; });
-                        if (checked) {
-                            // Bloquear todos los radios
-                            faunaFaseVueloRadios.forEach(function (r) {
-                                r.disabled = true;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Marcar el seleccionado
-                            var lbl = checked.closest('label');
-                            if (lbl) lbl.classList.add('selected');
-                            // Mostrar botón para cambiar
-                            if (faunaFaseVueloChangeBtn) faunaFaseVueloChangeBtn.style.display = 'inline-block';
-                        } else {
-                            // Desbloquear todos
-                            faunaFaseVueloRadios.forEach(function (r) {
-                                r.disabled = false;
-                                var lbl = r.closest('label');
-                                if (lbl) lbl.classList.remove('selected');
-                            });
-                            // Ocultar botón
-                            if (faunaFaseVueloChangeBtn) faunaFaseVueloChangeBtn.style.display = 'none';
-                        }
-                    } catch (e) { }
-                }
-
-                faunaFaseVueloRadios.forEach(function (r) {
-                    r.addEventListener('change', function () { updateFaunaFaseVueloState(); });
-                });
-
-                // Botón para cambiar fase de vuelo
-                if (faunaFaseVueloChangeBtn) {
-                    faunaFaseVueloChangeBtn.addEventListener('click', function () {
-                        faunaFaseVueloRadios.forEach(function (r) { r.disabled = false; r.checked = false; });
-                        faunaFaseVueloChangeBtn.style.display = 'none';
-                        faunaFaseVueloRadios.forEach(function (r) {
-                            var lbl = r.closest('label');
-                            if (lbl) lbl.classList.remove('selected');
-                        });
-                    });
-                }
-
-                updateFaunaFaseVueloState();
-            })();
-
-            // Manejar checkboxes de items en fauna form (similar a revision form)
-            (function () {
-                var itemIds = ['fauna_avistamiento'];
-                
-                itemIds.forEach(function (id) {
-                    var chk = faunaForm.querySelector('input#' + id);
-                    var det = faunaForm.querySelector('div#' + id.replace(/^fauna_/, 'fauna_details_'));
-                    if (!chk || !det) return;
-                    if (id === 'fauna_avistamiento') {
-                        chk.checked = true;
-                        det.style.display = 'block';
-                    }
-                    
-                    chk.addEventListener('change', function () {
-                        if (id === 'fauna_avistamiento') {
-                            chk.checked = true;
-                            det.style.display = 'block';
-                            return;
-                        }
-                        if (chk.checked) { det.style.display = 'block'; }
-                        else {
-                            det.style.display = 'none';
-                            // Limpiar campos
-                            Array.prototype.slice.call(det.querySelectorAll('input, textarea, select')).forEach(function (el) {
-                                try {
-                                    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-                                    else {
-                                        el.value = '';
-                                        if (el.classList && el.classList.contains('priority-select')) el.style.backgroundColor = '';
-                                        if (el.classList && el.classList.contains('condicion-select')) el.style.backgroundColor = '';
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                    });
-                });
-            })();
-
-            // Manejar color de selects en fauna form
-            (function () {
-                try {
-                    var prioSelects = faunaForm.querySelectorAll('select.priority-select');
-                    var condSelects = faunaForm.querySelectorAll('select.condicion-select');
-                    
-                    Array.prototype.forEach.call(prioSelects, function (sel) {
-                        sel.addEventListener('change', function () {
-                            var colorMap = { '1': '#28a745', '2': '#ffc107', '3': '#ff8c00' };
-                            sel.style.backgroundColor = colorMap[sel.value] || '';
-                        });
-                    });
-                    
-                    Array.prototype.forEach.call(condSelects, function (sel) {
-                        sel.addEventListener('change', function () {
-                            var condMap = { 'Daño Menor': '#28a745', 'Daño Mayor': '#ffc107', 'Daño Severo': '#ff8c00', 'Daño Catastrofico': '#dc3545', 'Satisfactorio': '#28a745', 'No Satisfactorio': '#dc3545', 'N/A': '#6c757d' };
-                            sel.style.backgroundColor = condMap[sel.value] || '';
-                        });
-                    });
-                } catch (e) { }
-            })();
-
-            // Manejar mapa picker para campos de ubicación/lugar en fauna
-            (function () {
-                setTimeout(function () {
-                    try {
-                        var lugarInputs = faunaForm.querySelectorAll('input[name*="[lugar]"]');
-                        Array.prototype.forEach.call(lugarInputs, function (input) {
-                            input.addEventListener('click', function (e) {
-                                e.preventDefault();
-                                if (window.openMapPicker) window.openMapPicker(input);
-                            });
-                            input.style.cursor = 'pointer';
-                            input.setAttribute('placeholder', 'Click para seleccionar en mapa');
-                            input.style.pointerEvents = 'auto';
-                        });
-                    } catch (e) { console.error('Error wiring map picker for fauna', e); }
-                }, 100);
-            })();
-
-            // Manejar especie en avistamiento - mostrar/ocultar campo "Otra"
-            (function () {
-                var especieSelects = faunaForm.querySelectorAll('select.fauna-especie-select');
-                
-                Array.prototype.forEach.call(especieSelects, function (sel) {
-                    var especieOtherInput = sel.closest('label').parentElement.querySelector('input[name*="[especie_otra]"]');
-                    
-                    function updateEspecieVisibility() {
-                        if (sel.value === 'Otra' && especieOtherInput) {
-                            especieOtherInput.style.display = 'block';
-                        } else if (especieOtherInput) {
-                            especieOtherInput.style.display = 'none';
-                            especieOtherInput.value = '';
-                        }
-                    }
-                    
-                    sel.addEventListener('change', updateEspecieVisibility);
-                    updateEspecieVisibility();
-                });
-            })();
-
-            // Combo inteligente de aerolíneas (catálogo + frecuencia histórica)
-            (function () {
-                var aerolineaInput = faunaForm.querySelector('#fauna_report-aerolinea');
-                var aerolineaDataList = faunaForm.querySelector('#fauna_report-aerolinea-options');
-                var aerolineaTopHint = faunaForm.querySelector('#fauna_report-aerolinea-top');
-                if (!aerolineaInput || !aerolineaDataList) return;
-
-                function normalizeText(v) {
-                    return (v || '')
-                        .toString()
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .trim()
-                        .toLowerCase();
-                }
-
-                async function loadAirlineSmartOptions() {
-                    var client = window.supabaseClient;
-                    if (!client) return;
-                    var airlinesMap = new Map(); // key: nombre normalizado
-                    var frequencyMap = new Map(); // key: nombre normalizado
-
-                    function splitCodeAndName(rawValue) {
-                        var raw = (rawValue || '').trim();
-                        var match = raw.match(/^([A-Z0-9]{2,3})\s*-\s*(.+)$/i);
-                        if (match) {
-                            return { code: match[1].toUpperCase(), name: match[2].trim() };
-                        }
-                        return { code: '', name: raw };
-                    }
-
-                    function upsertAirline(rawValue, preferredCode) {
-                        var parts = splitCodeAndName(rawValue);
-                        var name = parts.name;
-                        if (!name) return;
-                        var key = normalizeText(name);
-                        var current = airlinesMap.get(key);
-                        var code = (preferredCode || parts.code || '').trim().toUpperCase();
-                        if (!current) {
-                            airlinesMap.set(key, { key: key, name: name, code: code });
-                            return;
-                        }
-                        if (!current.code && code) {
-                            current.code = code;
-                        }
-                    }
-
-                    var catalogResp = await client
-                        .from('catalogo_aerolineas')
-                        .select('codigo_iata,nombre_aerolinea')
-                        .order('nombre_aerolinea', { ascending: true });
-                    if (!catalogResp.error && Array.isArray(catalogResp.data)) {
-                        catalogResp.data.forEach(function (row) {
-                            var code = (row.codigo_iata || '').trim();
-                            var name = (row.nombre_aerolinea || '').trim();
-                            upsertAirline(name, code);
-                        });
-                    }
-
-                    var usageResp = await client.from('fauna_reports').select('aerolinea').limit(5000);
-                    if (!usageResp.error && Array.isArray(usageResp.data)) {
-                        usageResp.data.forEach(function (row) {
-                            var rawAirline = (row.aerolinea || '').trim();
-                            var parsed = splitCodeAndName(rawAirline);
-                            var freqKey = normalizeText(parsed.name);
-                            if (!freqKey) return;
-                            frequencyMap.set(freqKey, (frequencyMap.get(freqKey) || 0) + 1);
-                            upsertAirline(rawAirline, parsed.code);
-                        });
-                    }
-
-                    var items = Array.from(airlinesMap.values()).map(function (item) {
-                        var label = item.code ? (item.code + ' - ' + item.name) : item.name;
-                        return { label: label, key: item.key };
-                    });
-                    items.sort(function (a, b) {
-                        var aFreq = frequencyMap.get(a.key) || 0;
-                        var bFreq = frequencyMap.get(b.key) || 0;
-                        if (bFreq !== aFreq) return bFreq - aFreq;
-                        return a.label.localeCompare(b.label, 'es');
-                    });
-
-                    aerolineaDataList.innerHTML = '';
-                    items.forEach(function (item) {
-                        var option = document.createElement('option');
-                        option.value = item.label;
-                        aerolineaDataList.appendChild(option);
-                    });
-
-                    var topAirlines = items.slice(0, 5).map(function (item) { return item.label; });
-                    if (aerolineaTopHint) {
-                        aerolineaTopHint.textContent = topAirlines.length
-                            ? ('Más usadas: ' + topAirlines.join(' · '))
-                            : 'Sin historial de frecuencia todavía.';
-                    }
-                }
-
-                loadAirlineSmartOptions().catch(function (err) {
-                    console.warn('No se pudo cargar el combo inteligente de aerolíneas:', err);
-                });
-
-                aerolineaInput.addEventListener('input', function () {
-                    var typed = normalizeText(aerolineaInput.value);
-                    if (!typed) return;
-                    var options = Array.from(aerolineaDataList.options || []);
-                    var match = options.some(function (opt) {
-                        return normalizeText(opt.value).includes(typed);
-                    });
-                    if (!match && aerolineaTopHint) {
-                        aerolineaTopHint.textContent = 'Sin coincidencias exactas, puedes capturar una nueva aerolínea.';
-                    }
-                });
-            })();
-
-            // Parte del avión impactada (solo para evento = Impacto)
-            (function () {
-                var eventoInputs = faunaForm.querySelectorAll('input[name="fauna_report_evento"]');
-                var parteWrap = document.getElementById('fauna_impacto_parte_avion_wrap');
-                var parteSelect = document.getElementById('fauna_report-parte-avion');
-                var parteHint = document.getElementById('fauna_report-parte-avion-hint');
-                if (!eventoInputs.length || !parteWrap || !parteSelect) return;
-
-                function getEventoValue() {
-                    var checked = faunaForm.querySelector('input[name="fauna_report_evento"]:checked');
-                    return checked ? checked.value : '';
-                }
-
-                function updateParteVisibility() {
-                    var show = getEventoValue() === 'Impacto';
-                    parteSelect.disabled = !show;
-                    parteSelect.style.opacity = show ? '1' : '0.65';
-                    if (parteHint) {
-                        parteHint.textContent = show
-                            ? 'Selecciona la parte del avión afectada.'
-                            : 'Selecciona primero el evento "Impacto" para habilitar este campo.';
-                    }
-                    if (!show) parteSelect.value = '';
-                }
-
-                async function loadPartesAvion() {
-                    var client = window.supabaseClient;
-                    if (!client) return;
-                    var resp = await client
-                        .from('catalogo_partes_avion')
-                        .select('nombre,orden')
-                        .eq('activo', true)
-                        .order('orden', { ascending: true });
-                    if (resp.error || !Array.isArray(resp.data)) return;
-                    resp.data.forEach(function (row) {
-                        var nombre = (row.nombre || '').trim();
-                        if (!nombre) return;
-                        var opt = document.createElement('option');
-                        opt.value = nombre;
-                        opt.textContent = nombre;
-                        parteSelect.appendChild(opt);
-                    });
-                }
-
-                eventoInputs.forEach(function (radio) {
-                    radio.addEventListener('change', updateParteVisibility);
-                });
-                updateParteVisibility();
-                loadPartesAvion().catch(function (err) {
-                    console.warn('No se pudo cargar catálogo de partes de avión:', err);
-                });
-            })();
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            if (!navigator.onLine) {
-                showOfflineBanner('📡 Sin conexión — los reportes se guardarán localmente', 'offline');
+            if (window.MHRFaunaInteractionsPage && typeof window.MHRFaunaInteractionsPage.init === "function") {
+                window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna: cargarCatalogosFauna });
             }
-            window.updatePendingBadge();
-            // Si hay pendientes y hay conexión, sincronizar automáticamente al abrir
-            if (navigator.onLine) {
-                getPendingReports().then(function (list) {
-                    if (list && list.length > 0) {
-                        // Esperar 0.8 s para que Supabase termine de inicializarse
-                        setTimeout(window.syncPendingReports, 800);
-                    }
-                }).catch(function () {});
+
+            if (window.MHROfflineSyncPage && typeof window.MHROfflineSyncPage.init === "function") {
+                window.MHROfflineSyncPage.init({
+                    showOfflineBanner: showOfflineBanner,
+                    hideOfflineBanner: hideOfflineBanner,
+                    getPendingReports: getPendingReports
+                });
             }
         });
 
