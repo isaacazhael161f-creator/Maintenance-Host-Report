@@ -64,3 +64,6 @@
 
 ## `js/pages/form-state-page.js`
 - Gestiona guardado/restauración de estado en `localStorage` (incluye counters de ítems duplicados), y expone `window.saveFormState` + `window.restoreFormState` por compatibilidad.
+
+## `js/pages/clear-saved-page.js`
+- Maneja el botón `clear-saved-btn` para limpiar la sección activa (revisión/fauna), resetear previews de fotos fauna y persistir estado limpio vía `window.saveFormState`.

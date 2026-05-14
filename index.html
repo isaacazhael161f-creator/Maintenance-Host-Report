@@ -3728,74 +3728,9 @@
     </script>
 
     <script src="./js/pages/form-state-page.js"></script>
+    <script src="./js/pages/clear-saved-page.js"></script>
 
 
-    <script>
-        // Botón para limpiar el estado guardado en localStorage
-        document.addEventListener('DOMContentLoaded', function () {
-            var btn = document.getElementById('clear-saved-btn');
-            if (!btn) return;
-            btn.addEventListener('click', function () {
-                if (!confirm('¿Borrar el estado guardado de la sección actual?')) return;
-                try {
-                    // Identificar qué sección está activa
-                    var revisionSection = document.getElementById('revision-section');
-                    var faunaSection = document.getElementById('fauna-section');
-                    var isRevisionActive = revisionSection && revisionSection.classList.contains('active');
-                    var isFaunaActive = faunaSection && faunaSection.classList.contains('active');
-                    
-                    if (isRevisionActive) {
-                        // Limpiar datos de revisión
-                        var form = document.getElementById('report-form');
-                        if (form) {
-                            Array.prototype.slice.call(form.querySelectorAll('input, textarea, select')).forEach(function (el) {
-                                try {
-                                    if (el.tagName === 'BUTTON' || (el.type && (el.type === 'submit' || el.type === 'button'))) return;
-                                    if (el.type === 'checkbox' || el.type === 'radio') {
-                                        el.checked = false;
-                                    } else {
-                                        el.value = '';
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                        // Limpiar items de inspección
-                        Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id^="tipo_"]')).forEach(function (chk) {
-                            chk.checked = false;
-                            var det = document.getElementById('details_' + chk.id);
-                            if (det) det.style.display = 'none';
-                        });
-                    } else if (isFaunaActive) {
-                        // Limpiar datos de fauna
-                        var faunaForm = document.getElementById('fauna-form');
-                        if (faunaForm) {
-                            Array.prototype.slice.call(faunaForm.querySelectorAll('input, textarea, select')).forEach(function (el) {
-                                try {
-                                    if (el.tagName === 'BUTTON' || (el.type && (el.type === 'submit' || el.type === 'button'))) return;
-                                    if (el.type === 'checkbox' || el.type === 'radio') {
-                                        el.checked = false;
-                                    } else {
-                                        el.value = '';
-                                    }
-                                } catch (e) { }
-                            });
-                        }
-                        // Limpiar fotos de rescate si existen
-                        window.faunaRescateFotos = [];
-                        var fotosPreview = document.getElementById('fauna_rescate_fotos_preview');
-                        if (fotosPreview) fotosPreview.innerHTML = '';
-                    }
-                    
-                    // Guardar estado limpio
-                    if (window.saveFormState) window.saveFormState();
-                    alert('Sección limpiada correctamente.');
-                } catch (e) {
-                    console.error('Error al limpiar', e);
-                    alert('Ocurrió un error al limpiar. Revisa la consola.');
-                }
-            });
-        });
-    </script>
 
     <script>
         (function () {
