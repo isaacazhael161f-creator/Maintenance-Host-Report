@@ -73,3 +73,6 @@
 
 ## `js/pages/revision-item-lock-page.js`
 - Gestiona lock/unlock por ítem de revisión para checkboxes `tipo_*`, incluyendo visualización de botones `done_`/`update_` y habilitación/deshabilitación de campos dentro de `details_*`.
+
+## `js/pages/revision-hallazgo-page.js`
+- Controla visibilidad/limpieza del campo `hallazgo_other_*` cuando el select `hallazgo_*` toma valor "Otro" en ítems de revisión.

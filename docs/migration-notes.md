@@ -81,3 +81,4 @@
 - **Siguiente fase aplicada:** limpieza manual de estado por sección (botón `clear-saved-btn`) extraída de `index.html` a `js/pages/clear-saved-page.js` con compatibilidad de `window.saveFormState`.
 - **Siguiente fase aplicada:** selector de cargo (`.role-item`, reset y campo "Otro") movido de `index.html` a `js/pages/role-selector-page.js`.
 - **Siguiente fase aplicada:** bloqueo/desbloqueo por ítem de revisión (botones `done_`/`update_` y campos `details_*`) extraído de `index.html` a `js/pages/revision-item-lock-page.js`.
+- **Siguiente fase aplicada:** manejo de campo "Hallazgo Otro" para ítems de revisión movido de `index.html` a `js/pages/revision-hallazgo-page.js`.
