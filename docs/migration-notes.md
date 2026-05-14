@@ -79,3 +79,4 @@
 - **Siguiente fase aplicada:** listeners de conectividad y bootstrap de sincronización offline movidos a `js/pages/offline-sync-page.js`; `index.html` conserva solo el arranque del módulo con callbacks existentes.
 - **Siguiente fase aplicada:** persistencia/restauración de estado del formulario (`saveFormState`/`restoreFormState`, counters de duplicados, listeners de guardado) extraída de `index.html` a `js/pages/form-state-page.js`.
 - **Siguiente fase aplicada:** limpieza manual de estado por sección (botón `clear-saved-btn`) extraída de `index.html` a `js/pages/clear-saved-page.js` con compatibilidad de `window.saveFormState`.
+- **Siguiente fase aplicada:** selector de cargo (`.role-item`, reset y campo "Otro") movido de `index.html` a `js/pages/role-selector-page.js`.

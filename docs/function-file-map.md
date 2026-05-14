@@ -67,3 +67,6 @@
 
 ## `js/pages/clear-saved-page.js`
 - Maneja el botón `clear-saved-btn` para limpiar la sección activa (revisión/fauna), resetear previews de fotos fauna y persistir estado limpio vía `window.saveFormState`.
+
+## `js/pages/role-selector-page.js`
+- Maneja el comportamiento del selector de cargo con botones `.role-item`, botón reset y visibilidad del input "Otro" para mantener UX de selección actual.

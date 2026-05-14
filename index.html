@@ -3728,37 +3728,15 @@
     </script>
 
     <script src="./js/pages/form-state-page.js"></script>
+
+
     <script src="./js/pages/clear-saved-page.js"></script>
 
 
 
-    <script>
-        (function () {
-            // Comportamiento para Cargo: botones estilo responsable
-            var roleBtns = document.querySelectorAll('.role-item');
-            var roleInput = document.getElementById('report-role-input');
-            var roleOther = document.getElementById('report-role-other');
-            var roleReset = document.getElementById('report-role-reset');
-            if (roleBtns && roleBtns.length && roleInput && roleReset) {
-                roleBtns.forEach(function (btn) {
-                    btn.addEventListener('click', function () {
-                        // ocultar los demás y marcar seleccionado
-                        roleBtns.forEach(function (b) { if (b !== btn) b.style.display = 'none'; else b.classList.add('selected'); });
-                        roleInput.value = btn.getAttribute('data-value') || btn.textContent.trim();
-                        roleReset.style.display = 'inline-block';
-                        if (roleInput.value === 'Otro') { roleOther.style.display = 'block'; }
-                        else { roleOther.style.display = 'none'; roleOther.value = ''; }
-                    });
-                });
-                roleReset.addEventListener('click', function () {
-                    roleBtns.forEach(function (b) { b.style.display = 'inline-block'; b.classList.remove('selected'); });
-                    roleInput.value = '';
-                    roleOther.style.display = 'none'; roleOther.value = '';
-                    roleReset.style.display = 'none';
-                });
-            }
-        })();
-    </script>
+    <script src="./js/pages/role-selector-page.js"></script>
+
+
 
     <script>
         (function () {
