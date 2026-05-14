@@ -80,3 +80,4 @@
 - **Siguiente fase aplicada:** persistencia/restauración de estado del formulario (`saveFormState`/`restoreFormState`, counters de duplicados, listeners de guardado) extraída de `index.html` a `js/pages/form-state-page.js`.
 - **Siguiente fase aplicada:** limpieza manual de estado por sección (botón `clear-saved-btn`) extraída de `index.html` a `js/pages/clear-saved-page.js` con compatibilidad de `window.saveFormState`.
 - **Siguiente fase aplicada:** selector de cargo (`.role-item`, reset y campo "Otro") movido de `index.html` a `js/pages/role-selector-page.js`.
+- **Siguiente fase aplicada:** bloqueo/desbloqueo por ítem de revisión (botones `done_`/`update_` y campos `details_*`) extraído de `index.html` a `js/pages/revision-item-lock-page.js`.

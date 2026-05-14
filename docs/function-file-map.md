@@ -70,3 +70,6 @@
 
 ## `js/pages/role-selector-page.js`
 - Maneja el comportamiento del selector de cargo con botones `.role-item`, botón reset y visibilidad del input "Otro" para mantener UX de selección actual.
+
+## `js/pages/revision-item-lock-page.js`
+- Gestiona lock/unlock por ítem de revisión para checkboxes `tipo_*`, incluyendo visualización de botones `done_`/`update_` y habilitación/deshabilitación de campos dentro de `details_*`.
