@@ -88,3 +88,6 @@
 
 ## `js/pages/clear-all-page.js`
 - Maneja el botón fijo `clear-all-btn`: confirma limpieza total de la sección activa, restablece controles de revisión/fauna y persiste el estado limpio.
+
+## `js/pages/app-bootstrap-page.js`
+- Inicializa en `DOMContentLoaded` los módulos de arranque (`MHRDashboardUI` y `MHRRevisionPage`) manteniendo el orden de bootstrap existente.
