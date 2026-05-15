@@ -85,3 +85,6 @@
 
 ## `js/ui/select-colorizer.js`
 - Inicializa listeners para colorización de `select.priority-select` y `select.condicion-select` preservando reglas visuales actuales.
+
+## `js/pages/clear-all-page.js`
+- Maneja el botón fijo `clear-all-btn`: confirma limpieza total de la sección activa, restablece controles de revisión/fauna y persiste el estado limpio.
