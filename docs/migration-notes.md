@@ -82,3 +82,6 @@
 - **Siguiente fase aplicada:** selector de cargo (`.role-item`, reset y campo "Otro") movido de `index.html` a `js/pages/role-selector-page.js`.
 - **Siguiente fase aplicada:** bloqueo/desbloqueo por ítem de revisión (botones `done_`/`update_` y campos `details_*`) extraído de `index.html` a `js/pages/revision-item-lock-page.js`.
 - **Siguiente fase aplicada:** manejo de campo "Hallazgo Otro" para ítems de revisión movido de `index.html` a `js/pages/revision-hallazgo-page.js`.
+- **Fase R2 avance (sesión actual):** flujo de render/preview/export de PDF de revisión extraído desde `js/pages/revision-page.js` hacia `js/ui/pdf-renderer.js`.
+- **Integración:** `revision-page` conserva orquestación de submit, metadatos y persistencia en Supabase, delegando la generación del blob/preview al renderer.
+- **Compatibilidad mantenida:** mismo contenedor `#report-summary`, mismos controles `#pdf-preview-*`, mismos mensajes y secuencia de guardado (upload PDF → insert de reporte/items/fotos).

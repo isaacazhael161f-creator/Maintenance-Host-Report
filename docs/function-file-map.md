@@ -76,3 +76,6 @@
 
 ## `js/pages/revision-hallazgo-page.js`
 - Controla visibilidad/limpieza del campo `hallazgo_other_*` cuando el select `hallazgo_*` toma valor "Otro" en ítems de revisión.
+
+## `js/ui/pdf-renderer.js`
+- `window.MHRPdfRenderer.renderRevisionPdf(options)`: renderiza HTML a PDF con `html2pdf`, agrega página horizontal auxiliar, muestra preview/descarga y devuelve el blob vía callback para persistencia.
