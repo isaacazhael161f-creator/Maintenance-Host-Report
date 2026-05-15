@@ -90,3 +90,4 @@
 - **Fase R2 avance (siguiente fase):** extracción de colorización de selects de prioridad/condición a `js/ui/select-colorizer.js` para eliminar listeners inline repetitivos en `index.html`.
 - **Fase R2 avance (siguiente fase):** extracción del bloque inline del botón `clear-all-btn` hacia `js/pages/clear-all-page.js`, preservando limpieza por sección (revisión/fauna), reseteo de controles especiales y persistencia vía `window.saveFormState`.
 - **Fase R2 avance (siguiente fase):** inicializaciones `DOMContentLoaded` de `MHRDashboardUI` y `MHRRevisionPage` extraídas de `index.html` a `js/pages/app-bootstrap-page.js` para dejar bootstrap mínimo y consistente.
+- **Fase R2 avance (siguiente fase):** bloque inline de utilidades UI de revisión (visibilidad de turno, lock de responsable y toggle/limpieza de `details_tipo_*`) extraído de `index.html` a `js/pages/revision-basic-ui-page.js`.

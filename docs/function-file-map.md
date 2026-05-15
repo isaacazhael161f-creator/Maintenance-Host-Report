@@ -91,3 +91,6 @@
 
 ## `js/pages/app-bootstrap-page.js`
 - Inicializa en `DOMContentLoaded` los módulos de arranque (`MHRDashboardUI` y `MHRRevisionPage`) manteniendo el orden de bootstrap existente.
+
+## `js/pages/revision-basic-ui-page.js`
+- Inicializa utilidades base de UI de revisión: visibilidad de turno por tipo de inspección, lock/reset de responsable y mostrar/ocultar + limpieza de paneles `details_*` al activar/desactivar `tipo_*`.
