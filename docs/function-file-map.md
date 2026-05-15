@@ -94,3 +94,6 @@
 
 ## `js/pages/revision-basic-ui-page.js`
 - Inicializa utilidades base de UI de revisión: visibilidad de turno por tipo de inspección, lock/reset de responsable y mostrar/ocultar + limpieza de paneles `details_*` al activar/desactivar `tipo_*`.
+
+## `js/pages/revision-duplicate-page.js`
+- Gestiona controles dinámicos de ítems de revisión (done/update/duplicar/clear), clonación de bloques `details_*`, y expone compatibilidad en `window.mhr` (`duplicateItem`, `counters`, `setupItemControlsFor`).
