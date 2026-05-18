@@ -118,3 +118,6 @@
 
 ## `js/pages/fauna-submit-page.js`
 - Encapsula el submit del formulario Fauna, incluyendo armado de payloads para impacto/rescate, generación de PDF/preview y persistencia en Supabase mediante servicios existentes.
+
+## `js/pages/fauna-dashboard-page.js`
+- Encapsula la capa de dashboard Fauna: navegación de tabs fauna, carga de catálogos/filtros, estadísticas e historial de fauna, además del modal/mapa de hallazgos con exportación.
