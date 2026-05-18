@@ -1452,27 +1452,11 @@
 
     <!-- Scripts: fecha/hora, bloqueo Cargo y comportamiento Turno -->
     <script src="./js/ui/dashboard-ui.js"></script>
-
     <script src="./js/pages/revision-basic-ui-page.js"></script>
-
-
-
     <script src="./js/pages/revision-duplicate-page.js"></script>
-
-
-
     <script src="./js/pages/revision-item-composer-page.js"></script>
-
-
-
     <script src="./js/pages/fauna-impact-item-controls-page.js"></script>
-
-
-
     <script src="./js/pages/revision-item-photos-page.js"></script>
-
-
-
     <!-- Script: Captura de Firmas en Canvas -->
     <script src="./js/ui/signature-manager.js"></script>
     <script src="./js/pages/fauna-form-page.js"></script>
@@ -2476,8 +2460,11 @@
             }
 
             async function loadFaunaHallazgosClaseEspecieCombos() {
-                await cargarCatalogoSelect('catalogo_clase', faunaClaseSelect, 'Todas las clases');
-                await cargarEspeciesPorClase(faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
+                var client = window.supabaseClient;
+                var svc = window.MHRFaunaCatalogService;
+                if (!client || !svc) return;
+                await svc.cargarCatalogoSelect(client, 'catalogo_clase', faunaClaseSelect, 'Todas las clases');
+                await svc.cargarEspeciesPorClase(client, faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
             }
 
             function formatFaunaHistorico(resumenMap) {
@@ -2490,7 +2477,8 @@
             }
 
             function getFaunaClaseMarkerColor(claseNombre) {
-                var claseNorm = normalizarTextoCatalogo(claseNombre);
+                var svc = window.MHRFaunaCatalogService;
+                var claseNorm = svc && svc.normalizarTextoCatalogo ? svc.normalizarTextoCatalogo(claseNombre) : (claseNombre || '').toString().toLowerCase().trim();
                 if (claseNorm === 'reptil') return '#16a34a'; // verde
                 if (claseNorm === 'mamifero') return '#8b5a2b'; // cafe
                 if (claseNorm === 'ave') return '#2563eb'; // azul
@@ -2498,7 +2486,7 @@
             }
 
             async function loadFaunaHallazgosMapData() {
-                if (!window.supabaseClient || !faunaHistoricoResumen || !faunaHallazgosMap) return;
+                if (!window.supabaseClient || !faunaHallazgosMap) return;
                 var selectedYear = faunaYearSelect ? faunaYearSelect.value : '';
                 var selectedMonth = faunaMonthSelect ? faunaMonthSelect.value : '';
                 var selectedClase = faunaClaseSelect ? faunaClaseSelect.value : '';
@@ -2542,6 +2530,10 @@
                         { direction: 'top', offset: [0, -8], opacity: 0.95 }
                     ).addTo(faunaHallazgosMarkersLayer);
                 });
+                if (faunaHistoricoResumen) {
+                    faunaHistoricoResumen.style.display = 'none';
+                    faunaHistoricoResumen.innerHTML = '';
+                }
                 if (bounds.length) {
                     faunaHallazgosMap.fitBounds(bounds, { padding: [24, 24] });
                 } else {
@@ -2589,7 +2581,9 @@
             faunaYearSelect?.addEventListener('change', function () { loadFaunaHallazgosMapData(); });
             faunaMonthSelect?.addEventListener('change', function () { loadFaunaHallazgosMapData(); });
             faunaClaseSelect?.addEventListener('change', async function () {
-                await cargarEspeciesPorClase(faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
+                var client = window.supabaseClient;
+                var svc = window.MHRFaunaCatalogService;
+                if (client && svc) await svc.cargarEspeciesPorClase(client, faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
                 loadFaunaHallazgosMapData();
             });
             faunaEspecieSelect?.addEventListener('change', function () { loadFaunaHallazgosMapData(); });
