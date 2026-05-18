@@ -109,3 +109,6 @@
 
 ## `js/pages/auth-session-page.js`
 - Encapsula autenticación/sesión: control de login modal, `signInWithPassword`, resolución de rol (`user_roles`), persistencia de usuario actual y carga de responsables de revisión desde `vw_app_usuarios`.
+
+## `js/pages/main-tabs-page.js`
+- Maneja navegación principal por pestañas (`.sidebar-tab`), actualización de título, toggle de sidebar y disparadores de carga diferida para estadísticas/historial fauna.

@@ -1568,6 +1568,7 @@
     </div>
 
     <script src="./js/pages/auth-session-page.js"></script>
+    <script src="./js/pages/main-tabs-page.js"></script>
 
     <script src="./js/supabase-client.js"></script>
 
@@ -1591,71 +1592,14 @@
 
         
 
-            // Tab switching functionality
-            (function () {
-                const tabs = document.querySelectorAll('.sidebar-tab');
-                const sections = document.querySelectorAll('.content-section');
-
-                tabs.forEach(tab => {
-                    tab.addEventListener('click', function () {
-                        const targetTab = this.getAttribute('data-tab');
-
-                        // Remove active class from all tabs
-                        tabs.forEach(t => t.classList.remove('active'));
-                        // Add active class to clicked tab
-                        this.classList.add('active');
-
-                        // Hide all sections
-                        sections.forEach(section => section.classList.remove('active'));
-                        // Show target section
-                        const targetSection = document.getElementById(targetTab + '-section');
-                        if (targetSection) {
-                            targetSection.classList.add('active');
-
-                            // Cambiar título según la pestaña
-                            const mainTitle = document.getElementById('main-title');
-                            if (mainTitle) {
-                                if (targetTab === 'revision') {
-                                    mainTitle.textContent = 'Formato de Revisión del Área de Movimiento';
-                                } else if (targetTab === 'fauna') {
-                                    mainTitle.textContent = 'Registro de Impacto o Posible Impacto';
-                                    cargarCatalogosFauna();
-                                } else if (targetTab === 'historial') {
-                                    mainTitle.textContent = 'Historial de Reportes';
-                                } else if (targetTab === 'estadistica') {
-                                    mainTitle.textContent = 'Estadísticas';
-                                } else if (targetTab === 'estadistica-fauna') {
-                                    mainTitle.textContent = 'Estadística Fauna';
-                                    cargarCatalogosFauna();
-                                    // Cargar estadísticas de fauna cuando se abre la pestaña
-                                    loadFaunaStatistics();
-                                } else if (targetTab === 'historial-fauna') {
-                                    mainTitle.textContent = 'Historial de Reportes de Fauna';
-                                    cargarCatalogosFauna();
-                                    // Cargar historial de fauna cuando se abre la pestaña
-                                    loadFaunaReports({});
-                                }
-                            }
-
-                            // Load statistics when statistics tab is activated
-                            if (targetTab === 'estadistica') {
-                                loadEstadisticas();
-                            }
-                        }
-
-                        // Hide sidebar after selecting a tab
-                        document.body.classList.add('sidebar-hidden');
-                    });
+            if (window.MHRMainTabsPage && typeof window.MHRMainTabsPage.init === 'function') {
+                window.MHRMainTabsPage.init({
+                    cargarCatalogosFauna: cargarCatalogosFauna,
+                    loadFaunaStatistics: loadFaunaStatistics,
+                    loadFaunaReports: loadFaunaReports,
+                    loadEstadisticas: loadEstadisticas
                 });
-
-                // Menu toggle button: show sidebar again
-                var menuToggleBtn = document.getElementById('menu-toggle-btn');
-                if (menuToggleBtn) {
-                    menuToggleBtn.addEventListener('click', function () {
-                        document.body.classList.remove('sidebar-hidden');
-                    });
-                }
-            })();
+            }
 
             // ═══════════════════════════════════════════════════════════
             // GENERACIÓN DE PDF PARA FAUNA
