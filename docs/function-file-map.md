@@ -100,3 +100,6 @@
 
 ## `js/pages/revision-item-photos-page.js`
 - Gestiona evidencias fotográficas por ítem de revisión: inyección de campos de carga, previews/eliminación de miniaturas y compatibilidad con duplicación dinámica mediante `window.mhr.getItemPhotos`.
+
+## `js/pages/fauna-impact-item-controls-page.js`
+- Gestiona controles dinámicos de Fauna Impacto para `fauna_avistamiento` (done/update/duplicar/clear), clonado de bloques `fauna_details_*` e inicialización de clones en carga.
