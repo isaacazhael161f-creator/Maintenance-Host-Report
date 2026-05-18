@@ -76,3 +76,27 @@
 
 ## `js/pages/revision-hallazgo-page.js`
 - Controla visibilidad/limpieza del campo `hallazgo_other_*` cuando el select `hallazgo_*` toma valor "Otro" en ítems de revisión.
+
+## `js/ui/pdf-renderer.js`
+- `window.MHRPdfRenderer.renderRevisionPdf(options)`: renderiza HTML a PDF con `html2pdf`, agrega página horizontal auxiliar, muestra preview/descarga y devuelve el blob vía callback para persistencia.
+
+## `js/ui/map-picker-modal.js`
+- Gestiona modal de mapa interactivo (Leaflet), geolocalización, confirmación de coordenadas y captura de miniatura de mapa; expone `window.openMapPicker` para compatibilidad legacy.
+
+## `js/ui/select-colorizer.js`
+- Inicializa listeners para colorización de `select.priority-select` y `select.condicion-select` preservando reglas visuales actuales.
+
+## `js/pages/clear-all-page.js`
+- Maneja el botón fijo `clear-all-btn`: confirma limpieza total de la sección activa, restablece controles de revisión/fauna y persiste el estado limpio.
+
+## `js/pages/app-bootstrap-page.js`
+- Inicializa en `DOMContentLoaded` los módulos de arranque (`MHRDashboardUI` y `MHRRevisionPage`) manteniendo el orden de bootstrap existente.
+
+## `js/pages/revision-basic-ui-page.js`
+- Inicializa utilidades base de UI de revisión: visibilidad de turno por tipo de inspección, lock/reset de responsable y mostrar/ocultar + limpieza de paneles `details_*` al activar/desactivar `tipo_*`.
+
+## `js/pages/revision-duplicate-page.js`
+- Gestiona controles dinámicos de ítems de revisión (done/update/duplicar/clear), clonación de bloques `details_*`, y expone compatibilidad en `window.mhr` (`duplicateItem`, `counters`, `setupItemControlsFor`).
+
+## `js/pages/revision-item-photos-page.js`
+- Gestiona evidencias fotográficas por ítem de revisión: inyección de campos de carga, previews/eliminación de miniaturas y compatibilidad con duplicación dinámica mediante `window.mhr.getItemPhotos`.
