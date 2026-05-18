@@ -49,7 +49,11 @@
         .order('fecha_reporte', { ascending: false });
       if (filters.year) query = query.gte('fecha_reporte', filters.year + '-01-01').lte('fecha_reporte', filters.year + '-12-31');
       if (filters.month && filters.year) {
-        query = query.gte('fecha_reporte', filters.year + '-' + filters.month + '-01').lte('fecha_reporte', filters.year + '-' + filters.month + '-31');
+        var monthNum = Number(filters.month);
+        var lastDay = new Date(Number(filters.year), monthNum, 0).getDate();
+        var monthStart = filters.year + '-' + String(monthNum).padStart(2, '0') + '-01';
+        var monthEnd = filters.year + '-' + String(monthNum).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+        query = query.gte('fecha_reporte', monthStart).lte('fecha_reporte', monthEnd);
       }
       if (filters.clase) query = query.eq('clase', filters.clase);
       if (filters.especie) query = query.eq('especie', filters.especie);
