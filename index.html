@@ -3860,8 +3860,8 @@
                     ).addTo(faunaHallazgosMarkersLayer);
                 });
                 if (faunaHistoricoResumen) {
-                    faunaHistoricoResumen.style.display = 'block';
-                    faunaHistoricoResumen.innerHTML = formatFaunaHistorico(resumen);
+                    faunaHistoricoResumen.style.display = 'none';
+                    faunaHistoricoResumen.innerHTML = '';
                 }
                 if (bounds.length) {
                     faunaHallazgosMap.fitBounds(bounds, { padding: [24, 24] });
