@@ -3811,7 +3811,7 @@
             }
 
             async function loadFaunaHallazgosMapData() {
-                if (!window.supabaseClient || !faunaHistoricoResumen || !faunaHallazgosMap) return;
+                if (!window.supabaseClient || !faunaHallazgosMap) return;
                 var selectedYear = faunaYearSelect ? faunaYearSelect.value : '';
                 var selectedMonth = faunaMonthSelect ? faunaMonthSelect.value : '';
                 var selectedClase = faunaClaseSelect ? faunaClaseSelect.value : '';
@@ -3855,6 +3855,10 @@
                         { direction: 'top', offset: [0, -8], opacity: 0.95 }
                     ).addTo(faunaHallazgosMarkersLayer);
                 });
+                if (faunaHistoricoResumen) {
+                    faunaHistoricoResumen.style.display = 'block';
+                    faunaHistoricoResumen.innerHTML = formatFaunaHistorico(resumen);
+                }
                 if (bounds.length) {
                     faunaHallazgosMap.fitBounds(bounds, { padding: [24, 24] });
                 } else {
