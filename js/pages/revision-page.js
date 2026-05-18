@@ -372,61 +372,34 @@ window.MHRRevisionPage = (function () {
             }
             html += '</div><p style="margin-top:18px;font-size:12px;color:#6b7280">Generado desde el formulario interno.</p></div>';
 
-            container.innerHTML = html;
-            container.style.display = 'block';
-
-            var fnameDate = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                        var fnameDate = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
             var filename = 'Reporte-' + fnameDate + '.pdf';
-            var opt = { margin: 10, filename: filename, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: false, allowTaint: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
 
-            // Renderizar PDF
-            (function generatePdf() {
-                var spinner = document.getElementById('pdf-spinner');
-                var preview = document.getElementById('pdf-preview-container');
-                try { if (spinner) spinner.style.display = 'flex'; } catch (e) { }
-
-                function finalizePdf() {
-                    html2pdf().set(opt).from(container).toPdf().get('pdf').then(async function (pdf) {
-                        
-                        // Páginas extra (mapa paisaje, evidencias) - Simplificado por espacio, asume compatibilidad de entorno
-                        if (apCanvas && apCanvas.width > 0) {
-                            try { pdf.addPage([297, 210], 'l'); pdf.addImage(apCanvas.toDataURL('image/jpeg', 0.94), 'JPEG', 4, 4, 289, 202); } catch (e) {}
-                        }
-                        
-                        var blob;
-                        try { blob = pdf.output('blob'); } catch (e) { blob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' }); }
-
-                        if (blob) {
-                            try {
-                                var pdfUrl = await uploadPdfToSupabase(blob, folio);
-                                if (submitBtn) submitBtn.value = 'Guardando datos...';
-                                var reportId = await saveToSupabase(pdfUrl);
-                            } catch (e) { console.error(e); }
-                        }
-
-                        if (spinner) spinner.style.display = 'none';
-                        if (submitBtn) { submitBtn.disabled = false; submitBtn.value = originalBtnText; }
-
-                        if (!blob) return;
-                        var url = URL.createObjectURL(blob);
-                        var iframe = document.getElementById('pdf-preview-frame');
-                        var downloadBtn = document.getElementById('pdf-download-btn');
-                        var closeBtn = document.getElementById('pdf-preview-close');
-                        iframe.src = url;
-                        preview.style.display = 'block';
-                        preview.setAttribute('aria-hidden', 'false');
-                        downloadBtn.onclick = function () { var a = document.createElement('a'); a.href = url; a.download = filename; a.click(); };
-                        closeBtn.onclick = function () { preview.style.display = 'none'; iframe.src = ''; };
-                    });
+            if (!window.MHRPdfRenderer || typeof window.MHRPdfRenderer.renderRevisionPdf !== 'function') {
+                alert('Error al generar PDF: renderer no disponible.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
+                    else submitBtn.value = originalBtnText;
                 }
+                return;
+            }
 
-                // Generación de mapa Offscreen
-                var apCanvas = document.createElement('canvas');
-                apCanvas.width = 1600; apCanvas.height = 1030;
-                var ctx2d = apCanvas.getContext('2d');
-                ctx2d.fillStyle = '#1e3a5f'; ctx2d.fillRect(0, 0, 1600, 1030);
-                finalizePdf(); 
-            })();
+            window.MHRPdfRenderer.renderRevisionPdf({
+                container: container,
+                html: html,
+                filename: filename,
+                submitBtn: submitBtn,
+                originalBtnText: originalBtnText,
+                onBlobReady: async function (blob) {
+                    var pdfUrl = await uploadPdfToSupabase(blob, folio);
+                    if (submitBtn) {
+                        if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = 'Guardando datos...';
+                        else submitBtn.value = 'Guardando datos...';
+                    }
+                    await saveToSupabase(pdfUrl);
+                }
+            });;
         });
     }
 
