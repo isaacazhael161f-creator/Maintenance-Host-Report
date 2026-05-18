@@ -97,3 +97,6 @@
 
 ## `js/pages/revision-duplicate-page.js`
 - Gestiona controles dinámicos de ítems de revisión (done/update/duplicar/clear), clonación de bloques `details_*`, y expone compatibilidad en `window.mhr` (`duplicateItem`, `counters`, `setupItemControlsFor`).
+
+## `js/pages/revision-item-photos-page.js`
+- Gestiona evidencias fotográficas por ítem de revisión: inyección de campos de carga, previews/eliminación de miniaturas y compatibilidad con duplicación dinámica mediante `window.mhr.getItemPhotos`.
