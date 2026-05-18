@@ -106,3 +106,6 @@
 
 ## `js/pages/revision-item-composer-page.js`
 - Gestiona la composición incremental de ítems de revisión: staging de bloques originales, selector de ítems no usados, activación en tarjetas colapsables y alta de nuevas filas de selección.
+
+## `js/pages/auth-session-page.js`
+- Encapsula autenticación/sesión: control de login modal, `signInWithPassword`, resolución de rol (`user_roles`), persistencia de usuario actual y carga de responsables de revisión desde `vw_app_usuarios`.
