@@ -101,3 +101,4 @@
 - **Fase R3 (commit 4/6):** extracción del bloque inline de submit/generación PDF de Fauna (impacto y rescate) a `js/pages/fauna-submit-page.js`, inicializado desde `Supabase Logic` con contexto de `supabase`.
 - **Fase R3 (commit 5/6):** extracción del bloque inline de dashboard Fauna (tabs impacto/rescate, carga de catálogos, estadísticas/historial, mapa de hallazgos y filtros) a `js/pages/fauna-dashboard-page.js`, invocado desde `Supabase Logic`.
 - **Fase R3 (commit 6/6):** orquestación residual de `Supabase Logic` extraída a `js/pages/supabase-orchestrator-page.js`; `index.html` ahora solo invoca el orquestador para inicializar auth, tabs, fauna submit/dashboard y sync offline sin bloque inline extenso.
+- **Post-R3 cleanup:** se depuraron trazas de depuración (`console.log`) en módulos de página/UI ya extraídos para reducir ruido en producción, sin alterar flujos funcionales.

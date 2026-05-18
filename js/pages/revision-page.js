@@ -188,7 +188,6 @@ window.MHRRevisionPage = (function () {
 
             // --- Funciones internas de guardado ---
             var saveToSupabase = async function (pdfUrl) {
-                console.log('Iniciando guardado en Supabase...');
                 try {
                     if (!window.supabaseClient) {
                         alert('Error: No hay conexión con la base de datos.');

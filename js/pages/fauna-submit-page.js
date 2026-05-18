@@ -3,10 +3,8 @@ window.MHRFaunaSubmitPage = (function () {
     var supabase = ctx && ctx.supabase;
             var faunaForm = document.getElementById('fauna-form');
             if (faunaForm) {
-                console.log('DEBUG: fauna-form listener attached');
                 faunaForm.addEventListener('submit', async function (e) {
                     e.preventDefault();
-                    console.log('DEBUG: fauna-form SUBMITTED');
 
                     // Feedback visual
                     var submitBtn = faunaForm.querySelector('input[type="submit"]');
@@ -28,11 +26,6 @@ window.MHRFaunaSubmitPage = (function () {
                         var isImpacto = impactoTab && impactoTab.classList.contains('active');
                         var isRescate = rescateTab && rescateTab.classList.contains('active');
                         
-                        console.log('DEBUG FORM SUBMIT - isImpacto:', isImpacto, 'isRescate:', isRescate);
-                        console.log('DEBUG - impactoTab el:', impactoTab);
-                        console.log('DEBUG - rescateTab el:', rescateTab);
-                        if (impactoTab) console.log('DEBUG - impactoTab.classList:', impactoTab.classList.toString());
-                        if (rescateTab) console.log('DEBUG - rescateTab.classList:', rescateTab.classList.toString());
 
                         var client = window.supabaseClient;
                         if (!client) {
@@ -88,7 +81,6 @@ window.MHRFaunaSubmitPage = (function () {
                                 pdf_url: null
                             };
 
-                            console.log('DEBUG IMPACTO PAYLOAD:', impactPayload);
 
                             // Obtener logo del header o usar base64 precargado
                             var logoSrc = '';
@@ -277,24 +269,14 @@ window.MHRFaunaSubmitPage = (function () {
                                 try {
                                     // Buscar el input de ubicación para este tipo de fauna
                                     var inp = document.querySelector('input[name="fauna_details[' + itemType + '][lugar]"]');
-                                    console.log('🔍 [PDF] Buscando input para:', itemType);
-                                    console.log('   Selector:', 'input[name="fauna_details[' + itemType + '][lugar]"]');
-                                    console.log('   Input encontrado:', !!inp);
                                     
                                     if (inp) {
-                                        console.log('✓ [PDF] Input encontrado para ' + itemType);
-                                        console.log('   - inp.value:', inp.value);
-                                        console.log('   - inp.dataset:', inp.dataset);
-                                        console.log('   - inp.dataset.mapImage existe:', !!inp.dataset.mapImage);
                                         
                                         if (inp.dataset.mapImage) {
-                                            console.log('✅ [PDF] ENCONTRADO mapImage para ' + itemType + ', tamaño:', (inp.dataset.mapImage.length / 1024).toFixed(1), 'KB');
                                             h += '<img src="' + inp.dataset.mapImage + '" style="width:100%;max-height:120px;border-radius:4px;object-fit:cover;border:1px solid #d1dbe9;">';
                                         } else {
-                                            console.log('❌ [PDF] NO hay mapImage para ' + itemType);
                                         }
                                     } else {
-                                        console.log('❌ [PDF] NO se encontró input para ' + itemType);
                                     }
                                 } catch (ex) { console.warn('Error mostrando mapa fauna:', ex); }
                                 return h;
@@ -397,22 +379,18 @@ window.MHRFaunaSubmitPage = (function () {
 
                             // Generar PDF - toPdf() retorna promesa
                             html2pdf().set(opt).from(impactoReportSummary).toPdf().get('pdf').then(async function(pdf) {
-                                console.log('PDF impacto generado exitosamente');
                                 
                                 try {
                                     // ═══ Agregar páginas de mapas capturados ═══
                                     var mapaPageCounter = 0;
                                     var mapTypes = ['avistamiento', 'presencia', 'daino'];
                                     
-                                    console.log('Buscando mapas capturados para fauna types:', mapTypes);
                                     
                                     // Recopilar todas las imágenes de mapas de los items de fauna
                                     mapTypes.forEach(function(faunaType) {
                                         var inp = document.querySelector('input[name="fauna_details[' + faunaType + '][lugar]"]');
-                                        console.log('Buscando input para fauna type "' + faunaType + '": ', inp ? 'encontrado' : 'NO ENCONTRADO');
                                         
                                         if (inp) {
-                                            console.log('dataset.mapImage disponible:', inp.dataset.mapImage ? 'SÍ (' + (inp.dataset.mapImage.length / 1024).toFixed(2) + ' KB)' : 'NO');
                                         }
                                         
                                         if (inp && inp.dataset.mapImage) {
@@ -434,14 +412,12 @@ window.MHRFaunaSubmitPage = (function () {
                                                 var pdfPageCount = pdf.getNumberOfPages();
                                                 pdf.text('Página ' + pdfPageCount, 270, 206, { align: 'right' });
                                                 
-                                                console.log('Página de mapa agregada para ' + faunaType);
                                             } catch (mapPageErr) {
                                                 console.warn('Error agregando página de mapa para ' + faunaType + ':', mapPageErr);
                                             }
                                         }
                                     });
                                     
-                                    console.log('Total de páginas de mapas agregadas:', mapaPageCounter);
                                     
                                     // ═══ Agregar página final con links de Google Maps ═══
                                     var linkCounter = 0;
@@ -532,7 +508,6 @@ window.MHRFaunaSubmitPage = (function () {
                                                 yPosition += 18;
                                             });
                                             
-                                            console.log('Página de links agregada con ' + linksData.length + ' hallazgos');
                                         } catch (linksErr) {
                                             console.warn('Error agregando página de links:', linksErr);
                                         }
@@ -572,7 +547,6 @@ window.MHRFaunaSubmitPage = (function () {
                                     
                                     // Upload PDF a bucket fauna-reports (si falla, continuar sin PDF)
                                     var pdfPath = 'fauna/' + Date.now() + '-' + folio + '.pdf';
-                                    console.log('📤 Intentando subir PDF a fauna-reports con ruta:', pdfPath);
                                     var { data: uploadData, error: uploadError } = await client.storage
                                         .from('fauna-reports')
                                         .upload(pdfPath, pdfBlob, { contentType: 'application/pdf' });
@@ -584,11 +558,9 @@ window.MHRFaunaSubmitPage = (function () {
                                             alert('⚠️ El PDF no se pudo subir por políticas RLS de Storage, pero el reporte SÍ se guardará en la base de datos sin PDF adjunto.');
                                         }
                                     } else {
-                                        console.log('✅ PDF subido exitosamente al storage. Datos:', uploadData);
                                     }
                                     
                                     if (uploadData && !uploadError) {
-                                        console.log('🔗 Generando URL firmada para:', pdfPath);
                                         try {
                                             var { data: signedUrlData, error: signedUrlError } = await client.storage
                                                 .from('fauna-reports')
@@ -598,22 +570,18 @@ window.MHRFaunaSubmitPage = (function () {
                                                 console.warn('⚠️ Error generando Signed URL. Se guardará sin pdf_url:', signedUrlError);
                                             } else if (signedUrlData && signedUrlData.signedUrl) {
                                                 pdfUrl = signedUrlData.signedUrl;
-                                                console.log('✅ URL firmada generada correctamente');
-                                                console.log('URL:', pdfUrl.substring(0, 100) + '...');
                                             } else {
                                                 console.warn('⚠️ signedUrlData sin signedUrl. Se guardará sin pdf_url:', signedUrlData);
                                             }
                                         } catch (e) {
                                             console.warn('⚠️ Excepción al generar URL. Se guardará sin pdf_url:', e);
                                         }
-                                        console.log('✅ Proceso de PDF finalizado; continuando guardado en BD');
                                     } else {
                                         console.warn('⚠️ Sin uploadData; continuando guardado en BD sin URL de PDF.');
                                     }
                                     
                                     // Actualizar payload con PDF URL
                                     impactPayload.pdf_url = pdfUrl;
-                                    console.log('💾 Guardando reporte en fauna_reports con pdf_url:', pdfUrl);
 
                                     var impactData;
                                     try {
@@ -626,9 +594,7 @@ window.MHRFaunaSubmitPage = (function () {
                                         return;
                                     }
 
-                                    console.log('✅ Reporte guardado exitosamente:', impactData);
                                     if (impactData && impactData.length > 0 && impactData[0].pdf_url) {
-                                        console.log('✅ Verificación - pdf_url guardado correctamente:', impactData[0].pdf_url);
                                     } else {
                                         console.warn('⚠️ ADVERTENCIA: El reporte se guardó pero sin pdf_url');
                                     }
@@ -757,7 +723,6 @@ window.MHRFaunaSubmitPage = (function () {
                                             '</div>' +
                                             '</div>';
                                     }
-                                } catch (e) { console.log('Error building membrete:', e); }
                                 return membreteHtml;
                             })() +
                             
@@ -816,7 +781,6 @@ window.MHRFaunaSubmitPage = (function () {
 
                         // Generar PDF - toPdf() retorna promesa
                         html2pdf().set(opt).from(reportSummary).toPdf().get('pdf').then(async function(pdf) {
-                            console.log('PDF generado exitosamente');
                             
                             try {
                                 // Obtener blob del PDF
@@ -872,7 +836,6 @@ window.MHRFaunaSubmitPage = (function () {
                                     return;
                                 }
 
-                                console.log('Guardando en Supabase...');
                                 
                                 // Upload PDF a storage
                                 var pdfPath = 'fauna/' + Date.now() + '-' + folio + '.pdf';
@@ -891,7 +854,6 @@ window.MHRFaunaSubmitPage = (function () {
                                         .from('fauna-reports')
                                         .getPublicUrl(pdfPath);
                                     pdfUrl = publicUrl;
-                                    console.log('PDF URL generada:', pdfUrl);
                                 }
 
                                 // Guardar reporte de rescate
@@ -927,7 +889,6 @@ window.MHRFaunaSubmitPage = (function () {
                                     return;
                                 }
 
-                                console.log('Datos guardados en Supabase:', rescateData);
                                 alert('✓ Reporte generado y guardado exitosamente.');
 
                                 // Limpiar formulario

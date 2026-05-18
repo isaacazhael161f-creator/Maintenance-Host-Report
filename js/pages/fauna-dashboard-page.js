@@ -676,7 +676,6 @@ window.MHRFaunaDashboardPage = (function () {
                         return true;
                     });
 
-                    console.log('DEBUG: Final allReports - Total count:', allReports.length, 'Records:', allReports);
 
                     // Renderizar tabla
                     if (reportsList) {
@@ -736,7 +735,6 @@ window.MHRFaunaDashboardPage = (function () {
                                     }
                                 }
                                 
-                                console.log('DEBUG TABLE RENDER: tipo_reporte_db=' + (report.tipo_reporte || 'NULL') + ' evento=' + (report.evento || 'NULL') + ' final_tipoReporte=' + tipoReporte);
 
                                 const tr = document.createElement('tr');
                                 tr.style.borderBottom = '1px solid #e5e7eb';
@@ -744,7 +742,6 @@ window.MHRFaunaDashboardPage = (function () {
                                 // Crear link de PDF si existe
                                 let pdfLink = '<a href="#" style="color:#6b7280;text-decoration:none;font-size:12px;">-</a>';
                                 if (report.pdf_url && report.pdf_url.trim() !== '') {
-                                    console.log('✅ PDF URL encontrado para folio', report.folio, ':', report.pdf_url);
                                     pdfLink = '<a href="' + report.pdf_url + '" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:12px;font-weight:600;">📄 Ver PDF</a>';
                                 } else {
                                     console.warn('⚠️ Sin PDF para folio', report.folio, '- pdf_url:', report.pdf_url);

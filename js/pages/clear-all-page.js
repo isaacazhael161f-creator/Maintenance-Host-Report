@@ -3,9 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!btn) return;
     btn.addEventListener('click', function (e) {
         try { e.preventDefault(); e.stopPropagation(); } catch (err) { }
-        console.log('Clear all clicked');
         var ok = window.confirm('¿Estás seguro que deseas limpiar TODOS los campos de la sección actual?');
-        if (!ok) { console.log('Clear all canceled'); return; }
 
         var revisionSection = document.getElementById('revision-section');
         var faunaSection = document.getElementById('fauna-section');
@@ -117,7 +115,6 @@ document.addEventListener('DOMContentLoaded', function () {
             } catch (e) { }
         }
 
-        try { if (window.saveFormState) window.saveFormState(); else console.log('saveFormState not available'); } catch (e) { console.error('Error saving state', e); }
 
         var original = btn.textContent;
         btn.textContent = 'Limpiado';

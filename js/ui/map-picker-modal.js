@@ -6,7 +6,6 @@
             var currentLugarField = null;
 
             function openMapModal(lugarInputEl) {
-                console.log('openMapModal called with:', lugarInputEl);
                 currentLugarField = lugarInputEl;
                 selectedLatLng = null;
 
@@ -22,10 +21,8 @@
                 setTimeout(function () {
                     try {
                         if (!mapInstance) {
-                            console.log('Initializing map...');
                             initMap();
                         } else {
-                            console.log('Map already initialized, invalidating size...');
                             // LIMPIAR TODOS los marcadores del mapa
                             mapInstance.eachLayer(function(layer) {
                                 if (layer instanceof L.Marker) {
@@ -92,7 +89,6 @@
 
             function updateMapInfo() {
                 if (!selectedLatLng) {
-                    console.log('No selectedLatLng, skipping updateMapInfo');
                     return;
                 }
                 var infoEl = document.getElementById('map-info');
@@ -101,7 +97,6 @@
                         'Latitud: ' + selectedLatLng.lat.toFixed(6) + '<br>' +
                         'Longitud: ' + selectedLatLng.lng.toFixed(6);
                     infoEl.innerHTML = infoText;
-                    console.log('Map info updated:', infoText);
                 }
             }
 
@@ -164,9 +159,6 @@
             }
 
             function confirmLocation() {
-                console.log('🔵 [confirmLocation] INICIADO - selectedLatLng:', selectedLatLng);
-                console.log('🔵 [confirmLocation] currentLugarField:', currentLugarField);
-                console.log('🔵 [confirmLocation] currentLugarField.name:', currentLugarField ? currentLugarField.name : 'NULL');
 
                 if (!selectedLatLng) {
                     alert('Por favor selecciona una ubicación en el mapa haciendo clic.');
@@ -179,7 +171,6 @@
                 }
 
                 // ===== PASO 1: LIMPIAR TODOS LOS MARCADORES VIEJOS =====
-                console.log('🟡 [confirmLocation] LIMPIANDO MARCADORES VIEJOS...');
                 if (mapInstance) {
                     var markersOnMap = [];
                     mapInstance.eachLayer(function(layer) {
@@ -187,22 +178,18 @@
                             markersOnMap.push(layer);
                         }
                     });
-                    console.log('🟡 [confirmLocation] Encontrados ' + markersOnMap.length + ' marcadores para limpiar');
                     
                     markersOnMap.forEach(function(m, idx) {
                         try {
                             mapInstance.removeLayer(m);
-                            console.log('🟡 [confirmLocation] Marcador ' + idx + ' eliminado');
                         } catch (e) {
                             console.error('Error eliminando marcador:', e);
                         }
                     });
                     marker = null;  // Reset referencia global
-                    console.log('✓ [confirmLocation] Marcadores limpios');
                 }
 
                 // ===== PASO 2: CREAR NUEVO MARCADOR CON ESTILO ROJO Y NÚMERO =====
-                console.log('🟡 [confirmLocation] Creando nuevo marcador ÚNICO en:', selectedLatLng);
                 if (mapInstance) {
                     // Contar cuántos hallazgos hay para numerar el marker
                     var markerNumber = 1;
@@ -221,7 +208,6 @@
                         className: 'custom-red-marker'
                     });
                     marker = L.marker(selectedLatLng, { icon: redMarkerIcon }).addTo(mapInstance);
-                    console.log('✓ [confirmLocation] Nuevo marcador rojo #' + markerNumber + ' creado');
                 }
 
                 // ===== PASO 3: GUARDAR COORDENADAS =====
@@ -231,29 +217,21 @@
                 currentLugarField.dataset.lng = selectedLatLng.lng.toFixed(6);
                 currentLugarField.dataset.mapsUrl = 'https://maps.google.com/maps?q=' + selectedLatLng.lat.toFixed(6) + ',' + selectedLatLng.lng.toFixed(6) + '&t=k&z=17';
 
-                console.log('🟡 [confirmLocation] Datos guardados en input:');
-                console.log('   - value:', currentLugarField.value);
-                console.log('   - mapsUrl:', currentLugarField.dataset.mapsUrl);
 
                 // ===== PASO 4: BAJAR ZOOM =====
                 if (mapInstance) {
                     mapInstance.setZoom(14);
-                    console.log('🟡 [confirmLocation] Zoom cambiado a 14');
                 }
 
                 // ===== PASO 5: CAPTURAR MAPA =====
                 var mapCaptureComplete = false;
                 var mapContainer = document.getElementById('map');
                 
-                console.log('🟡 [confirmLocation] mapContainer encontrado:', !!mapContainer);
-                console.log('🟡 [confirmLocation] html2canvas disponible:', !!window.html2canvas);
                 
                 // Pequeño delay para que el mapa se re-renderice con el nuevo zoom
                 setTimeout(function() {
-                    console.log('🟠 [AFTER DELAY 500ms] Iniciando captura...');
                     
                     if (mapContainer && window.html2canvas) {
-                        console.log('🟠 [CAPTURE] Llamando html2canvas...');
                         html2canvas(mapContainer, {
                             allowTaint: true,
                             useCORS: true,
@@ -267,17 +245,13 @@
                                 return false;
                             }
                         }).then(function(canvas) {
-                            console.log('🟢 [CAPTURE] Canvas generado:', canvas.width, 'x', canvas.height);
                             
                             try {
                                 if (canvas && canvas.width > 0 && canvas.height > 0) {
                                     var imgData = canvas.toDataURL('image/jpeg', 0.98);
-                                    console.log('🟢 [CAPTURE] imgData generado, tamaño:', (imgData.length / 1024).toFixed(1), 'KB');
                                     
                                     if (imgData && imgData.length > 1000) {
                                         currentLugarField.dataset.mapImage = imgData;
-                                        console.log('✅ [CAPTURE] SUCCESS - mapImage guardado en dataset');
-                                        console.log('✅ [CAPTURE] currentLugarField.dataset.mapImage existe:', !!currentLugarField.dataset.mapImage);
                                         mapCaptureComplete = true;
                                     } else {
                                         console.warn('❌ [CAPTURE] imgData muy pequeño:', imgData.length);
@@ -291,7 +265,6 @@
                         }).catch(function(err) {
                             console.error('❌ [CAPTURE] Error en html2canvas:', err.message);
                         }).finally(function() {
-                            console.log('🔘 [CAPTURE] Finalizando...');
                             finalizarConfirmLocation();
                         });
                         
@@ -310,7 +283,6 @@
                 } catch (e) { console.error('Error disparando eventos:', e); }
                 
                 function finalizarConfirmLocation() {
-                    console.log('🔘 [finalizarConfirmLocation] Cerrando modal...');
                     closeMapModal();
                     selectedLatLng = null;
                     if (marker) {
