@@ -103,3 +103,6 @@
 
 ## `js/pages/fauna-impact-item-controls-page.js`
 - Gestiona controles dinámicos de Fauna Impacto para `fauna_avistamiento` (done/update/duplicar/clear), clonado de bloques `fauna_details_*` e inicialización de clones en carga.
+
+## `js/pages/revision-item-composer-page.js`
+- Gestiona la composición incremental de ítems de revisión: staging de bloques originales, selector de ítems no usados, activación en tarjetas colapsables y alta de nuevas filas de selección.
