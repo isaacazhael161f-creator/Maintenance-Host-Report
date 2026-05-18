@@ -112,3 +112,6 @@
 
 ## `js/pages/main-tabs-page.js`
 - Maneja navegación principal por pestañas (`.sidebar-tab`), actualización de título, toggle de sidebar y disparadores de carga diferida para estadísticas/historial fauna.
+
+## `js/pages/offline-report-sync-page.js`
+- Encapsula persistencia offline de reportes de revisión con `IndexedDB`, además de guardado local/sincronización diferida y actualización de badge mediante `window.saveFormOffline`, `window.syncPendingReports` y `window.updatePendingBadge`.
