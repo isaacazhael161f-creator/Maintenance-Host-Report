@@ -115,3 +115,6 @@
 
 ## `js/pages/offline-report-sync-page.js`
 - Encapsula persistencia offline de reportes de revisión con `IndexedDB`, además de guardado local/sincronización diferida y actualización de badge mediante `window.saveFormOffline`, `window.syncPendingReports` y `window.updatePendingBadge`.
+
+## `js/pages/fauna-submit-page.js`
+- Encapsula el submit del formulario Fauna, incluyendo armado de payloads para impacto/rescate, generación de PDF/preview y persistencia en Supabase mediante servicios existentes.
