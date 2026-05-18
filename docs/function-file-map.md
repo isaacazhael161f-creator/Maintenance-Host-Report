@@ -121,3 +121,6 @@
 
 ## `js/pages/fauna-dashboard-page.js`
 - Encapsula la capa de dashboard Fauna: navegación de tabs fauna, carga de catálogos/filtros, estadísticas e historial de fauna, además del modal/mapa de hallazgos con exportación.
+
+## `js/pages/supabase-orchestrator-page.js`
+- Orquesta inicialización de módulos dependientes de `window.supabaseClient` y helpers (`auth-session`, `main-tabs`, `fauna-submit`, `fauna-dashboard`, `offline-sync`), dejando `index.html` como shell de includes + arranque mínimo.

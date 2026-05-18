@@ -1452,26 +1452,11 @@
 
     <!-- Scripts: fecha/hora, bloqueo Cargo y comportamiento Turno -->
     <script src="./js/ui/dashboard-ui.js"></script>
-
     <script src="./js/pages/revision-basic-ui-page.js"></script>
-
-
-
     <script src="./js/pages/revision-duplicate-page.js"></script>
-
-
-
     <script src="./js/pages/revision-item-composer-page.js"></script>
-
-
-
     <script src="./js/pages/fauna-impact-item-controls-page.js"></script>
-
-
-
     <script src="./js/pages/revision-item-photos-page.js"></script>
-
-
 
     <!-- Script: Captura de Firmas en Canvas -->
     <script src="./js/ui/signature-manager.js"></script>
@@ -1531,16 +1516,6 @@
 
 
     <script src="./js/pages/revision-hallazgo-page.js"></script>
-
-
-
-
-
-
-
-
-
-
     <script src="./js/ui/map-picker-modal.js"></script>
     <script src="./js/ui/select-colorizer.js"></script>
 
@@ -1572,71 +1547,18 @@
     <script src="./js/pages/offline-report-sync-page.js"></script>
     <script src="./js/pages/fauna-submit-page.js"></script>
     <script src="./js/pages/fauna-dashboard-page.js"></script>
+    <script src="./js/pages/supabase-orchestrator-page.js"></script>
 
     <script src="./js/supabase-client.js"></script>
 
-    <!-- Supabase Logic -->
+    <script src="./js/supabase-client.js"></script>
+
     <script>
         (function () {
-            var supabase = window.supabaseClient;
-            var helpers = window.MHRSupabaseHelpers || {};
-            var APP_CONFIG = helpers.APP_CONFIG || {};
-            var isSafeStoragePath = helpers.isSafeStoragePath || function(path){ return !!path; };
-            var resolvePdfUrl = helpers.resolvePdfUrl || (async function(){ return null; });
-
-            if (!supabase) {
-                console.error('Error inicializando Supabase: window.supabaseClient no disponible');
-                return;
+            if (window.MHRSupabaseOrchestratorPage && typeof window.MHRSupabaseOrchestratorPage.init === 'function') {
+                window.MHRSupabaseOrchestratorPage.init();
             }
-
-                if (window.MHRAuthSessionPage && typeof window.MHRAuthSessionPage.init === 'function') {
-                    window.MHRAuthSessionPage.init({ supabase: supabase });
-                }
-
-        
-
-            if (window.MHRMainTabsPage && typeof window.MHRMainTabsPage.init === 'function') {
-                window.MHRMainTabsPage.init({
-                    cargarCatalogosFauna: cargarCatalogosFauna,
-                    loadFaunaStatistics: loadFaunaStatistics,
-                    loadFaunaReports: loadFaunaReports,
-                    loadEstadisticas: loadEstadisticas
-                });
-            }
-
-            // ═══════════════════════════════════════════════════════════
-            // GENERACIÓN DE PDF PARA FAUNA
-            // ═══════════════════════════════════════════════════════════
-            if (window.MHRFaunaSubmitPage && typeof window.MHRFaunaSubmitPage.init === 'function') {
-                window.MHRFaunaSubmitPage.init({ supabase: supabase });
-            }
-
-        if (window.MHRFaunaDashboardPage && typeof window.MHRFaunaDashboardPage.init === "function") {
-            window.MHRFaunaDashboardPage.init({
-                supabase: supabase,
-                helpers: helpers,
-                APP_CONFIG: APP_CONFIG,
-                isSafeStoragePath: isSafeStoragePath,
-                resolvePdfUrl: resolvePdfUrl
-            });
-        }
-
-        // ─── Handler para Fauna Form (migrado a módulo de página) ───
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.MHRFaunaInteractionsPage && typeof window.MHRFaunaInteractionsPage.init === "function") {
-                window.MHRFaunaInteractionsPage.init({ cargarCatalogosFauna: cargarCatalogosFauna });
-            }
-
-            if (window.MHROfflineSyncPage && typeof window.MHROfflineSyncPage.init === "function") {
-                window.MHROfflineSyncPage.init({
-                    showOfflineBanner: showOfflineBanner,
-                    hideOfflineBanner: hideOfflineBanner,
-                    getPendingReports: getPendingReports
-                });
-            }
-        });
-
-    })();
+        })();
     </script>
 </body>
 
