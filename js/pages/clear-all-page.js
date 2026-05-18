@@ -1,0 +1,126 @@
+document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('clear-all-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function (e) {
+        try { e.preventDefault(); e.stopPropagation(); } catch (err) { }
+        console.log('Clear all clicked');
+        var ok = window.confirm('¿Estás seguro que deseas limpiar TODOS los campos de la sección actual?');
+        if (!ok) { console.log('Clear all canceled'); return; }
+
+        var revisionSection = document.getElementById('revision-section');
+        var faunaSection = document.getElementById('fauna-section');
+        var isRevisionActive = revisionSection && revisionSection.classList.contains('active');
+        var isFaunaActive = faunaSection && faunaSection.classList.contains('active');
+
+        if (isRevisionActive) {
+            var itemCheckboxes = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id^="tipo_"]'));
+            itemCheckboxes.forEach(function (chk) {
+                try {
+                    var id = chk.id;
+                    chk.checked = false;
+                    chk.disabled = false;
+                    var det = document.getElementById('details_' + id);
+                    if (det) {
+                        det.style.display = 'none';
+                        Array.prototype.slice.call(det.querySelectorAll('input, textarea, select')).forEach(function (el) {
+                            try {
+                                if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+                                else el.value = '';
+                                el.disabled = false;
+                                if (el.classList && el.classList.contains('priority-select')) el.style.backgroundColor = '';
+                                if (el.classList && el.classList.contains('condicion-select')) el.style.backgroundColor = '';
+                            } catch (e) { }
+                        });
+                    }
+                    var doneBtn = document.getElementById('done_' + id);
+                    var updateBtn = document.getElementById('update_' + id);
+                    if (doneBtn) doneBtn.style.display = 'none';
+                    if (updateBtn) updateBtn.style.display = 'none';
+                } catch (e) { console.error('Error clearing item', chk && chk.id, e); }
+            });
+        }
+
+        try {
+            if (isRevisionActive) {
+                var form = document.getElementById('report-form');
+                if (form) {
+                    Array.prototype.slice.call(form.querySelectorAll('input, textarea, select')).forEach(function (el) {
+                        try {
+                            if (el.tagName === 'BUTTON' || (el.type && (el.type === 'submit' || el.type === 'button'))) return;
+                            if (el.type === 'checkbox' || el.type === 'radio') {
+                                el.checked = false;
+                                el.disabled = false;
+                            } else {
+                                el.value = '';
+                                el.disabled = false;
+                            }
+                            if (el.classList && el.classList.contains('priority-select')) el.style.backgroundColor = '';
+                            if (el.classList && el.classList.contains('condicion-select')) el.style.backgroundColor = '';
+                        } catch (e) { }
+                    });
+                }
+            } else if (isFaunaActive) {
+                var faunaForm = document.getElementById('fauna-form');
+                if (faunaForm) {
+                    Array.prototype.slice.call(faunaForm.querySelectorAll('input, textarea, select')).forEach(function (el) {
+                        try {
+                            if (el.tagName === 'BUTTON' || (el.type && (el.type === 'submit' || el.type === 'button'))) return;
+                            if (el.type === 'checkbox' || el.type === 'radio') {
+                                el.checked = false;
+                                el.disabled = false;
+                            } else {
+                                el.value = '';
+                                el.disabled = false;
+                            }
+                        } catch (e) { }
+                    });
+                }
+                window.faunaRescateFotos = [];
+                var fotosPreview = document.getElementById('fauna_rescate_fotos_preview');
+                if (fotosPreview) fotosPreview.innerHTML = '';
+            }
+        } catch (e) { console.error('Error clearing form fields', e); }
+
+        if (isRevisionActive) {
+            try {
+                var authorSel = document.getElementById('report-authors-select');
+                var authorReset = document.getElementById('report-authors-reset');
+                if (authorSel) { authorSel.value = ''; authorSel.disabled = false; }
+                if (authorReset) authorReset.style.display = 'none';
+
+                var roleSel = document.getElementById('report-role');
+                var roleReset = document.getElementById('report-role-reset');
+                var roleOther = document.getElementById('report-role-other');
+                if (roleSel) { roleSel.selectedIndex = 0; roleSel.disabled = false; }
+                if (roleReset) roleReset.style.display = 'none';
+                if (roleOther) { roleOther.value = ''; roleOther.style.display = 'none'; }
+
+                var pistaBtn = document.getElementById('pista-change-btn');
+                if (pistaBtn) pistaBtn.style.display = 'none';
+                Array.prototype.slice.call(document.querySelectorAll('label.pista-option')).forEach(function (lbl) { try { lbl.classList.remove('selected'); } catch (e) { } });
+                Array.prototype.slice.call(document.querySelectorAll('input[name="pista"]')).forEach(function (r) {
+                    try { r.checked = false; r.disabled = false; } catch (e) { }
+                });
+            } catch (e) { }
+        } else if (isFaunaActive) {
+            try {
+                var faunaAuthorSel = document.getElementById('fauna_report-authors-select');
+                var faunaAuthorReset = document.getElementById('fauna_report-authors-reset');
+                if (faunaAuthorSel) { faunaAuthorSel.value = ''; faunaAuthorSel.disabled = false; }
+                if (faunaAuthorReset) faunaAuthorReset.style.display = 'none';
+            } catch (e) { }
+        }
+
+        if (isRevisionActive) {
+            try {
+                Array.prototype.slice.call(document.querySelectorAll('[id^="details_"]')).forEach(function (d) { try { d.style.display = 'none'; } catch (e) { } });
+            } catch (e) { }
+        }
+
+        try { if (window.saveFormState) window.saveFormState(); else console.log('saveFormState not available'); } catch (e) { console.error('Error saving state', e); }
+
+        var original = btn.textContent;
+        btn.textContent = 'Limpiado';
+        setTimeout(function () { btn.textContent = original; }, 1800);
+    });
+});
