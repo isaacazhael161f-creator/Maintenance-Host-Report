@@ -11,11 +11,6 @@
     var catalogTree = [];
     var itemMap = {};
     var selectedIds = {};
-    var legacyItemIds = [
-        'tipo_area_movimiento', 'tipo_franjas', 'tipo_iluminacion', 'tipo_marcas', 'tipo_ayudas',
-        'tipo_obstaculos', 'tipo_combustibles', 'tipo_construccion', 'tipo_ssei', 'tipo_vehiculos',
-        'tipo_fauna', 'tipo_proteccion'
-    ];
 
     function esc(text) {
         return (text || '').toString().replace(/[&<>'"]/g, function (m) {
@@ -31,23 +26,6 @@
     function getPriorityOptionsHtml() {
         var src = document.querySelector('.priority-select');
         return src ? src.innerHTML : '<option value="">Seleccione prioridad</option>';
-    }
-    function hideLegacyChecklist() {
-        legacyItemIds.forEach(function (id) {
-            var chk = document.getElementById(id);
-            var lbl = document.querySelector('label[for="' + id + '"]');
-            var doneBtn = document.getElementById('done_' + id);
-            var updateBtn = document.getElementById('update_' + id);
-            var dupBtn = document.getElementById('dup_' + id);
-            var clearBtn = document.getElementById('clear_' + id);
-            var det = document.getElementById('details_' + id);
-            var br = det && det.previousElementSibling && det.previousElementSibling.tagName === 'BR' ? det.previousElementSibling : null;
-            [chk, lbl, doneBtn, updateBtn, dupBtn, clearBtn, br, det].forEach(function (node) {
-                if (!node) return;
-                node.style.display = 'none';
-                if (stagingContainer && node.parentNode !== stagingContainer) stagingContainer.appendChild(node);
-            });
-        });
     }
 
     function createComboRow(afterNode) {
@@ -75,19 +53,16 @@
         select.appendChild(placeholder);
 
         catalogTree.forEach(function (cat) {
-            var catOpt = document.createElement('option');
-            catOpt.value = '';
-            catOpt.disabled = true;
-            catOpt.textContent = '- ' + cat.nombre;
-            select.appendChild(catOpt);
-
+            var group = document.createElement('optgroup');
+            group.label = cat.nombre;
             cat.items.forEach(function (item) {
                 if (selectedIds[item.id]) return;
                 var opt = document.createElement('option');
                 opt.value = item.id;
-                opt.textContent = '-- ' + item.nombre;
-                select.appendChild(opt);
+                opt.textContent = item.nombre;
+                group.appendChild(opt);
             });
+            if (group.children.length > 0) select.appendChild(group);
         });
 
         var status = document.createElement('span');
@@ -203,28 +178,40 @@
         }).filter(function (c) { return c.items.length > 0; });
         return catalogTree.length > 0;
     }
-    function buildFallbackTree() {
-        catalogTree = [{
-            id: 'fallback-categoria',
-            nombre: 'Items de inspección',
-            items: legacyItemIds.map(function (id) {
-                var lbl = document.querySelector('label[for="' + id + '"]');
-                var nombre = lbl ? lbl.textContent.trim() : id;
-                var obj = { id: id, nombre: nombre, categoria: 'Items de inspección', hallazgos: [] };
-                itemMap[id] = obj;
-                return obj;
-            })
-        }];
+    function removeLegacyChecklist() {
+        var legacyIds = [
+            'tipo_area_movimiento', 'tipo_franjas', 'tipo_iluminacion', 'tipo_marcas', 'tipo_ayudas',
+            'tipo_obstaculos', 'tipo_combustibles', 'tipo_construccion', 'tipo_ssei', 'tipo_vehiculos',
+            'tipo_fauna', 'tipo_proteccion'
+        ];
+
+        legacyIds.forEach(function (id) {
+            var chk = document.getElementById(id);
+            var lbl = document.querySelector('label[for="' + id + '"]');
+            var doneBtn = document.getElementById('done_' + id);
+            var updateBtn = document.getElementById('update_' + id);
+            var dupBtn = document.getElementById('dup_' + id);
+            var clearBtn = document.getElementById('clear_' + id);
+            var det = document.getElementById('details_' + id);
+            var br = det && det.previousElementSibling && det.previousElementSibling.tagName === 'BR' ? det.previousElementSibling : null;
+            [chk, lbl, doneBtn, updateBtn, dupBtn, clearBtn, br, det].forEach(function (node) {
+                if (!node) return;
+                node.remove();
+            });
+        });
+
+        if (stagingContainer) stagingContainer.remove();
     }
 
-    hideLegacyChecklist();
+    removeLegacyChecklist();
     loadCatalogTree().then(function (ok) {
-        if (!ok) buildFallbackTree();
+        if (!ok) {
+            selectedContainer.innerHTML = '<div style="padding:10px; border:1px solid #fecaca; color:#991b1b; background:#fef2f2; border-radius:8px;">No se pudo cargar el catálogo de inspección (catalogo_items_inspeccion).</div>';
+            return;
+        }
         createComboRow();
         window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
     }).catch(function () {
-        buildFallbackTree();
-        createComboRow();
-        window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
+        selectedContainer.innerHTML = '<div style="padding:10px; border:1px solid #fecaca; color:#991b1b; background:#fef2f2; border-radius:8px;">Error cargando catálogo de inspección.</div>';
     });
 })();
