@@ -22,6 +22,7 @@
 
             var usedItems = {};
             var itemDefsLoaded = itemDefs.slice();
+            var itemCatalogMeta = {};
             comboList.style.display = 'none';
             addBtn.style.display = 'none';
 
@@ -69,29 +70,66 @@
                 try {
                     var response = await window.supabaseClient
                         .from('catalogo_items_inspeccion')
-                        .select('id, clave, nombre, orden, activo, tipo')
+                        .select('id, clave, nombre, orden, activo, tipo, parent_id')
                         .eq('activo', true)
-                        .eq('tipo', 'ITEM')
                         .order('orden', { ascending: true })
                         .order('nombre', { ascending: true });
                     var rows = (response && response.data) ? response.data : [];
                     if (!rows.length) return itemDefsLoaded;
 
-                    var rowMap = {};
-                    rows.forEach(function (row) {
-                        rowMap[normalizeText(row.nombre)] = true;
-                        rowMap[normalizeText(row.clave)] = true;
+                    var byId = {};
+                    rows.forEach(function (row) { byId[row.id] = row; });
+                    var categoryByItem = {};
+                    var hallazgosByItem = {};
+                    var itemRows = rows.filter(function (row) { return row.tipo === 'ITEM'; });
+                    rows.filter(function (row) { return row.tipo === 'HALLAZGO'; }).forEach(function (row) {
+                        var itemParent = byId[row.parent_id];
+                        if (!itemParent || itemParent.tipo !== 'ITEM') return;
+                        var itemKey = normalizeText(itemParent.nombre);
+                        hallazgosByItem[itemKey] = hallazgosByItem[itemKey] || [];
+                        hallazgosByItem[itemKey].push(row.nombre);
+                    });
+                    itemRows.forEach(function (row) {
+                        var cat = byId[row.parent_id];
+                        var categoryName = (cat && cat.tipo === 'CATEGORIA') ? cat.nombre : 'Sin categoría';
+                        categoryByItem[normalizeText(row.nombre)] = categoryName;
                     });
 
-                    var filtered = itemDefs.filter(function (item) {
-                        var keyById = normalizeText(item.id.replace(/^tipo_/, '').replace(/_/g, ' '));
-                        return rowMap[normalizeText(item.label)] || rowMap[keyById];
-                    });
+                    var filtered = itemDefs.map(function (item) {
+                        var itemKey = normalizeText(item.label);
+                        var categoryName = categoryByItem[itemKey];
+                        if (!categoryName) return null;
+                        var hallazgos = hallazgosByItem[itemKey] || [];
+                        itemCatalogMeta[item.id] = { category: categoryName, hallazgos: hallazgos };
+                        return { id: item.id, label: item.label, category: categoryName };
+                    }).filter(Boolean);
                     if (filtered.length > 0) itemDefsLoaded = filtered;
                 } catch (e) {
                     console.warn('No se pudo cargar catálogo de items desde Supabase, se usa lista local.', e);
                 }
                 return itemDefsLoaded;
+            }
+
+            function applyItemHallazgos(itemId) {
+                var meta = itemCatalogMeta[itemId];
+                if (!meta || !meta.hallazgos || meta.hallazgos.length === 0) return;
+                var hallazgoSelect = byId('hallazgo_' + itemId);
+                if (!hallazgoSelect) return;
+                hallazgoSelect.innerHTML = '';
+                var placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- Seleccione hallazgo --';
+                hallazgoSelect.appendChild(placeholder);
+                meta.hallazgos.forEach(function (hallazgoName) {
+                    var option = document.createElement('option');
+                    option.value = hallazgoName;
+                    option.textContent = hallazgoName;
+                    hallazgoSelect.appendChild(option);
+                });
+                var otherOption = document.createElement('option');
+                otherOption.value = 'Otro';
+                otherOption.textContent = 'Otro';
+                hallazgoSelect.appendChild(otherOption);
             }
 
             function renderComboOptions(select) {
@@ -101,7 +139,7 @@
                     if (usedItems[item.id] && item.id !== currentVal) return;
                     var opt = document.createElement('option');
                     opt.value = item.id;
-                    opt.textContent = item.label;
+                    opt.textContent = (item.category ? ('- ' + item.category + ' -- ' + item.label) : item.label);
                     if (item.id === currentVal) opt.selected = true;
                     select.appendChild(opt);
                 });
@@ -176,6 +214,7 @@
                 usedItems[itemId] = true;
                 chk.checked = true;
                 chk.dispatchEvent(new Event('change'));
+                applyItemHallazgos(itemId);
 
                 var label = (itemDefsLoaded.find(function (i) { return i.id === itemId; }) || {}).label || itemId;
                 var card = document.createElement('div');
