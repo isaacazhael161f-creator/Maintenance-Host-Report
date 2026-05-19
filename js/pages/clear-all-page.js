@@ -114,7 +114,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 Array.prototype.slice.call(document.querySelectorAll('[id^="details_"]')).forEach(function (d) { try { d.style.display = 'none'; } catch (e) { } });
             } catch (e) { }
         }
-
+        try {
+            localStorage.removeItem('mhr_form_state_v1');
+            sessionStorage.removeItem('mhr_form_state_v1');
+            window.faunaCatalogosCache = {};
+            if (window.saveFormState) {
+                setTimeout(function () {
+                    try { window.saveFormState(); } catch (e) { }
+                }, 50);
+            }
+        } catch (e) { console.error('Error clearing persisted cache/state', e); }
 
         var original = btn.textContent;
         btn.textContent = 'Limpiado';
