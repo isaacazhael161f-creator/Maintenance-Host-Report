@@ -3,33 +3,44 @@
  * Encapsula la inicialización de la interfaz global, relojes y precarga de assets.
  */
 window.MHRDashboardUI = (function () {
-    
-    function initDateTime() {
+    var dateTimeIntervalId = null;
+
+    function renderDateTime() {
         var utils = window.MHRUtils || {
             pad2: function (n) { return n.toString().padStart(2, '0'); }
         };
         var d = new Date();
-        var date = utils.pad2(d.getDate()) + '/' + utils.pad2(d.getMonth() + 1) + '/' + d.getFullYear();
-        var time = utils.pad2(d.getHours()) + ':' + utils.pad2(d.getMinutes()) + ':' + utils.pad2(d.getSeconds());
-        var str = date + ' ' + time;
+        var localDate = utils.pad2(d.getDate()) + '/' + utils.pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+        var localTime = utils.pad2(d.getHours()) + ':' + utils.pad2(d.getMinutes()) + ':' + utils.pad2(d.getSeconds());
+        var localDateTime = localDate + ' ' + localTime;
 
-        ['report-date', 'report-date-historial', 'report-date-estadistica'].forEach(function(id) {
+        ['report-date', 'report-date-historial', 'report-date-estadistica'].forEach(function (id) {
             var el = document.getElementById(id);
-            if (el) el.textContent = str;
+            if (el) {
+                el.innerHTML = '<div><strong>' + localDateTime + '</strong></div><div style="font-size:12px;color:#6b7280;margin-top:4px">Hora local</div>';
+            }
         });
 
-        try {
-            var utcHours = utils.pad2(d.getUTCHours());
-            var utcMins = utils.pad2(d.getUTCMinutes());
-            var utcSecs = utils.pad2(d.getUTCSeconds());
-            var utcStr = utcHours + ':' + utcMins + ':' + utcSecs;
-            var utcDateStr = utils.pad2(d.getUTCDate()) + '/' + utils.pad2(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
+        var utcHours = utils.pad2(d.getUTCHours());
+        var utcMins = utils.pad2(d.getUTCMinutes());
+        var utcSecs = utils.pad2(d.getUTCSeconds());
+        var utcTime = utcHours + ':' + utcMins + ':' + utcSecs;
+        var utcDate = utils.pad2(d.getUTCDate()) + '/' + utils.pad2(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear();
 
-            ['report-utc', 'report-utc-historial', 'report-utc-estadistica'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.innerHTML = '<div><strong>' + utcStr + ' UTC</strong></div><div style="font-size:12px;color:#6b7280;margin-top:4px">' + utcDateStr + '</div>';
-            });
-        } catch (e) { }
+        ['report-utc', 'report-utc-historial', 'report-utc-estadistica'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = '<div><strong>' + utcDate + ' ' + utcTime + ' UTC</strong></div><div style="font-size:12px;color:#6b7280;margin-top:4px">Hora UTC</div>';
+            }
+        });
+    }
+    
+    function initDateTime() {
+        if (dateTimeIntervalId) {
+            clearInterval(dateTimeIntervalId);
+        }
+        renderDateTime();
+        dateTimeIntervalId = setInterval(renderDateTime, 1000);
     }
 
     function initLogoPreload() {

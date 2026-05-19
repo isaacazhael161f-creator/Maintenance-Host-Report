@@ -5,6 +5,7 @@ window.MHRAuthSessionPage = (function () {
                 var loginBtn = document.getElementById('login-btn');
                 var emailInput = document.getElementById('login-email');
                 var passInput = document.getElementById('login-password');
+                var togglePassBtn = document.getElementById('toggle-password-visibility');
                 var errorMsg = document.getElementById('login-error');
                 var userInfo = document.getElementById('user-info');
                 var userEmailSpan = document.getElementById('user-email');
@@ -219,6 +220,25 @@ window.MHRAuthSessionPage = (function () {
                     return user;
                 }
                 
+
+                if (togglePassBtn && passInput) {
+                    togglePassBtn.addEventListener('click', function () {
+                        var isPassword = passInput.type === 'password';
+                        passInput.type = isPassword ? 'text' : 'password';
+                        togglePassBtn.setAttribute('aria-pressed', String(isPassword));
+                        togglePassBtn.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                        togglePassBtn.title = isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña';
+                        togglePassBtn.textContent = isPassword ? '🙈' : '👁️';
+                    });
+
+                    passInput.addEventListener('keydown', function (event) {
+                        if (event.key === 'Enter' && loginBtn && !loginBtn.disabled) {
+                            event.preventDefault();
+                            loginBtn.click();
+                        }
+                    });
+                }
+
                 if (loginBtn) {
                     loginBtn.addEventListener('click', async function () {
                 
