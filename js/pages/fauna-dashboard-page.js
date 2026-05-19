@@ -1008,25 +1008,6 @@ window.MHRFaunaDashboardPage = (function () {
 
             // Event listener para el botón de actualizar estadísticas de fauna
             document.getElementById('refresh-estadisticas-fauna-btn')?.addEventListener('click', loadFaunaStatistics);
-        })();
-    </script>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         SOPORTE OFFLINE: IndexedDB + Sincronización automática
-         ═══════════════════════════════════════════════════════════ -->
-    <script>
-    (function () {
-        'use strict';
-
-        if (window.MHROfflineReportSyncPage && typeof window.MHROfflineReportSyncPage.init === "function") {
-            window.MHROfflineReportSyncPage.init({
-                supabase: supabase,
-                showOfflineBanner: showOfflineBanner,
-                hideOfflineBanner: hideOfflineBanner
-            });
-        }
-
-
   }
   return { init: init };
 })();

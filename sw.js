@@ -60,6 +60,7 @@ self.addEventListener('fetch', function (event) {
         fetch(event.request).then(function (response) {
             // Cachear la respuesta fresca
             if (response && response.status === 200) {
+                if (!event.request.url.startsWith('http')) return response;
                 var clone = response.clone();
                 caches.open(CACHE_NAME).then(function (cache) {
                     cache.put(event.request, clone);
