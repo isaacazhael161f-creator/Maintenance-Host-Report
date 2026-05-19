@@ -153,9 +153,32 @@
         comboRow.replaceWith(card);
     }
 
+
+    function waitForSupabaseClient(maxWaitMs) {
+        maxWaitMs = typeof maxWaitMs === 'number' ? maxWaitMs : 5000;
+        return new Promise(function (resolve) {
+            if (window.supabaseClient) { resolve(window.supabaseClient); return; }
+            var elapsed = 0;
+            var step = 100;
+            var timer = setInterval(function () {
+                elapsed += step;
+                if (window.supabaseClient) {
+                    clearInterval(timer);
+                    resolve(window.supabaseClient);
+                    return;
+                }
+                if (elapsed >= maxWaitMs) {
+                    clearInterval(timer);
+                    resolve(null);
+                }
+            }, step);
+        });
+    }
+
     async function loadCatalogTree() {
-        if (!window.supabaseClient) return false;
-        var res = await window.supabaseClient
+        var client = await waitForSupabaseClient(7000);
+        if (!client) return false;
+        var res = await client
             .from('catalogo_items_inspeccion')
             .select('id, clave, nombre, orden, activo, parent_id, tipo')
             .eq('activo', true)
