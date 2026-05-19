@@ -89,6 +89,16 @@
         return row;
     }
 
+
+    function ensureSingleComboRow(afterNode) {
+        var rows = selectedContainer.querySelectorAll('.item-combo-row');
+        if (rows.length > 0) {
+            for (var i = 1; i < rows.length; i++) rows[i].remove();
+            return rows[0];
+        }
+        return createComboRow(afterNode);
+    }
+
     function activateItem(itemId, comboRow) {
         var item = itemMap[itemId];
         if (!item) return;
@@ -151,13 +161,13 @@
         card.querySelector('.dynamic-remove').addEventListener('click', function () {
             if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
             selectedIds[itemId] = false;
-            var replacement = createComboRow();
-            card.replaceWith(replacement);
+            card.remove();
+            ensureSingleComboRow();
         });
 
         card.querySelector('.dynamic-add-next').addEventListener('click', function () {
             card.querySelector('.item-card-actions').remove();
-            createComboRow(card);
+            ensureSingleComboRow(card);
         });
 
         comboRow.replaceWith(card);
@@ -283,11 +293,27 @@
             return out;
         }
 
+        function getItemChildren(itemId) {
+            return (childrenByParent[itemId] || []).filter(function (n) { return n.tipo === 'ITEM'; });
+        }
+
+        function buildItemPathName(itemNode) {
+            var parts = [itemNode.nombre || ''];
+            var cursor = itemNode;
+            while (cursor && cursor.parent_id && byId[cursor.parent_id] && byId[cursor.parent_id].tipo !== 'CATEGORIA') {
+                cursor = byId[cursor.parent_id];
+                parts.unshift(cursor.nombre || '');
+            }
+            return parts.join(' / ');
+        }
+
         var categorias = res.data.filter(function (r) { return r.tipo === 'CATEGORIA'; });
         catalogTree = categorias.map(function (cat) {
-            var items = getDescendantsByType(cat.id, 'ITEM').map(function (it) {
+            var items = getDescendantsByType(cat.id, 'ITEM').filter(function (it) {
+                return getItemChildren(it.id).length === 0;
+            }).map(function (it) {
                 var hallazgos = getDescendantsByType(it.id, 'HALLAZGO');
-                var obj = { id: it.id, nombre: it.nombre, categoria: cat.nombre, hallazgos: hallazgos, nivel: it.nivel };
+                var obj = { id: it.id, nombre: buildItemPathName(it), categoria: cat.nombre, hallazgos: hallazgos, nivel: it.nivel };
                 itemMap[it.id] = obj;
                 return obj;
             });
@@ -326,7 +352,7 @@
             selectedContainer.innerHTML = '<div style="padding:10px; border:1px solid #fecaca; color:#991b1b; background:#fef2f2; border-radius:8px;">No se pudo cargar el catálogo de inspección (catalogo_items_inspeccion).</div>';
             return;
         }
-        createComboRow();
+        ensureSingleComboRow();
         window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
     }).catch(function () {
         selectedContainer.innerHTML = '<div style="padding:10px; border:1px solid #fecaca; color:#991b1b; background:#fef2f2; border-radius:8px;">Error cargando catálogo de inspección.</div>';
