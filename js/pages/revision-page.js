@@ -179,6 +179,29 @@ window.MHRRevisionPage = (function () {
                 }
                 filled.push({ id: id, name: name, fields: fields });
             });
+            Array.prototype.slice.call(document.querySelectorAll('.dynamic-item-card')).forEach(function (card) {
+                var itemId = card.dataset.itemCatalogId;
+                if (!itemId) return;
+                var title = card.querySelector('.item-card-toggle');
+                var name = title ? title.textContent.replace(/^[▼▶]\s*/, '').trim() : itemId;
+                var fields = [];
+                var lugar = card.querySelector('.dynamic-lugar');
+                var hallazgo = card.querySelector('.dynamic-hallazgo');
+                var hallazgoOtro = card.querySelector('.dynamic-hallazgo-otro');
+                var condicion = card.querySelector('.dynamic-condicion');
+                var observaciones = card.querySelector('.dynamic-observaciones');
+                var prioridad = card.querySelector('.dynamic-prioridad');
+                var codigo = card.querySelector('.dynamic-codigo');
+                if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim() });
+                var hallazgoVal = hallazgo ? hallazgo.value : '';
+                if (hallazgoVal === 'Otro' && hallazgoOtro && hallazgoOtro.value.trim()) hallazgoVal = hallazgoOtro.value.trim();
+                if (hallazgoVal) fields.push({ key: 'hallazgo', value: hallazgoVal });
+                if (condicion && condicion.value.trim()) fields.push({ key: 'condicion', value: condicion.value.trim() });
+                if (observaciones && observaciones.value.trim()) fields.push({ key: 'observaciones', value: observaciones.value.trim() });
+                if (prioridad && prioridad.value.trim()) fields.push({ key: 'prioridad', value: prioridad.value.trim() });
+                if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
+                filled.push({ id: itemId, name: name, fields: fields });
+            });
 
             if (filled.length === 0) {
                 alert('No hay items seleccionados para generar el reporte.');

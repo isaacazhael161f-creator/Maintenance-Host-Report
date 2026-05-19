@@ -56,7 +56,10 @@
             </div>
             <div class="input-group">
                 <label>Contraseña</label>
-                <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+                <div class="password-field">
+                    <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+                    <button type="button" id="toggle-password-visibility" class="password-toggle" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">👁️</button>
+                </div>
             </div>
             <button id="login-btn">Iniciar Sesión</button>
             <div id="login-error"></div>
