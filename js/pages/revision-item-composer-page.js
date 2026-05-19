@@ -21,6 +21,8 @@
             if (!comboList || !addBtn || !selectedContainer || !stagingContainer) return;
 
             var usedItems = {};
+            var itemDefsLoaded = itemDefs.slice();
+            var itemCatalogMeta = {};
             comboList.style.display = 'none';
             addBtn.style.display = 'none';
 
@@ -59,14 +61,99 @@
                 return wrapper;
             }
 
+            function normalizeText(value) {
+                return (value || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+            }
+            function compactToken(value) {
+                return normalizeText(value).replace(/[^a-z0-9]/g, '');
+            }
+
+            async function loadItemDefsFromCatalog() {
+                if (!window.supabaseClient) return itemDefsLoaded;
+                try {
+                    var response = await window.supabaseClient
+                        .from('catalogo_items_inspeccion')
+                        .select('id, clave, nombre, orden, activo, tipo, parent_id')
+                        .eq('activo', true)
+                        .order('orden', { ascending: true })
+                        .order('nombre', { ascending: true });
+                    var rows = (response && response.data) ? response.data : [];
+                    if (!rows.length) return itemDefsLoaded;
+
+                    var byId = {};
+                    rows.forEach(function (row) { byId[row.id] = row; });
+                    var categoryByItem = {};
+                    var hallazgosByItem = {};
+                    var itemRows = rows.filter(function (row) { return row.tipo === 'ITEM'; });
+                    rows.filter(function (row) { return row.tipo === 'HALLAZGO'; }).forEach(function (row) {
+                        var itemParent = byId[row.parent_id];
+                        if (!itemParent || itemParent.tipo !== 'ITEM') return;
+                        var itemKey = normalizeText(itemParent.nombre);
+                        hallazgosByItem[itemKey] = hallazgosByItem[itemKey] || [];
+                        hallazgosByItem[itemKey].push(row.nombre);
+                    });
+                    itemRows.forEach(function (row) {
+                        var cat = byId[row.parent_id];
+                        var categoryName = (cat && cat.tipo === 'CATEGORIA') ? cat.nombre : 'Sin categoría';
+                        categoryByItem[normalizeText(row.nombre)] = categoryName;
+                    });
+
+                    var filtered = itemDefs.map(function (item) {
+                        var itemKey = normalizeText(item.label);
+                        var itemToken = compactToken(item.id.replace(/^tipo_/, ''));
+                        var matchedRow = itemRows.find(function (row) {
+                            var rowName = normalizeText(row.nombre);
+                            var rowClave = compactToken(row.clave || '');
+                            var rowNameToken = compactToken(row.nombre || '');
+                            return rowName === itemKey ||
+                                rowName.includes(itemKey) ||
+                                itemKey.includes(rowName) ||
+                                rowClave === itemToken ||
+                                rowNameToken === itemToken;
+                        });
+                        var matchedKey = matchedRow ? normalizeText(matchedRow.nombre) : itemKey;
+                        var categoryName = categoryByItem[matchedKey] || 'Sin categoría';
+                        var hallazgos = hallazgosByItem[matchedKey] || [];
+                        itemCatalogMeta[item.id] = { category: categoryName, hallazgos: hallazgos };
+                        return { id: item.id, label: item.label, category: categoryName };
+                    });
+                    if (filtered.length > 0) itemDefsLoaded = filtered;
+                } catch (e) {
+                    console.warn('No se pudo cargar catálogo de items desde Supabase, se usa lista local.', e);
+                }
+                return itemDefsLoaded;
+            }
+
+            function applyItemHallazgos(itemId) {
+                var meta = itemCatalogMeta[itemId];
+                if (!meta || !meta.hallazgos || meta.hallazgos.length === 0) return;
+                var hallazgoSelect = byId('hallazgo_' + itemId);
+                if (!hallazgoSelect) return;
+                hallazgoSelect.innerHTML = '';
+                var placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- Seleccione hallazgo --';
+                hallazgoSelect.appendChild(placeholder);
+                meta.hallazgos.forEach(function (hallazgoName) {
+                    var option = document.createElement('option');
+                    option.value = hallazgoName;
+                    option.textContent = hallazgoName;
+                    hallazgoSelect.appendChild(option);
+                });
+                var otherOption = document.createElement('option');
+                otherOption.value = 'Otro';
+                otherOption.textContent = 'Otro';
+                hallazgoSelect.appendChild(otherOption);
+            }
+
             function renderComboOptions(select) {
                 var currentVal = select.value;
                 select.innerHTML = '<option value=\"\">-- Seleccionar item --</option>';
-                itemDefs.forEach(function (item) {
+                itemDefsLoaded.forEach(function (item) {
                     if (usedItems[item.id] && item.id !== currentVal) return;
                     var opt = document.createElement('option');
                     opt.value = item.id;
-                    opt.textContent = item.label;
+                    opt.textContent = '- ' + (item.category || 'Sin categoría') + ' -- ' + item.label;
                     if (item.id === currentVal) opt.selected = true;
                     select.appendChild(opt);
                 });
@@ -141,8 +228,9 @@
                 usedItems[itemId] = true;
                 chk.checked = true;
                 chk.dispatchEvent(new Event('change'));
+                applyItemHallazgos(itemId);
 
-                var label = (itemDefs.find(function (i) { return i.id === itemId; }) || {}).label || itemId;
+                var label = (itemDefsLoaded.find(function (i) { return i.id === itemId; }) || {}).label || itemId;
                 var card = document.createElement('div');
                 card.className = 'item-card';
                 card.style.border = '1px solid #d1dbe9';
@@ -168,6 +256,23 @@
 
                 card.appendChild(toggle);
                 card.appendChild(body);
+                var removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-ghost';
+                removeBtn.style.marginTop = '8px';
+                removeBtn.textContent = '🗑️ Eliminar item';
+                removeBtn.addEventListener('click', function () {
+                    if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
+                    usedItems[itemId] = false;
+                    chk.checked = false;
+                    chk.dispatchEvent(new Event('change'));
+                    block.style.display = 'none';
+                    stagingContainer.appendChild(block);
+                    var replacement = createComboRow();
+                    bindComboRow(replacement);
+                    card.replaceWith(replacement);
+                });
+                card.appendChild(removeBtn);
 
                 comboRow.replaceWith(card);
                 attachAddItemAction(card);
@@ -182,10 +287,25 @@
                 row.dataset.bound = '1';
             }
 
+            function activatePreselectedItems() {
+                itemDefsLoaded.forEach(function (item) {
+                    if (usedItems[item.id]) return;
+                    var chk = byId(item.id);
+                    if (!chk || !chk.checked) return;
+                    var row = selectedContainer.querySelector('.item-combo-row') || createComboRow();
+                    bindComboRow(row);
+                    activateItem(item.id, row);
+                });
+            }
+
             // Inicialización: crear wrappers y ocultar lista larga original
             itemDefs.forEach(function (item) { wrapItemBlock(item.id); });
-            var firstRow = createComboRow();
-            bindComboRow(firstRow);
+            loadItemDefsFromCatalog().finally(function () {
+                var firstRow = createComboRow();
+                bindComboRow(firstRow);
+                activatePreselectedItems();
+                setTimeout(activatePreselectedItems, 450);
+            });
 
             // Hook para combos nuevos
             var observer = new MutationObserver(function () {
