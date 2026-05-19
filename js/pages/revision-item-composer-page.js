@@ -21,6 +21,7 @@
             if (!comboList || !addBtn || !selectedContainer || !stagingContainer) return;
 
             var usedItems = {};
+            var itemDefsLoaded = itemDefs.slice();
             comboList.style.display = 'none';
             addBtn.style.display = 'none';
 
@@ -59,10 +60,44 @@
                 return wrapper;
             }
 
+            function normalizeText(value) {
+                return (value || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+            }
+
+            async function loadItemDefsFromCatalog() {
+                if (!window.supabaseClient) return itemDefsLoaded;
+                try {
+                    var response = await window.supabaseClient
+                        .from('catalogo_items_inspeccion')
+                        .select('id, clave, nombre, orden, activo, tipo')
+                        .eq('activo', true)
+                        .eq('tipo', 'ITEM')
+                        .order('orden', { ascending: true })
+                        .order('nombre', { ascending: true });
+                    var rows = (response && response.data) ? response.data : [];
+                    if (!rows.length) return itemDefsLoaded;
+
+                    var rowMap = {};
+                    rows.forEach(function (row) {
+                        rowMap[normalizeText(row.nombre)] = true;
+                        rowMap[normalizeText(row.clave)] = true;
+                    });
+
+                    var filtered = itemDefs.filter(function (item) {
+                        var keyById = normalizeText(item.id.replace(/^tipo_/, '').replace(/_/g, ' '));
+                        return rowMap[normalizeText(item.label)] || rowMap[keyById];
+                    });
+                    if (filtered.length > 0) itemDefsLoaded = filtered;
+                } catch (e) {
+                    console.warn('No se pudo cargar catálogo de items desde Supabase, se usa lista local.', e);
+                }
+                return itemDefsLoaded;
+            }
+
             function renderComboOptions(select) {
                 var currentVal = select.value;
                 select.innerHTML = '<option value=\"\">-- Seleccionar item --</option>';
-                itemDefs.forEach(function (item) {
+                itemDefsLoaded.forEach(function (item) {
                     if (usedItems[item.id] && item.id !== currentVal) return;
                     var opt = document.createElement('option');
                     opt.value = item.id;
@@ -142,7 +177,7 @@
                 chk.checked = true;
                 chk.dispatchEvent(new Event('change'));
 
-                var label = (itemDefs.find(function (i) { return i.id === itemId; }) || {}).label || itemId;
+                var label = (itemDefsLoaded.find(function (i) { return i.id === itemId; }) || {}).label || itemId;
                 var card = document.createElement('div');
                 card.className = 'item-card';
                 card.style.border = '1px solid #d1dbe9';
@@ -168,6 +203,23 @@
 
                 card.appendChild(toggle);
                 card.appendChild(body);
+                var removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-ghost';
+                removeBtn.style.marginTop = '8px';
+                removeBtn.textContent = '🗑️ Eliminar item';
+                removeBtn.addEventListener('click', function () {
+                    if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
+                    usedItems[itemId] = false;
+                    chk.checked = false;
+                    chk.dispatchEvent(new Event('change'));
+                    block.style.display = 'none';
+                    stagingContainer.appendChild(block);
+                    var replacement = createComboRow();
+                    bindComboRow(replacement);
+                    card.replaceWith(replacement);
+                });
+                card.appendChild(removeBtn);
 
                 comboRow.replaceWith(card);
                 attachAddItemAction(card);
@@ -182,10 +234,25 @@
                 row.dataset.bound = '1';
             }
 
+            function activatePreselectedItems() {
+                itemDefsLoaded.forEach(function (item) {
+                    if (usedItems[item.id]) return;
+                    var chk = byId(item.id);
+                    if (!chk || !chk.checked) return;
+                    var row = selectedContainer.querySelector('.item-combo-row') || createComboRow();
+                    bindComboRow(row);
+                    activateItem(item.id, row);
+                });
+            }
+
             // Inicialización: crear wrappers y ocultar lista larga original
             itemDefs.forEach(function (item) { wrapItemBlock(item.id); });
-            var firstRow = createComboRow();
-            bindComboRow(firstRow);
+            loadItemDefsFromCatalog().finally(function () {
+                var firstRow = createComboRow();
+                bindComboRow(firstRow);
+                activatePreselectedItems();
+                setTimeout(activatePreselectedItems, 450);
+            });
 
             // Hook para combos nuevos
             var observer = new MutationObserver(function () {
