@@ -64,6 +64,9 @@
             function normalizeText(value) {
                 return (value || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
             }
+            function compactToken(value) {
+                return normalizeText(value).replace(/[^a-z0-9]/g, '');
+            }
 
             async function loadItemDefsFromCatalog() {
                 if (!window.supabaseClient) return itemDefsLoaded;
@@ -97,12 +100,23 @@
 
                     var filtered = itemDefs.map(function (item) {
                         var itemKey = normalizeText(item.label);
-                        var categoryName = categoryByItem[itemKey];
-                        if (!categoryName) return null;
-                        var hallazgos = hallazgosByItem[itemKey] || [];
+                        var itemToken = compactToken(item.id.replace(/^tipo_/, ''));
+                        var matchedRow = itemRows.find(function (row) {
+                            var rowName = normalizeText(row.nombre);
+                            var rowClave = compactToken(row.clave || '');
+                            var rowNameToken = compactToken(row.nombre || '');
+                            return rowName === itemKey ||
+                                rowName.includes(itemKey) ||
+                                itemKey.includes(rowName) ||
+                                rowClave === itemToken ||
+                                rowNameToken === itemToken;
+                        });
+                        var matchedKey = matchedRow ? normalizeText(matchedRow.nombre) : itemKey;
+                        var categoryName = categoryByItem[matchedKey] || 'Sin categoría';
+                        var hallazgos = hallazgosByItem[matchedKey] || [];
                         itemCatalogMeta[item.id] = { category: categoryName, hallazgos: hallazgos };
                         return { id: item.id, label: item.label, category: categoryName };
-                    }).filter(Boolean);
+                    });
                     if (filtered.length > 0) itemDefsLoaded = filtered;
                 } catch (e) {
                     console.warn('No se pudo cargar catálogo de items desde Supabase, se usa lista local.', e);
@@ -139,7 +153,7 @@
                     if (usedItems[item.id] && item.id !== currentVal) return;
                     var opt = document.createElement('option');
                     opt.value = item.id;
-                    opt.textContent = (item.category ? ('- ' + item.category + ' -- ' + item.label) : item.label);
+                    opt.textContent = '- ' + (item.category || 'Sin categoría') + ' -- ' + item.label;
                     if (item.id === currentVal) opt.selected = true;
                     select.appendChild(opt);
                 });
