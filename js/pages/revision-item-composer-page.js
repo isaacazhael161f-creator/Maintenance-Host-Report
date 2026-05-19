@@ -115,7 +115,14 @@
             '  <label>Hallazgo: <select class="dynamic-hallazgo">' + hallazgoOptions + '</select></label><br>' +
             '  <input type="text" class="dynamic-hallazgo-otro" placeholder="Especifique otro hallazgo" style="display:none; width:100%; margin:6px 0;">' +
             '  <label>Condición: <select class="condicion-select dynamic-condicion">' + getConditionOptionsHtml() + '</select></label><br>' +
-            '  <label>Evidencias: <input type="file" class="dynamic-evidencias" multiple accept="image/*"></label><br>' +
+            '  <div class="dynamic-photo-upload-area" style="margin:10px 0;">' +
+            '    <div style="font-size:13px;color:#374151;margin-bottom:4px;">📷 Evidencia Fotográfica <span style="color:#6b7280;">(opcional)</span></div>' +
+            '    <div style="display:flex;gap:10px;">' +
+            '      <label style="flex:1;text-align:center;border:2px dashed #3b82f6;color:#1d4ed8;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📁 Archivo<input type="file" class="dynamic-evidencias dynamic-evidencias-file" multiple accept="image/*" style="display:none;"></label>' +
+            '      <label style="flex:1;text-align:center;border:2px dashed #10b981;color:#065f46;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📸 Foto<input type="file" class="dynamic-evidencias dynamic-evidencias-camera" accept="image/*" capture="environment" style="display:none;"></label>' +
+            '    </div>' +
+            '    <div class="dynamic-photo-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>' +
+            '  </div>' +
             '  <label>Observaciones:<br><textarea class="dynamic-observaciones" rows="3"></textarea></label><br>' +
             '  <label>Prioridad: <select class="priority-select dynamic-prioridad">' + getPriorityOptionsHtml() + '</select></label><br>' +
             '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo"></label>' +
@@ -138,6 +145,9 @@
             if (hallSel.value !== 'Otro') hallOther.value = '';
         });
 
+        bindDynamicLugarInput(card.querySelector('.dynamic-lugar'));
+        bindDynamicPhotoInputs(card, itemId);
+
         card.querySelector('.dynamic-remove').addEventListener('click', function () {
             if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
             selectedIds[itemId] = false;
@@ -151,6 +161,67 @@
         });
 
         comboRow.replaceWith(card);
+    }
+
+
+    function bindDynamicLugarInput(input) {
+        if (!input) return;
+        input.readOnly = true;
+        input.style.cursor = 'pointer';
+        input.style.pointerEvents = 'auto';
+        input.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (window.openMapPicker) window.openMapPicker(input);
+        });
+    }
+
+    function renderDynamicPhotoPreviews(card, itemId) {
+        var previewsDiv = card.querySelector('.dynamic-photo-previews');
+        if (!previewsDiv) return;
+        var photos = (window.itemPhotos && window.itemPhotos[itemId]) || [];
+        previewsDiv.innerHTML = '';
+        photos.forEach(function (photo, idx) {
+            var wrap = document.createElement('div');
+            wrap.style.position = 'relative';
+            var img = document.createElement('img');
+            img.src = photo.dataURL;
+            img.style.width = '84px'; img.style.height = '84px'; img.style.objectFit = 'cover'; img.style.borderRadius = '8px'; img.style.border = '1px solid #cbd5e1';
+            var rm = document.createElement('button');
+            rm.type = 'button'; rm.textContent = '×';
+            rm.style.position='absolute'; rm.style.top='-6px'; rm.style.right='-6px'; rm.style.width='22px'; rm.style.height='22px'; rm.style.borderRadius='999px'; rm.style.border='none'; rm.style.background='#ef4444'; rm.style.color='#fff'; rm.style.cursor='pointer';
+            rm.addEventListener('click', function () {
+                if (!window.itemPhotos || !window.itemPhotos[itemId]) return;
+                window.itemPhotos[itemId].splice(idx, 1);
+                renderDynamicPhotoPreviews(card, itemId);
+            });
+            wrap.appendChild(img); wrap.appendChild(rm);
+            previewsDiv.appendChild(wrap);
+        });
+    }
+
+    function bindDynamicPhotoInputs(card, itemId) {
+        window.itemPhotos = window.itemPhotos || {};
+        window.itemPhotos[itemId] = window.itemPhotos[itemId] || [];
+        var inputs = card.querySelectorAll('.dynamic-evidencias');
+        Array.prototype.forEach.call(inputs, function (input) {
+            input.addEventListener('change', function () {
+                var files = Array.prototype.slice.call(input.files || []);
+                if (!files.length) return;
+                var pending = files.length;
+                files.forEach(function (file) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        window.itemPhotos[itemId].push({ dataURL: e.target.result, name: file.name });
+                        pending--;
+                        if (pending === 0) {
+                            renderDynamicPhotoPreviews(card, itemId);
+                            input.value = '';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+        });
     }
 
 
