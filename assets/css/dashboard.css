@@ -13,7 +13,7 @@
         #login-panel-left {
             flex: 1 1 55%;
             position: relative;
-            background: url('Imágenes/Whisky_1.jpg') center center / cover no-repeat;
+            background: url('../../Imágenes/Whisky_1.jpg') center center / cover no-repeat;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -155,6 +155,30 @@
             border-color: #007acc;
             box-shadow: 0 0 0 4px rgba(0, 122, 204, 0.12);
         }
+        
+        .password-field {
+            position: relative;
+        }
+        .password-field input {
+            padding-right: 48px !important;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            color: #64748b;
+            padding: 2px;
+        }
+        .password-toggle:hover {
+            color: #0f172a;
+        }
+
         #login-btn {
             width: 100%;
             padding: 14px;
