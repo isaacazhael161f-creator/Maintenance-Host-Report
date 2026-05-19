@@ -251,23 +251,46 @@
         if (!client) return false;
         var res = await client
             .from('catalogo_items_inspeccion')
-            .select('id, clave, nombre, orden, activo, parent_id, tipo')
+            .select('id, clave, nombre, orden, activo, parent_id, tipo, nivel')
             .eq('activo', true)
             .order('orden', { ascending: true })
             .order('nombre', { ascending: true });
         if (res.error || !res.data) return false;
 
         var byId = {};
-        res.data.forEach(function (r) { byId[r.id] = r; });
+        var childrenByParent = {};
+        res.data.forEach(function (r) {
+            byId[r.id] = r;
+            var k = r.parent_id || '__root__';
+            childrenByParent[k] = childrenByParent[k] || [];
+            childrenByParent[k].push(r);
+        });
+
+        function getDescendantsByType(parentId, type) {
+            var out = [];
+            var stack = (childrenByParent[parentId] || []).slice();
+            while (stack.length) {
+                var n = stack.shift();
+                if (n.tipo === type) out.push(n);
+                var kids = childrenByParent[n.id] || [];
+                for (var i = 0; i < kids.length; i++) stack.push(kids[i]);
+            }
+            out.sort(function (a, b) {
+                var ao = Number(a.orden || 0), bo = Number(b.orden || 0);
+                if (ao !== bo) return ao - bo;
+                return (a.nombre || '').localeCompare(b.nombre || '');
+            });
+            return out;
+        }
+
         var categorias = res.data.filter(function (r) { return r.tipo === 'CATEGORIA'; });
         catalogTree = categorias.map(function (cat) {
-            var items = res.data.filter(function (r) { return r.tipo === 'ITEM' && r.parent_id === cat.id; })
-                .map(function (it) {
-                    var hallazgos = res.data.filter(function (r) { return r.tipo === 'HALLAZGO' && r.parent_id === it.id; });
-                    var obj = { id: it.id, nombre: it.nombre, categoria: cat.nombre, hallazgos: hallazgos };
-                    itemMap[it.id] = obj;
-                    return obj;
-                });
+            var items = getDescendantsByType(cat.id, 'ITEM').map(function (it) {
+                var hallazgos = getDescendantsByType(it.id, 'HALLAZGO');
+                var obj = { id: it.id, nombre: it.nombre, categoria: cat.nombre, hallazgos: hallazgos, nivel: it.nivel };
+                itemMap[it.id] = obj;
+                return obj;
+            });
             return { id: cat.id, nombre: cat.nombre, items: items };
         }).filter(function (c) { return c.items.length > 0; });
         return catalogTree.length > 0;
