@@ -11,6 +11,11 @@
     var catalogTree = [];
     var itemMap = {};
     var selectedIds = {};
+    var legacyItemIds = [
+        'tipo_area_movimiento', 'tipo_franjas', 'tipo_iluminacion', 'tipo_marcas', 'tipo_ayudas',
+        'tipo_obstaculos', 'tipo_combustibles', 'tipo_construccion', 'tipo_ssei', 'tipo_vehiculos',
+        'tipo_fauna', 'tipo_proteccion'
+    ];
 
     function esc(text) {
         return (text || '').toString().replace(/[&<>'"]/g, function (m) {
@@ -26,6 +31,23 @@
     function getPriorityOptionsHtml() {
         var src = document.querySelector('.priority-select');
         return src ? src.innerHTML : '<option value="">Seleccione prioridad</option>';
+    }
+    function hideLegacyChecklist() {
+        legacyItemIds.forEach(function (id) {
+            var chk = document.getElementById(id);
+            var lbl = document.querySelector('label[for="' + id + '"]');
+            var doneBtn = document.getElementById('done_' + id);
+            var updateBtn = document.getElementById('update_' + id);
+            var dupBtn = document.getElementById('dup_' + id);
+            var clearBtn = document.getElementById('clear_' + id);
+            var det = document.getElementById('details_' + id);
+            var br = det && det.previousElementSibling && det.previousElementSibling.tagName === 'BR' ? det.previousElementSibling : null;
+            [chk, lbl, doneBtn, updateBtn, dupBtn, clearBtn, br, det].forEach(function (node) {
+                if (!node) return;
+                node.style.display = 'none';
+                if (stagingContainer && node.parentNode !== stagingContainer) stagingContainer.appendChild(node);
+            });
+        });
     }
 
     function createComboRow(afterNode) {
@@ -181,15 +203,28 @@
         }).filter(function (c) { return c.items.length > 0; });
         return catalogTree.length > 0;
     }
+    function buildFallbackTree() {
+        catalogTree = [{
+            id: 'fallback-categoria',
+            nombre: 'Items de inspección',
+            items: legacyItemIds.map(function (id) {
+                var lbl = document.querySelector('label[for="' + id + '"]');
+                var nombre = lbl ? lbl.textContent.trim() : id;
+                var obj = { id: id, nombre: nombre, categoria: 'Items de inspección', hallazgos: [] };
+                itemMap[id] = obj;
+                return obj;
+            })
+        }];
+    }
 
+    hideLegacyChecklist();
     loadCatalogTree().then(function (ok) {
-        if (!ok) {
-            selectedContainer.innerHTML = '<div style="padding:10px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;">No se pudo cargar catálogo ITEM/CATEGORÍA/HALLAZGO desde Supabase.</div>';
-            return;
-        }
+        if (!ok) buildFallbackTree();
         createComboRow();
         window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
     }).catch(function () {
-        selectedContainer.innerHTML = '<div style="padding:10px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;">No se pudo cargar catálogo ITEM/CATEGORÍA/HALLAZGO desde Supabase.</div>';
+        buildFallbackTree();
+        createComboRow();
+        window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
     });
 })();

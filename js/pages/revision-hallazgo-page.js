@@ -21,6 +21,7 @@
     });
 
     itemIds.forEach(function (id) {
+      var chk = document.getElementById(id);
       var other = document.getElementById('hallazgo_other_' + id);
       if (!chk || !other) return;
       chk.addEventListener('change', function () {

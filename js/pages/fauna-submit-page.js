@@ -723,6 +723,9 @@ window.MHRFaunaSubmitPage = (function () {
                                             '</div>' +
                                             '</div>';
                                     }
+                                } catch (membreteErr) {
+                                    console.warn('No se pudo construir membrete de fauna:', membreteErr);
+                                }
                                 return membreteHtml;
                             })() +
                             

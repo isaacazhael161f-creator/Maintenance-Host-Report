@@ -312,7 +312,18 @@ window.MHRRevisionPage = (function () {
             // --- Generación HTML para PDF ---
             var container = document.getElementById('report-summary');
             var html = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;">';
-            function escapeHtml(str) { try { return str.toString().replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '''); } catch (e) { return '' + str; } }
+            function escapeHtml(str) {
+                try {
+                    return str.toString()
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                } catch (e) {
+                    return '' + str;
+                }
+            }
             
             function buildLugarHtml(f, lugarVal) {
                 if (!lugarVal) return '<span style="color:#9ca3af">-</span>';
