@@ -192,7 +192,7 @@ window.MHRRevisionPage = (function () {
                 var observaciones = card.querySelector('.dynamic-observaciones');
                 var prioridad = card.querySelector('.dynamic-prioridad');
                 var codigo = card.querySelector('.dynamic-codigo');
-                if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim() });
+                if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim(), mapImage: lugar.dataset.mapImage || '', mapsUrl: lugar.dataset.mapsUrl || '' });
                 var hallazgoVal = hallazgo ? hallazgo.value : '';
                 if (hallazgoVal === 'Otro' && hallazgoOtro && hallazgoOtro.value.trim()) hallazgoVal = hallazgoOtro.value.trim();
                 if (hallazgoVal) fields.push({ key: 'hallazgo', value: hallazgoVal });
@@ -225,7 +225,7 @@ window.MHRRevisionPage = (function () {
                     var reportPayload = {
                         folio: folio, fecha_local: fecha, fecha_utc: utcDateStr + ' ' + utcTimeStr,
                         tipo_inspeccion: tiposText, turno: turnoText, pista: pistaText, responsable: autor,
-                        cargo: cargo, area_representante: areaRep, area_representante_nombre: areaRepName,
+                        cargo: cargo, "Area_Representante": areaRep, "Area_Representante_Nombre": areaRepName,
                         pdf_url: pdfUrl || null
                     };
 
@@ -257,10 +257,15 @@ window.MHRRevisionPage = (function () {
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
-                        itemsToInsert.push({ report_id: reportId, categoria: f.name, lugar: lugarVal, hallazgo: hallazgoVal, condicion: condicionVal, observaciones: observacionesVal, prioridad: prioridadVal, codigo_seguimiento: codigoVal });
+                        itemsToInsert.push({
+                            report_id: reportId,
+                            item_id: f.id,
+                            item_name: f.name,
+                            fields: JSON.stringify(f.fields || [])
+                        });
                     });
 
-                    var { error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
+                    var { data: insertedItems, error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
                     if (itemsError) alert('Reporte guardado, pero hubo error al guardar los detalles: ' + itemsError.message);
 
                     // Subir evidencias fotográficas
@@ -279,15 +284,55 @@ window.MHRRevisionPage = (function () {
                                     while (n--) u8arr[n] = bstr.charCodeAt(n);
                                     var photoBlob = new Blob([u8arr], { type: mime });
                                     var ext = mime.split('/')[1] || 'jpg';
-                                    var photoFilename = 'photos/' + folio + '_item' + (fi + 1) + '_' + pi + '_' + Date.now() + '.' + ext;
-                                    var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'photos', photoFilename, photoBlob, { cacheControl: '3600', upsert: false });
+                                    var photoFilename = reportId + '/' + (insertedItems && insertedItems[fi] ? insertedItems[fi].id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
+                                    var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime });
                                     if (!photoUploadErr) {
-                                        photosToInsert.push({ report_id: reportId, item_id: f.id, item_categoria: f.name, item_numero: fi + 1, photo_url: photoFilename, photo_name: photo.name || photoFilename });
+                                        photosToInsert.push({
+                                            report_id: reportId,
+                                            report_inspection_item_id: (insertedItems && insertedItems[fi]) ? insertedItems[fi].id : null,
+                                            storage_bucket: 'report-evidencias',
+                                            storage_path: photoFilename,
+                                            photo_url: photoFilename,
+                                            photo_name: photo.name || photoFilename,
+                                            mime_type: mime,
+                                            file_size: photoBlob.size
+                                        });
                                     }
                                 } catch (photoErr) {}
                             }
                         }
                         if (photosToInsert.length > 0) await window.MHRReportService.insertItemPhotosBulk(window.supabaseClient, photosToInsert);
+
+                        // Subir firmas como imágenes para conservarlas en edición/consulta
+                        var firmasToUpload = (window.obtenerFirmas && window.obtenerFirmas()) || {};
+                        var signatureKeys = ['area', 'aifa', 'afac'];
+                        for (var si = 0; si < signatureKeys.length; si++) {
+                            var sigKey = signatureKeys[si];
+                            var sigData = firmasToUpload[sigKey];
+                            if (!sigData || typeof sigData !== 'string' || sigData.indexOf('data:image/') !== 0) continue;
+                            try {
+                                var sigArr = sigData.split(',');
+                                var sigMime = (sigArr[0].match(/:(.*?);/) || [])[1] || 'image/png';
+                                var sigBstr = atob(sigArr[1]), sigN = sigBstr.length, sigU8 = new Uint8Array(sigN);
+                                while (sigN--) sigU8[sigN] = sigBstr.charCodeAt(sigN);
+                                var sigBlob = new Blob([sigU8], { type: sigMime });
+                                var sigExt = sigMime.split('/')[1] || 'png';
+                                var sigPath = reportId + '/signatures/' + sigKey + '_' + Date.now() + '.' + sigExt;
+                                var upSig = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', sigPath, sigBlob, { cacheControl: '3600', upsert: false, contentType: sigMime });
+                                if (!upSig.error) {
+                                    await window.MHRReportService.insertItemPhoto(window.supabaseClient, {
+                                        report_id: reportId,
+                                        report_inspection_item_id: null,
+                                        storage_bucket: 'report-evidencias',
+                                        storage_path: sigPath,
+                                        photo_url: sigPath,
+                                        photo_name: 'firma_' + sigKey + '.' + sigExt,
+                                        mime_type: sigMime,
+                                        file_size: sigBlob.size
+                                    });
+                                }
+                            } catch (sigErr) {}
+                        }
                     } catch (allPhotosErr) { console.warn('Error general en subida de evidencias:', allPhotosErr); }
 
                     return reportId;
@@ -329,11 +374,19 @@ window.MHRRevisionPage = (function () {
                 if (!lugarVal) return '<span style="color:#9ca3af">-</span>';
                 var h = '<div style="font-size:11px;font-weight:600;margin-bottom:4px;">' + escapeHtml(lugarVal) + '</div>';
                 try {
-                    var inp = document.querySelector('input[name="details[' + f.id + '][lugar]"]');
-                    if (inp && inp.dataset.mapImage) {
-                        h += '<div style="position:relative;width:100%;"><img src="' + inp.dataset.mapImage + '" style="width:100%;max-height:88px;border-radius:4px;display:block;object-fit:cover;border:1px solid #e6eef9;"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7));">\uD83D\uDCCD</div></div>';
+                    var placeField = null;
+                    if (f.fields && f.fields.length) {
+                        for (var i = 0; i < f.fields.length; i++) {
+                            var fld = f.fields[i];
+                            if (fld && fld.key && /^lugar$/i.test(String(fld.key))) { placeField = fld; break; }
+                        }
                     }
-                    if (inp && inp.dataset.mapsUrl) h += '<div style="font-size:9px;color:#0055a5;margin-top:3px;word-break:break-all;">' + escapeHtml(inp.dataset.mapsUrl) + '</div>';
+                    var mapImage = placeField ? placeField.mapImage : '';
+                    var mapsUrl = placeField ? placeField.mapsUrl : '';
+                    if (mapImage) {
+                        h += '<div style="position:relative;width:100%;"><img src="' + mapImage + '" style="width:100%;max-height:88px;border-radius:4px;display:block;object-fit:cover;border:1px solid #e6eef9;"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7));">\uD83D\uDCCD</div></div>';
+                    }
+                    if (mapsUrl) h += '<div style="font-size:9px;color:#0055a5;margin-top:3px;word-break:break-all;">' + escapeHtml(mapsUrl) + '</div>';
                 } catch (ex) { }
                 return h;
             }

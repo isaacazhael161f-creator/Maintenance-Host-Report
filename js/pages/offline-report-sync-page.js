@@ -244,8 +244,8 @@ window.MHROfflineReportSyncPage = (function () {
                 turno:           record.turnoText,
                 responsable:     record.autor,
                 cargo:           record.cargo,
-                area_representante: record.areaRep,
-                area_representante_nombre: record.areaRepName,
+                "Area_Representante": record.areaRep,
+                "Area_Representante_Nombre": record.areaRepName,
                 user_id:         userId,
                 pdf_url:         null
             };
@@ -273,6 +273,7 @@ window.MHROfflineReportSyncPage = (function () {
             var reportId = reportData.id;
 
             // 5b. Insertar items
+            var insertedItems = [];
             if (record.filled && record.filled.length > 0) {
                 var itemsPayload = record.filled.map(function (it) {
                     return {
@@ -282,7 +283,9 @@ window.MHROfflineReportSyncPage = (function () {
                         fields:    JSON.stringify(it.fields)
                     };
                 });
-                var { error: itemsError } = await window.MHRReportService.insertReportItems(sc, itemsPayload);
+                var itemsResult = await window.MHRReportService.insertReportItems(sc, itemsPayload);
+                insertedItems = itemsResult.data || [];
+                var itemsError = itemsResult.error;
                 if (itemsError) console.warn('Error insertando items offline:', itemsError);
             }
 
@@ -301,16 +304,21 @@ window.MHROfflineReportSyncPage = (function () {
                         var blob     = new Blob([byteArr], { type: mime });
                         var ext      = (ph.name || 'foto.jpg').split('.').pop() || 'jpg';
                         var fileName = reportId + '/' + itemId + '_' + Date.now() + '_' + pi + '.' + ext;
-                        var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'photos', fileName, blob, { upsert: false, contentType: mime });
+                        var insertedItem = (insertedItems || []).find(function (x) { return String(x.item_id) === String(itemId); });
+                        var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'report-evidencias', fileName, blob, { upsert: false, contentType: mime });
                         if (upError) { console.warn('Error subiendo foto:', upError); continue; }
-                        var { data: urlData } = window.MHRReportService.getPublicUrl(sc, 'photos', fileName);
+                        var { data: urlData } = window.MHRReportService.getPublicUrl(sc, 'report-evidencias', fileName);
                         var photoUrl = urlData ? urlData.publicUrl : null;
                         if (photoUrl) {
                             await window.MHRReportService.insertItemPhoto(sc, {
                                 report_id:  reportId,
-                                item_id:    itemId,
+                                report_inspection_item_id: insertedItem ? insertedItem.id : null,
+                                storage_bucket: 'report-evidencias',
+                                storage_path: fileName,
                                 photo_url:  photoUrl,
-                                photo_name: ph.name
+                                photo_name: ph.name,
+                                mime_type: mime,
+                                file_size: blob.size
                             });
                         }
                     } catch (photoErr) {
