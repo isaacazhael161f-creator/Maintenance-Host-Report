@@ -246,6 +246,8 @@ window.MHRRevisionPage = (function () {
                     var reportId = reportData[0].id;
 
                     var insertedItems = [];
+                    var insertedItemsByCatalogId = {};
+                    var insertedItemsByFormItemKey = {};
                     for (var itx = 0; itx < filled.length; itx++) {
                         var f = filled[itx];
                         var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
@@ -258,12 +260,23 @@ window.MHRRevisionPage = (function () {
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
-                        var candidates = [
-                            { report_id: reportId, item_id: f.id, item_name: f.name },
-                            { report_id: reportId, item_name: f.name },
-                            { report_id: reportId, item_id: f.id },
-                            { report_id: reportId }
-                        ];
+                        var parsedOrder = parseInt(itx, 10);
+                        if (!isFinite(parsedOrder)) parsedOrder = 0;
+                        var parsedCatalogId = null;
+                        if (f.id && /^[0-9a-fA-F-]{36}$/.test(String(f.id))) parsedCatalogId = f.id;
+                        var itemPayload = {
+                            report_id: reportId,
+                            item_catalogo_id: parsedCatalogId,
+                            item_nombre: f.name || ('Item ' + (itx + 1)),
+                            lugar: lugarVal || null,
+                            hallazgo: hallazgoVal || null,
+                            condicion: condicionVal || null,
+                            observaciones: observacionesVal || null,
+                            prioridad: prioridadVal || null,
+                            codigo_seguimiento: codigoVal || null,
+                            orden: parsedOrder
+                        };
+                        var candidates = [itemPayload];
                         var inserted = null, lastErr = null;
                         for (var ci = 0; ci < candidates.length; ci++) {
                             var r = await window.MHRReportService.insertReportItems(window.supabaseClient, [candidates[ci]]);
@@ -277,6 +290,8 @@ window.MHRRevisionPage = (function () {
                             });
                         } else {
                             insertedItems.push(inserted);
+                            insertedItemsByFormItemKey[String(f.id)] = inserted;
+                            if (parsedCatalogId) insertedItemsByCatalogId[String(parsedCatalogId)] = inserted;
                         }
                     }
 
@@ -296,10 +311,11 @@ window.MHRRevisionPage = (function () {
                                     while (n--) u8arr[n] = bstr.charCodeAt(n);
                                     var photoBlob = new Blob([u8arr], { type: mime });
                                     var ext = mime.split('/')[1] || 'jpg';
-                                    var photoFilename = reportId + '/' + (insertedItems && insertedItems[fi] ? insertedItems[fi].id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
+                                    var relatedItem = insertedItemsByFormItemKey[String(f.id)] || insertedItemsByCatalogId[String(f.id)] || (insertedItems && insertedItems[fi] ? insertedItems[fi] : null);
+                                    var photoFilename = reportId + '/' + (relatedItem ? relatedItem.id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
                                     var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime });
                                     if (!photoUploadErr) {
-                                        var relItemId = (insertedItems && insertedItems[fi]) ? insertedItems[fi].id : null;
+                                        var relItemId = relatedItem ? relatedItem.id : null;
                                         if (relItemId) {
                                             photosToInsert.push({
                                                 report_inspection_item_id: relItemId,
@@ -497,6 +513,10 @@ window.MHRRevisionPage = (function () {
                         else submitBtn.value = 'Guardando datos...';
                     }
                     await saveToSupabase(pdfUrl);
+                    try {
+                        var clearAllBtn = document.getElementById('clear-all-btn');
+                        if (clearAllBtn) clearAllBtn.click();
+                    } catch (clearErr) { console.warn('No se pudo limpiar formulario automáticamente:', clearErr); }
                 }
             });;
         });
