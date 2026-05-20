@@ -279,8 +279,7 @@ window.MHROfflineReportSyncPage = (function () {
                     return {
                         report_id: reportId,
                         item_id:   it.id,
-                        item_name: it.name,
-                        fields:    JSON.stringify(it.fields)
+                        item_name: it.name
                     };
                 });
                 var itemsResult = await window.MHRReportService.insertReportItems(sc, itemsPayload);
@@ -309,16 +308,14 @@ window.MHROfflineReportSyncPage = (function () {
                         if (upError) { console.warn('Error subiendo foto:', upError); continue; }
                         var { data: urlData } = window.MHRReportService.getPublicUrl(sc, 'report-evidencias', fileName);
                         var photoUrl = urlData ? urlData.publicUrl : null;
-                        if (photoUrl) {
+                        if (photoUrl && insertedItem && insertedItem.id) {
                             await window.MHRReportService.insertItemPhoto(sc, {
-                                report_id:  reportId,
-                                report_inspection_item_id: insertedItem ? insertedItem.id : null,
-                                storage_bucket: 'report-evidencias',
+                                report_inspection_item_id: insertedItem.id,
+                                bucket: 'report-evidencias',
                                 storage_path: fileName,
-                                photo_url:  photoUrl,
-                                photo_name: ph.name,
+                                original_filename: ph.name,
                                 mime_type: mime,
-                                file_size: blob.size
+                                size_bytes: blob.size
                             });
                         }
                     } catch (photoErr) {

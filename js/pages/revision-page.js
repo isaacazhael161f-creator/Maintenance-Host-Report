@@ -245,11 +245,12 @@ window.MHRRevisionPage = (function () {
                     if (reportError) { alert('Error guardando en base de datos: ' + reportError.message); return null; }
                     var reportId = reportData[0].id;
 
-                    var itemsToInsert = [];
-                    filled.forEach(function (f) {
+                    var insertedItems = [];
+                    for (var itx = 0; itx < filled.length; itx++) {
+                        var f = filled[itx];
                         var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
-                        f.fields.forEach(function (ff) {
-                            var k = ff.key.toLowerCase(), v = ff.value;
+                        (f.fields || []).forEach(function (ff) {
+                            var k = (ff.key || '').toLowerCase(), v = ff.value;
                             if (k.includes('lugar')) lugarVal = v;
                             else if (k.includes('hallazgo')) hallazgoVal = v;
                             else if (k.includes('condici')) condicionVal = v;
@@ -257,16 +258,23 @@ window.MHRRevisionPage = (function () {
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
-                        itemsToInsert.push({
-                            report_id: reportId,
-                            item_id: f.id,
-                            item_name: f.name,
-                            fields: JSON.stringify(f.fields || [])
-                        });
-                    });
-
-                    var { data: insertedItems, error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
-                    if (itemsError) alert('Reporte guardado, pero hubo error al guardar los detalles: ' + itemsError.message);
+                        var candidates = [
+                            { report_id: reportId, categoria: f.name, lugar: lugarVal, hallazgo: hallazgoVal, condicion: condicionVal, observaciones: observacionesVal, prioridad: prioridadVal, codigo_seguimiento: codigoVal, "Pista": pistaText },
+                            { report_id: reportId, item_id: f.id, item_name: f.name },
+                            { report_id: reportId, categoria: f.name }
+                        ];
+                        var inserted = null, lastErr = null;
+                        for (var ci = 0; ci < candidates.length; ci++) {
+                            var r = await window.MHRReportService.insertReportItems(window.supabaseClient, [candidates[ci]]);
+                            if (!r.error && r.data && r.data.length) { inserted = r.data[0]; break; }
+                            lastErr = r.error || lastErr;
+                        }
+                        if (!inserted) {
+                            alert('Reporte guardado, pero hubo error al guardar un item: ' + (lastErr && lastErr.message ? lastErr.message : 'Error desconocido'));
+                        } else {
+                            insertedItems.push(inserted);
+                        }
+                    }
 
                     // Subir evidencias fotográficas
                     try {
@@ -287,16 +295,17 @@ window.MHRRevisionPage = (function () {
                                     var photoFilename = reportId + '/' + (insertedItems && insertedItems[fi] ? insertedItems[fi].id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
                                     var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime });
                                     if (!photoUploadErr) {
-                                        photosToInsert.push({
-                                            report_id: reportId,
-                                            report_inspection_item_id: (insertedItems && insertedItems[fi]) ? insertedItems[fi].id : null,
-                                            storage_bucket: 'report-evidencias',
-                                            storage_path: photoFilename,
-                                            photo_url: photoFilename,
-                                            photo_name: photo.name || photoFilename,
-                                            mime_type: mime,
-                                            file_size: photoBlob.size
-                                        });
+                                        var relItemId = (insertedItems && insertedItems[fi]) ? insertedItems[fi].id : null;
+                                        if (relItemId) {
+                                            photosToInsert.push({
+                                                report_inspection_item_id: relItemId,
+                                                bucket: 'report-evidencias',
+                                                storage_path: photoFilename,
+                                                original_filename: photo.name || photoFilename,
+                                                mime_type: mime,
+                                                size_bytes: photoBlob.size
+                                            });
+                                        }
                                     }
                                 } catch (photoErr) {}
                             }
@@ -305,6 +314,16 @@ window.MHRRevisionPage = (function () {
 
                         // Subir firmas como imágenes para conservarlas en edición/consulta
                         var firmasToUpload = (window.obtenerFirmas && window.obtenerFirmas()) || {};
+                        var signatureItemId = null;
+                        var sigItemCandidates = [
+                            { report_id: reportId, categoria: 'Firmas', observaciones: 'Firmas del reporte', "Pista": pistaText },
+                            { report_id: reportId, item_name: 'Firmas', item_id: 'firmas' },
+                            { report_id: reportId, categoria: 'Firmas' }
+                        ];
+                        for (var sic = 0; sic < sigItemCandidates.length; sic++) {
+                            var sigIns = await window.MHRReportService.insertReportItems(window.supabaseClient, [sigItemCandidates[sic]]);
+                            if (!sigIns.error && sigIns.data && sigIns.data.length && sigIns.data[0].id) { signatureItemId = sigIns.data[0].id; break; }
+                        }
                         var signatureKeys = ['area', 'aifa', 'afac'];
                         for (var si = 0; si < signatureKeys.length; si++) {
                             var sigKey = signatureKeys[si];
@@ -319,16 +338,14 @@ window.MHRRevisionPage = (function () {
                                 var sigExt = sigMime.split('/')[1] || 'png';
                                 var sigPath = reportId + '/signatures/' + sigKey + '_' + Date.now() + '.' + sigExt;
                                 var upSig = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', sigPath, sigBlob, { cacheControl: '3600', upsert: false, contentType: sigMime });
-                                if (!upSig.error) {
+                                if (!upSig.error && signatureItemId) {
                                     await window.MHRReportService.insertItemPhoto(window.supabaseClient, {
-                                        report_id: reportId,
-                                        report_inspection_item_id: null,
-                                        storage_bucket: 'report-evidencias',
+                                        report_inspection_item_id: signatureItemId,
+                                        bucket: 'report-evidencias',
                                         storage_path: sigPath,
-                                        photo_url: sigPath,
-                                        photo_name: 'firma_' + sigKey + '.' + sigExt,
+                                        original_filename: 'firma_' + sigKey + '.' + sigExt,
                                         mime_type: sigMime,
-                                        file_size: sigBlob.size
+                                        size_bytes: sigBlob.size
                                     });
                                 }
                             } catch (sigErr) {}
