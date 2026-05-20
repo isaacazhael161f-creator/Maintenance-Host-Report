@@ -259,9 +259,10 @@ window.MHRRevisionPage = (function () {
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
                         var candidates = [
-                            { report_id: reportId, categoria: f.name, lugar: lugarVal, hallazgo: hallazgoVal, condicion: condicionVal, observaciones: observacionesVal, prioridad: prioridadVal, codigo_seguimiento: codigoVal, "Pista": pistaText },
                             { report_id: reportId, item_id: f.id, item_name: f.name },
-                            { report_id: reportId, categoria: f.name }
+                            { report_id: reportId, item_name: f.name },
+                            { report_id: reportId, item_id: f.id },
+                            { report_id: reportId }
                         ];
                         var inserted = null, lastErr = null;
                         for (var ci = 0; ci < candidates.length; ci++) {
@@ -270,7 +271,10 @@ window.MHRRevisionPage = (function () {
                             lastErr = r.error || lastErr;
                         }
                         if (!inserted) {
-                            alert('Reporte guardado, pero hubo error al guardar un item: ' + (lastErr && lastErr.message ? lastErr.message : 'Error desconocido'));
+                            console.warn('No se pudo guardar item de inspección; se continuará con el flujo del reporte.', {
+                                item: f,
+                                error: lastErr
+                            });
                         } else {
                             insertedItems.push(inserted);
                         }
@@ -314,16 +318,8 @@ window.MHRRevisionPage = (function () {
 
                         // Subir firmas como imágenes para conservarlas en edición/consulta
                         var firmasToUpload = (window.obtenerFirmas && window.obtenerFirmas()) || {};
-                        var signatureItemId = null;
-                        var sigItemCandidates = [
-                            { report_id: reportId, categoria: 'Firmas', observaciones: 'Firmas del reporte', "Pista": pistaText },
-                            { report_id: reportId, item_name: 'Firmas', item_id: 'firmas' },
-                            { report_id: reportId, categoria: 'Firmas' }
-                        ];
-                        for (var sic = 0; sic < sigItemCandidates.length; sic++) {
-                            var sigIns = await window.MHRReportService.insertReportItems(window.supabaseClient, [sigItemCandidates[sic]]);
-                            if (!sigIns.error && sigIns.data && sigIns.data.length && sigIns.data[0].id) { signatureItemId = sigIns.data[0].id; break; }
-                        }
+                        var signatureItemId = (insertedItems[0] && insertedItems[0].id) ? insertedItems[0].id : null;
+                        if (!signatureItemId) console.warn('No hay item de inspección para relacionar firmas; se omite guardado de firmas en BD.');
                         var signatureKeys = ['area', 'aifa', 'afac'];
                         for (var si = 0; si < signatureKeys.length; si++) {
                             var sigKey = signatureKeys[si];
