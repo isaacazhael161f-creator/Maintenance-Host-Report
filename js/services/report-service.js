@@ -12,13 +12,20 @@
       return await client.from('reports').insert([payload]).select().single();
     },
     async insertReportItems(client, itemsPayload){
-      return await client.from('report_items').insert(itemsPayload);
+      return await client.from('report_inspection_items').insert(itemsPayload).select();
     },
     async insertItemPhoto(client, payload){
-      return await client.from('item_photos').insert([payload]);
+      return await client.from('report_inspection_item_photos').insert([payload]);
     },
     async insertItemPhotosBulk(client, payloads){
-      return await client.from('item_photos').insert(payloads);
+      return await client.from('report_inspection_item_photos').insert(payloads);
+    },
+    async getReportWithInspectionData(client, reportId){
+      return await client
+        .from('reports')
+        .select('*, report_inspection_items(*, report_inspection_item_photos(*))')
+        .eq('id', reportId)
+        .single();
     },
     async uploadToBucket(client, bucket, filename, blob, options){
       return await client.storage.from(bucket).upload(filename, blob, options || {});
