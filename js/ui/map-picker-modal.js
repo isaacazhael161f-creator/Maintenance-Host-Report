@@ -224,7 +224,6 @@
                 }
 
                 // ===== PASO 5: CAPTURAR MAPA =====
-                var mapCaptureComplete = false;
                 var mapContainer = document.getElementById('map');
                 
                 
@@ -252,7 +251,6 @@
                                     
                                     if (imgData && imgData.length > 1000) {
                                         currentLugarField.dataset.mapImage = imgData;
-                                        mapCaptureComplete = true;
                                     } else {
                                         console.warn('❌ [CAPTURE] imgData muy pequeño:', imgData.length);
                                     }
@@ -264,15 +262,9 @@
                             }
                         }).catch(function(err) {
                             console.error('❌ [CAPTURE] Error en html2canvas:', err.message);
-                        }).finally(function() {
-                            finalizarConfirmLocation();
                         });
-                        
-                        // Timeout de seguridad
-                        setTimeout(finalizarConfirmLocation, 2000);
                     } else {
                         console.warn('❌ [CAPTURE] html2canvas o mapContainer no disponible');
-                        finalizarConfirmLocation();
                     }
                 }, 500);
 
@@ -281,6 +273,9 @@
                     currentLugarField.dispatchEvent(new Event('input'));
                     currentLugarField.dispatchEvent(new Event('change'));
                 } catch (e) { console.error('Error disparando eventos:', e); }
+
+                // Cerrar inmediatamente para no bloquear el avance del usuario
+                finalizarConfirmLocation();
                 
                 function finalizarConfirmLocation() {
                     closeMapModal();
