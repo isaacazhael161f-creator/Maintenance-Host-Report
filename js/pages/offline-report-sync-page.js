@@ -274,16 +274,39 @@ window.MHROfflineReportSyncPage = (function () {
 
             // 5b. Insertar items
             var insertedItems = [];
+            var insertedItemsByCatalogId = {};
             if (record.filled && record.filled.length > 0) {
-                var itemsPayload = record.filled.map(function (it) {
+                var itemsPayload = record.filled.map(function (it, idx) {
+                    var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
+                    (it.fields || []).forEach(function (ff) {
+                        var k = String((ff && ff.key) || '').toLowerCase();
+                        var v = ff && ff.value;
+                        if (k.includes('lugar')) lugarVal = v;
+                        else if (k.includes('hallazgo')) hallazgoVal = v;
+                        else if (k.includes('condici')) condicionVal = v;
+                        else if (k.includes('observac')) observacionesVal = v;
+                        else if (k.includes('prioridad')) prioridadVal = v;
+                        else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
+                    });
+                    var parsedCatalogId = (it.id && /^[0-9a-fA-F-]{36}$/.test(String(it.id))) ? it.id : null;
                     return {
                         report_id: reportId,
-                        item_id:   it.id,
-                        item_name: it.name
+                        item_catalogo_id: parsedCatalogId,
+                        item_nombre: it.name || ('Item ' + (idx + 1)),
+                        lugar: lugarVal || null,
+                        hallazgo: hallazgoVal || null,
+                        condicion: condicionVal || null,
+                        observaciones: observacionesVal || null,
+                        prioridad: prioridadVal || null,
+                        codigo_seguimiento: codigoVal || null,
+                        orden: idx
                     };
                 });
                 var itemsResult = await window.MHRReportService.insertReportItems(sc, itemsPayload);
                 insertedItems = itemsResult.data || [];
+                insertedItems.forEach(function (row) {
+                    if (row && row.item_catalogo_id) insertedItemsByCatalogId[String(row.item_catalogo_id)] = row;
+                });
                 var itemsError = itemsResult.error;
                 if (itemsError) console.warn('Error insertando items offline:', itemsError);
             }
@@ -302,13 +325,12 @@ window.MHROfflineReportSyncPage = (function () {
                         for (var bi = 0; bi < bstr.length; bi++) byteArr[bi] = bstr.charCodeAt(bi);
                         var blob     = new Blob([byteArr], { type: mime });
                         var ext      = (ph.name || 'foto.jpg').split('.').pop() || 'jpg';
-                        var fileName = reportId + '/' + itemId + '_' + Date.now() + '_' + pi + '.' + ext;
-                        var insertedItem = (insertedItems || []).find(function (x) { return String(x.item_id) === String(itemId); });
+                        var insertedItem = insertedItemsByCatalogId[String(itemId)] || null;
+                        var itemPathSegment = insertedItem && insertedItem.id ? insertedItem.id : itemId;
+                        var fileName = reportId + '/' + itemPathSegment + '_' + Date.now() + '_' + pi + '.' + ext;
                         var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'report-evidencias', fileName, blob, { upsert: false, contentType: mime });
                         if (upError) { console.warn('Error subiendo foto:', upError); continue; }
-                        var { data: urlData } = window.MHRReportService.getPublicUrl(sc, 'report-evidencias', fileName);
-                        var photoUrl = urlData ? urlData.publicUrl : null;
-                        if (photoUrl && insertedItem && insertedItem.id) {
+                        if (insertedItem && insertedItem.id) {
                             await window.MHRReportService.insertItemPhoto(sc, {
                                 report_inspection_item_id: insertedItem.id,
                                 bucket: 'report-evidencias',
