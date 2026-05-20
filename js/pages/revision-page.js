@@ -225,7 +225,7 @@ window.MHRRevisionPage = (function () {
                     var reportPayload = {
                         folio: folio, fecha_local: fecha, fecha_utc: utcDateStr + ' ' + utcTimeStr,
                         tipo_inspeccion: tiposText, turno: turnoText, pista: pistaText, responsable: autor,
-                        cargo: cargo, area_representante: areaRep, area_representante_nombre: areaRepName,
+                        cargo: cargo, "Area_Representante": areaRep, "Area_Representante_Nombre": areaRepName,
                         pdf_url: pdfUrl || null
                     };
 
@@ -260,7 +260,7 @@ window.MHRRevisionPage = (function () {
                         itemsToInsert.push({ report_id: reportId, categoria: f.name, lugar: lugarVal, hallazgo: hallazgoVal, condicion: condicionVal, observaciones: observacionesVal, prioridad: prioridadVal, codigo_seguimiento: codigoVal });
                     });
 
-                    var { error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
+                    var { data: insertedItems, error: itemsError } = await window.MHRReportService.insertReportItems(window.supabaseClient, itemsToInsert);
                     if (itemsError) alert('Reporte guardado, pero hubo error al guardar los detalles: ' + itemsError.message);
 
                     // Subir evidencias fotográficas
@@ -279,10 +279,19 @@ window.MHRRevisionPage = (function () {
                                     while (n--) u8arr[n] = bstr.charCodeAt(n);
                                     var photoBlob = new Blob([u8arr], { type: mime });
                                     var ext = mime.split('/')[1] || 'jpg';
-                                    var photoFilename = 'photos/' + folio + '_item' + (fi + 1) + '_' + pi + '_' + Date.now() + '.' + ext;
-                                    var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'photos', photoFilename, photoBlob, { cacheControl: '3600', upsert: false });
+                                    var photoFilename = reportId + '/' + (insertedItems && insertedItems[fi] ? insertedItems[fi].id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
+                                    var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime });
                                     if (!photoUploadErr) {
-                                        photosToInsert.push({ report_id: reportId, item_id: f.id, item_categoria: f.name, item_numero: fi + 1, photo_url: photoFilename, photo_name: photo.name || photoFilename });
+                                        photosToInsert.push({
+                                            report_id: reportId,
+                                            report_inspection_item_id: (insertedItems && insertedItems[fi]) ? insertedItems[fi].id : null,
+                                            storage_bucket: 'report-evidencias',
+                                            storage_path: photoFilename,
+                                            photo_url: photoFilename,
+                                            photo_name: photo.name || photoFilename,
+                                            mime_type: mime,
+                                            file_size: photoBlob.size
+                                        });
                                     }
                                 } catch (photoErr) {}
                             }
