@@ -273,6 +273,7 @@ window.MHROfflineReportSyncPage = (function () {
             var reportId = reportData.id;
 
             // 5b. Insertar items
+            var insertedItems = [];
             if (record.filled && record.filled.length > 0) {
                 var itemsPayload = record.filled.map(function (it) {
                     return {
@@ -282,7 +283,9 @@ window.MHROfflineReportSyncPage = (function () {
                         fields:    JSON.stringify(it.fields)
                     };
                 });
-                var { data: insertedItems, error: itemsError } = await window.MHRReportService.insertReportItems(sc, itemsPayload);
+                var itemsResult = await window.MHRReportService.insertReportItems(sc, itemsPayload);
+                insertedItems = itemsResult.data || [];
+                var itemsError = itemsResult.error;
                 if (itemsError) console.warn('Error insertando items offline:', itemsError);
             }
 
