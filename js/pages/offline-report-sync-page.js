@@ -275,6 +275,7 @@ window.MHROfflineReportSyncPage = (function () {
             // 5b. Insertar items
             var insertedItems = [];
             var insertedItemsByCatalogId = {};
+            var insertedItemsByFormItemKey = {};
             if (record.filled && record.filled.length > 0) {
                 var itemsPayload = record.filled.map(function (it, idx) {
                     var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
@@ -304,6 +305,9 @@ window.MHROfflineReportSyncPage = (function () {
                 });
                 var itemsResult = await window.MHRReportService.insertReportItems(sc, itemsPayload);
                 insertedItems = itemsResult.data || [];
+                (record.filled || []).forEach(function (it, idx) {
+                    if (insertedItems[idx]) insertedItemsByFormItemKey[String(it.id)] = insertedItems[idx];
+                });
                 insertedItems.forEach(function (row) {
                     if (row && row.item_catalogo_id) insertedItemsByCatalogId[String(row.item_catalogo_id)] = row;
                 });
@@ -325,7 +329,7 @@ window.MHROfflineReportSyncPage = (function () {
                         for (var bi = 0; bi < bstr.length; bi++) byteArr[bi] = bstr.charCodeAt(bi);
                         var blob     = new Blob([byteArr], { type: mime });
                         var ext      = (ph.name || 'foto.jpg').split('.').pop() || 'jpg';
-                        var insertedItem = insertedItemsByCatalogId[String(itemId)] || null;
+                        var insertedItem = insertedItemsByFormItemKey[String(itemId)] || insertedItemsByCatalogId[String(itemId)] || null;
                         var itemPathSegment = insertedItem && insertedItem.id ? insertedItem.id : itemId;
                         var fileName = reportId + '/' + itemPathSegment + '_' + Date.now() + '_' + pi + '.' + ext;
                         var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'report-evidencias', fileName, blob, { upsert: false, contentType: mime });

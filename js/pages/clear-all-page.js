@@ -112,6 +112,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isRevisionActive) {
             try {
                 Array.prototype.slice.call(document.querySelectorAll('[id^="details_"]')).forEach(function (d) { try { d.style.display = 'none'; } catch (e) { } });
+                if (window.itemPhotos) window.itemPhotos = {};
+                Array.prototype.slice.call(document.querySelectorAll('.photo-previews')).forEach(function (p) { try { p.innerHTML = ''; } catch (e) { } });
             } catch (e) { }
         }
         try {
