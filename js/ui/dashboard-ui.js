@@ -17,7 +17,7 @@ window.MHRDashboardUI = (function () {
         ['report-date', 'report-date-historial', 'report-date-estadistica'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) {
-                el.innerHTML = '<div><strong>' + localDateTime + '</strong></div><div style="font-size:12px;color:#6b7280;margin-top:4px">Hora local</div>';
+                el.textContent = localDateTime;
             }
         });
 
@@ -30,7 +30,7 @@ window.MHRDashboardUI = (function () {
         ['report-utc', 'report-utc-historial', 'report-utc-estadistica'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) {
-                el.innerHTML = '<div><strong>' + utcDate + ' ' + utcTime + ' UTC</strong></div><div style="font-size:12px;color:#6b7280;margin-top:4px">Hora UTC</div>';
+                el.textContent = utcDate + ' ' + utcTime + ' UTC';
             }
         });
     }

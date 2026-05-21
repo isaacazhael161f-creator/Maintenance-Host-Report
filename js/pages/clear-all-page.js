@@ -4,11 +4,33 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', function (e) {
         try { e.preventDefault(); e.stopPropagation(); } catch (err) { }
         var ok = window.confirm('¿Estás seguro que deseas limpiar TODOS los campos de la sección actual?');
+        if (!ok) return;
 
         var revisionSection = document.getElementById('revision-section');
         var faunaSection = document.getElementById('fauna-section');
         var isRevisionActive = revisionSection && revisionSection.classList.contains('active');
         var isFaunaActive = faunaSection && faunaSection.classList.contains('active');
+
+
+        function removeDuplicateItems() {
+            try {
+                Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id*="_dup"]')).forEach(function (node) {
+                    var id = node.id;
+                    try {
+                        var lbl = document.querySelector('label[for="' + id + '"]');
+                        if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl);
+                        ['done_', 'update_', 'dup_', 'clear_'].forEach(function (pref) {
+                            var b = document.getElementById(pref + id);
+                            if (b && b.parentNode) b.parentNode.removeChild(b);
+                        });
+                        var det = document.getElementById('details_' + id);
+                        if (det && det.parentNode) det.parentNode.removeChild(det);
+                        if (node.parentNode) node.parentNode.removeChild(node);
+                    } catch (e) { }
+                });
+                if (window.mhr && window.mhr.counters) window.mhr.counters = {};
+            } catch (e) { }
+        }
 
         if (isRevisionActive) {
             var itemCheckboxes = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id^="tipo_"]'));
@@ -106,11 +128,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 var faunaAuthorReset = document.getElementById('fauna_report-authors-reset');
                 if (faunaAuthorSel) { faunaAuthorSel.value = ''; faunaAuthorSel.disabled = false; }
                 if (faunaAuthorReset) faunaAuthorReset.style.display = 'none';
+
+                var faunaPistaBtn = document.getElementById('fauna_pista-change-btn');
+                if (faunaPistaBtn) faunaPistaBtn.style.display = 'none';
+                Array.prototype.slice.call(document.querySelectorAll('input[name="fauna_pista"]')).forEach(function (r) {
+                    try { r.checked = false; r.disabled = false; } catch (e) { }
+                });
             } catch (e) { }
         }
 
         if (isRevisionActive) {
             try {
+                removeDuplicateItems();
                 Array.prototype.slice.call(document.querySelectorAll('[id^="details_"]')).forEach(function (d) { try { d.style.display = 'none'; } catch (e) { } });
                 if (window.itemPhotos) window.itemPhotos = {};
                 Array.prototype.slice.call(document.querySelectorAll('.photo-previews')).forEach(function (p) { try { p.innerHTML = ''; } catch (e) { } });
