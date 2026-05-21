@@ -65,6 +65,46 @@
             line-height: 1.6;
         }
 
+
+        .report-header .meta .meta-times {
+            display: grid;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .report-header .meta .meta-time-block {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .report-header .meta .meta-time-block strong {
+            font-size: 18px;
+            font-weight: 700;
+            color: #d1d5db;
+            line-height: 1.15;
+            letter-spacing: 0;
+        }
+
+        .report-header .meta .meta-time-block span {
+            font-size: 13px;
+            font-weight: 500;
+            color: #9ca3af;
+            line-height: 1.2;
+        }
+
+        .report-header .meta .meta-form-code {
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #b6c1d3;
+            letter-spacing: 0;
+        }
+
+        .report-header .meta .meta-actions {
+            margin-top: 10px;
+        }
         .report-header .meta .title {
             font-size: 14px;
             font-weight: 700;
