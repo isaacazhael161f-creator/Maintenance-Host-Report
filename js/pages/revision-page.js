@@ -472,6 +472,29 @@ window.MHRRevisionPage = (function () {
             html += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
             
             html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:24%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:36%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Lugar</th></tr></thead><tbody>';
+            function buildObservacionesPdf(observacionesRaw) {
+                var raw = (observacionesRaw || '').toString();
+                if (!raw.trim()) return '';
+                var lines = raw.split('\n');
+                var visibleLines = [];
+                var historySummary = '';
+                lines.forEach(function (ln) {
+                    if (/^\s*Historial JSON:\s*/i.test(ln)) {
+                        var jsonPart = ln.replace(/^\s*Historial JSON:\s*/i, '').trim();
+                        try {
+                            var parsed = JSON.parse(jsonPart);
+                            if (Array.isArray(parsed) && parsed.length) {
+                                var last = parsed[parsed.length - 1] || {};
+                                historySummary = 'Seguimiento: ' + (last.estado || 'N/A') + ' | ' + (last.usuario || 'N/A') + ' | ' + (last.fecha_utc || 'N/A');
+                            }
+                        } catch (e) { }
+                        return;
+                    }
+                    visibleLines.push(ln);
+                });
+                if (historySummary) visibleLines.push(historySummary);
+                return visibleLines.join('\n').trim();
+            }
             filled.forEach(function (f) {
                 var infoHtml = '', observacionesVal = '', lugarVal = '';
                 if (f.fields && f.fields.length) {
@@ -488,7 +511,8 @@ window.MHRRevisionPage = (function () {
                     });
                     infoHtml += '</ul>';
                 } else { infoHtml = '<span class="muted">Sin campos adicionales</span>'; }
-                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesVal ? ('<div style="white-space:pre-wrap;">' + escapeHtml(observacionesVal) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
+                var observacionesPdf = buildObservacionesPdf(observacionesVal);
+                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesPdf ? ('<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(observacionesPdf) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
             });
             html += '</tbody></table>';
 
