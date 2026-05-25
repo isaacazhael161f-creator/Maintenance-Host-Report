@@ -16,7 +16,9 @@ window.MHRPdfRenderer = (function () {
         container.style.top = '0';
         container.style.width = '900px';
         container.style.zIndex = '-1';
-        container.style.visibility = 'hidden';
+        container.style.visibility = 'visible';
+        container.style.opacity = '0';
+        container.style.pointerEvents = 'none';
 
         var opt = {
             margin: 10,
@@ -80,6 +82,8 @@ window.MHRPdfRenderer = (function () {
                 container.style.width = '';
                 container.style.zIndex = '';
                 container.style.visibility = '';
+                container.style.opacity = '';
+                container.style.pointerEvents = '';
             } catch (e) { }
         });
     }
