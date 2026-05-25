@@ -190,6 +190,9 @@ window.MHRRevisionPage = (function () {
                 var hallazgoOtro = card.querySelector('.dynamic-hallazgo-otro');
                 var condicion = card.querySelector('.dynamic-condicion');
                 var observaciones = card.querySelector('.dynamic-observaciones');
+                var followupStatus = card.querySelector('.dynamic-followup-status');
+                var followupObs = card.querySelector('.dynamic-followup-observaciones');
+                var historialJson = card.querySelector('.dynamic-historial-json');
                 var prioridad = card.querySelector('.dynamic-prioridad');
                 var codigo = card.querySelector('.dynamic-codigo');
                 if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim(), mapImage: lugar.dataset.mapImage || '', mapsUrl: lugar.dataset.mapsUrl || '' });
@@ -198,6 +201,9 @@ window.MHRRevisionPage = (function () {
                 if (hallazgoVal) fields.push({ key: 'hallazgo', value: hallazgoVal });
                 if (condicion && condicion.value.trim()) fields.push({ key: 'condicion', value: condicion.value.trim() });
                 if (observaciones && observaciones.value.trim()) fields.push({ key: 'observaciones', value: observaciones.value.trim() });
+                if (followupStatus && followupStatus.value.trim()) fields.push({ key: 'estatus_atencion', value: followupStatus.value.trim() });
+                if (followupObs && followupObs.value.trim()) fields.push({ key: 'observaciones_seguimiento', value: followupObs.value.trim() });
+                if (historialJson && historialJson.value.trim()) fields.push({ key: 'historial_observaciones_json', value: historialJson.value.trim() });
                 if (prioridad && prioridad.value.trim()) fields.push({ key: 'prioridad', value: prioridad.value.trim() });
                 if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
                 filled.push({ id: itemId, name: name, fields: fields });
@@ -251,15 +257,28 @@ window.MHRRevisionPage = (function () {
                     for (var itx = 0; itx < filled.length; itx++) {
                         var f = filled[itx];
                         var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
+                        var estatusAtencionVal = '', observacionesSeguimientoVal = '', historialObsJsonVal = '';
                         (f.fields || []).forEach(function (ff) {
                             var k = (ff.key || '').toLowerCase(), v = ff.value;
                             if (k.includes('lugar')) lugarVal = v;
                             else if (k.includes('hallazgo')) hallazgoVal = v;
                             else if (k.includes('condici')) condicionVal = v;
                             else if (k.includes('observac')) observacionesVal = v;
+                            else if (k.includes('estatus_atencion')) estatusAtencionVal = v;
+                            else if (k.includes('observaciones_seguimiento')) observacionesSeguimientoVal = v;
+                            else if (k.includes('historial_observaciones_json')) historialObsJsonVal = v;
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
+                        if (estatusAtencionVal) {
+                            observacionesVal = (observacionesVal ? observacionesVal + '\n' : '') + 'Estatus seguimiento: ' + estatusAtencionVal;
+                        }
+                        if (observacionesSeguimientoVal) {
+                            observacionesVal = (observacionesVal ? observacionesVal + '\n' : '') + 'Observaciones seguimiento: ' + observacionesSeguimientoVal;
+                        }
+                        if (historialObsJsonVal) {
+                            observacionesVal = (observacionesVal ? observacionesVal + '\n' : '') + 'Historial JSON: ' + historialObsJsonVal;
+                        }
                         var parsedOrder = parseInt(itx, 10);
                         if (!isFinite(parsedOrder)) parsedOrder = 0;
                         var parsedCatalogId = null;

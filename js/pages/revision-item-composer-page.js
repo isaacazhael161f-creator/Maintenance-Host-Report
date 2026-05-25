@@ -99,10 +99,11 @@
         return createComboRow(afterNode);
     }
 
-    function activateItem(itemId, comboRow) {
-        var item = itemMap[itemId];
+    function buildItemCard(item, prefill) {
+        prefill = prefill || {};
+        var followupStatus = prefill.followup_status || '';
+        var followupObs = prefill.followup_observaciones || '';
         if (!item) return;
-        selectedIds[itemId] = true;
 
         var hallazgoOptions = '<option value="">Seleccione hallazgo</option>';
         (item.hallazgos || []).forEach(function (h) {
@@ -110,12 +111,14 @@
         });
         hallazgoOptions += '<option value="Otro">Otro</option>';
 
+        var isPrefilled = !!prefill.is_prefilled_from_previous;
         var card = document.createElement('div');
         card.className = 'item-card dynamic-item-card';
         card.dataset.itemCatalogId = item.id;
+        if (isPrefilled) card.dataset.prefilled = '1';
         card.style.border = '1px solid #d1dbe9';
         card.style.borderRadius = '10px';
-        card.style.background = '#ffffff';
+        card.style.background = isPrefilled ? '#fffbeb' : '#ffffff';
         card.style.padding = '10px';
 
         card.innerHTML = '' +
@@ -133,11 +136,27 @@
             '    </div>' +
             '    <div class="dynamic-photo-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>' +
             '  </div>' +
-            '  <label>Observaciones:<br><textarea class="dynamic-observaciones" rows="3"></textarea></label><br>' +
+            '  <label>Observaciones:<br><textarea class="dynamic-observaciones" rows="3">' + esc(prefill.observaciones || '') + '</textarea></label><br>' +
+            '  <label>Estatus de atención:' +
+            '    <select class="dynamic-followup-status">' +
+            '      <option value="">Seleccione estatus</option>' +
+            '      <option value="Atendido satisfactoriamente"' + (followupStatus === 'Atendido satisfactoriamente' ? ' selected' : '') + '>Atendido satisfactoriamente</option>' +
+            '      <option value="Sigue activo"' + (followupStatus === 'Sigue activo' ? ' selected' : '') + '>Sigue activo</option>' +
+            '    </select>' +
+            '  </label><br>' +
+            '  <label>Observaciones de seguimiento:<br><textarea class="dynamic-followup-observaciones" rows="2">' + esc(followupObs) + '</textarea></label><br>' +
+            '  <input type="hidden" class="dynamic-historial-json" value="' + esc(prefill.historial_json || '') + '">' +
             '  <label>Prioridad: <select class="priority-select dynamic-prioridad">' + getPriorityOptionsHtml() + '</select></label><br>' +
-            '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo"></label>' +
+            '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo" value="' + esc(prefill.codigo || '') + '"></label>' +
             '</div>' +
-            '<button type="button" class="btn btn-ghost dynamic-remove" style="margin-top:8px;">🗑️ Eliminar item</button>' +
+            (isPrefilled
+                ? '<div class="dynamic-update-box" style="margin-top:8px;padding:8px;border:1px dashed #f59e0b;border-radius:8px;background:#fff7ed;">' +
+                ' <div style="font-size:12px;color:#92400e;margin-bottom:6px;">Ítem heredado de reporte anterior</div>' +
+                ' <label>Actualizar estado: <select class="dynamic-update-status"><option value="">Seleccione</option><option value="Atendido">Atendido</option><option value="No atendido">No atendido</option></select></label><br>' +
+                ' <label>Descripción:<br><textarea class="dynamic-update-desc" rows="2"></textarea></label><br>' +
+                ' <button type="button" class="btn btn-ghost dynamic-apply-update">✅ Actualizar estado</button>' +
+                '</div>'
+                : '<button type="button" class="btn btn-ghost dynamic-remove" style="margin-top:8px;">🗑️ Eliminar item</button>') +
             '<div class="item-card-actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost dynamic-add-next">➕ Agregar Item</button></div>';
 
         var toggle = card.querySelector('.item-card-toggle');
@@ -156,20 +175,64 @@
         });
 
         bindDynamicLugarInput(card.querySelector('.dynamic-lugar'));
-        bindDynamicPhotoInputs(card, itemId);
+        bindDynamicPhotoInputs(card, item.id);
 
-        card.querySelector('.dynamic-remove').addEventListener('click', function () {
-            if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
-            selectedIds[itemId] = false;
-            card.remove();
-            ensureSingleComboRow();
-        });
+        var removeBtn = card.querySelector('.dynamic-remove');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function () {
+                if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
+                selectedIds[item.id] = false;
+                card.remove();
+                ensureSingleComboRow();
+            });
+        }
+        var applyBtn = card.querySelector('.dynamic-apply-update');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', function () {
+                var st = card.querySelector('.dynamic-update-status');
+                var ds = card.querySelector('.dynamic-update-desc');
+                if (!st || !st.value) { alert('Selecciona Atendido o No atendido.'); return; }
+                var authorSel = document.getElementById('report-authors-select');
+                var author = '';
+                if (authorSel) { var opt = authorSel.options[authorSel.selectedIndex]; author = opt ? (opt.text || opt.value || '') : ''; }
+                var now = new Date().toISOString();
+                var histInput = card.querySelector('.dynamic-historial-json');
+                var history = [];
+                try { history = JSON.parse(histInput.value || '[]'); if (!Array.isArray(history)) history = []; } catch (e) { history = []; }
+                history.push({ estado: st.value, descripcion: (ds && ds.value ? ds.value.trim() : ''), usuario: author || 'N/A', fecha_utc: now });
+                histInput.value = JSON.stringify(history);
+                var followTxt = card.querySelector('.dynamic-followup-observaciones');
+                if (followTxt) followTxt.value = 'Última actualización: ' + st.value + ' por ' + (author || 'N/A') + ' el ' + now + (ds && ds.value ? '\n' + ds.value.trim() : '');
+                alert('Estado actualizado para seguimiento.');
+            });
+        }
 
         card.querySelector('.dynamic-add-next').addEventListener('click', function () {
             card.querySelector('.item-card-actions').remove();
             ensureSingleComboRow(card);
         });
 
+        var lugar = card.querySelector('.dynamic-lugar');
+        var hallazgo = card.querySelector('.dynamic-hallazgo');
+        var hallazgoOtro = card.querySelector('.dynamic-hallazgo-otro');
+        var condicion = card.querySelector('.dynamic-condicion');
+        var prioridad = card.querySelector('.dynamic-prioridad');
+        if (lugar && prefill.lugar) lugar.value = prefill.lugar;
+        if (hallazgo && prefill.hallazgo) {
+            var hasOption = Array.prototype.slice.call(hallazgo.options || []).some(function (o) { return o.value === prefill.hallazgo; });
+            if (hasOption) hallazgo.value = prefill.hallazgo;
+            else { hallazgo.value = 'Otro'; hallazgoOtro.style.display = 'block'; hallazgoOtro.value = prefill.hallazgo; }
+        }
+        if (condicion && prefill.condicion) condicion.value = prefill.condicion;
+        if (prioridad && prefill.prioridad) prioridad.value = prefill.prioridad;
+        return card;
+    }
+
+    function activateItem(itemId, comboRow) {
+        var item = itemMap[itemId];
+        if (!item) return;
+        selectedIds[itemId] = true;
+        var card = buildItemCard(item, {});
         comboRow.replaceWith(card);
     }
 
@@ -254,6 +317,45 @@
                 }
             }, step);
         });
+    }
+    async function loadLastReportForPista(pista) {
+        var client = await waitForSupabaseClient(7000);
+        if (!client || !window.MHRReportService || !pista) return;
+        selectedContainer.innerHTML = '';
+        selectedIds = {};
+        ensureSingleComboRow();
+        var resp = await window.MHRReportService.getLatestReportByPista(client, pista);
+        if (resp.error || !resp.data) return;
+        var items = Array.isArray(resp.data.report_inspection_items) ? resp.data.report_inspection_items : [];
+        if (!items.length) return;
+        selectedContainer.innerHTML = '';
+        selectedIds = {};
+        items.forEach(function (it, idx) {
+            var catalogId = it.item_catalogo_id || it.item_catalog_id;
+            if (!catalogId || selectedIds[catalogId] || !itemMap[catalogId]) return;
+            selectedIds[catalogId] = true;
+            var prefill = {
+                lugar: it.lugar || '',
+                hallazgo: it.hallazgo || '',
+                condicion: it.condicion || '',
+                observaciones: it.observaciones || '',
+                prioridad: it.prioridad || '',
+                codigo: it.codigo_seguimiento || ''
+            };
+            prefill.is_prefilled_from_previous = true;
+            prefill.historial_json = it.observaciones ? JSON.stringify([{ tipo: 'observacion_previa', texto: it.observaciones }]) : '[]';
+            var card = buildItemCard(itemMap[catalogId], prefill);
+            selectedContainer.appendChild(card);
+            if (idx === items.length - 1) {
+                var actions = card.querySelector('.item-card-actions');
+                if (actions) actions.innerHTML = '<button type="button" class="btn btn-ghost dynamic-add-next">➕ Agregar Item</button>';
+                var btn = card.querySelector('.dynamic-add-next');
+                if (btn) btn.addEventListener('click', function () { card.querySelector('.item-card-actions').remove(); ensureSingleComboRow(card); });
+            } else {
+                var a = card.querySelector('.item-card-actions'); if (a) a.remove();
+            }
+        });
+        if (!selectedContainer.querySelector('.item-combo-row')) ensureSingleComboRow();
     }
 
     async function loadCatalogTree() {
@@ -354,6 +456,11 @@
         }
         ensureSingleComboRow();
         window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
+        Array.prototype.slice.call(document.querySelectorAll('input[name="pista"]')).forEach(function (r) {
+            r.addEventListener('change', function () {
+                if (r.checked) loadLastReportForPista(r.value);
+            });
+        });
     }).catch(function () {
         selectedContainer.innerHTML = '<div style="padding:10px; border:1px solid #fecaca; color:#991b1b; background:#fef2f2; border-radius:8px;">Error cargando catálogo de inspección.</div>';
     });
