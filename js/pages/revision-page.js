@@ -190,6 +190,9 @@ window.MHRRevisionPage = (function () {
                 var hallazgoOtro = card.querySelector('.dynamic-hallazgo-otro');
                 var condicion = card.querySelector('.dynamic-condicion');
                 var observaciones = card.querySelector('.dynamic-observaciones');
+                var followupStatus = card.querySelector('.dynamic-followup-status');
+                var followupObs = card.querySelector('.dynamic-followup-observaciones');
+                var historialJson = card.querySelector('.dynamic-historial-json');
                 var prioridad = card.querySelector('.dynamic-prioridad');
                 var codigo = card.querySelector('.dynamic-codigo');
                 if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim(), mapImage: lugar.dataset.mapImage || '', mapsUrl: lugar.dataset.mapsUrl || '' });
@@ -198,6 +201,9 @@ window.MHRRevisionPage = (function () {
                 if (hallazgoVal) fields.push({ key: 'hallazgo', value: hallazgoVal });
                 if (condicion && condicion.value.trim()) fields.push({ key: 'condicion', value: condicion.value.trim() });
                 if (observaciones && observaciones.value.trim()) fields.push({ key: 'observaciones', value: observaciones.value.trim() });
+                if (followupStatus && followupStatus.value.trim()) fields.push({ key: 'estatus_atencion', value: followupStatus.value.trim() });
+                if (followupObs && followupObs.value.trim()) fields.push({ key: 'observaciones_seguimiento', value: followupObs.value.trim() });
+                if (historialJson && historialJson.value.trim()) fields.push({ key: 'historial_observaciones_json', value: historialJson.value.trim() });
                 if (prioridad && prioridad.value.trim()) fields.push({ key: 'prioridad', value: prioridad.value.trim() });
                 if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
                 filled.push({ id: itemId, name: name, fields: fields });
@@ -251,15 +257,28 @@ window.MHRRevisionPage = (function () {
                     for (var itx = 0; itx < filled.length; itx++) {
                         var f = filled[itx];
                         var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
+                        var estatusAtencionVal = '', observacionesSeguimientoVal = '', historialObsJsonVal = '';
                         (f.fields || []).forEach(function (ff) {
                             var k = (ff.key || '').toLowerCase(), v = ff.value;
                             if (k.includes('lugar')) lugarVal = v;
                             else if (k.includes('hallazgo')) hallazgoVal = v;
                             else if (k.includes('condici')) condicionVal = v;
-                            else if (k.includes('observac')) observacionesVal = v;
+                            else if (k.includes('estatus_atencion')) estatusAtencionVal = v;
+                            else if (k.includes('observaciones_seguimiento')) observacionesSeguimientoVal = v;
+                            else if (k.includes('historial_observaciones_json')) historialObsJsonVal = v;
+                            else if (k === 'observaciones' || k.endsWith('[observaciones]')) observacionesVal = v;
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
+                        if (estatusAtencionVal) {
+                            observacionesVal = (observacionesVal ? observacionesVal + '\n' : '') + 'Estatus seguimiento: ' + estatusAtencionVal;
+                        }
+                        if (observacionesSeguimientoVal) {
+                            observacionesVal = (observacionesVal ? observacionesVal + '\n' : '') + 'Observaciones seguimiento: ' + observacionesSeguimientoVal;
+                        }
+                        if (historialObsJsonVal) {
+                            observacionesVal = (observacionesVal ? observacionesVal + '\n' : '') + 'Historial JSON: ' + historialObsJsonVal;
+                        }
                         var parsedOrder = parseInt(itx, 10);
                         if (!isFinite(parsedOrder)) parsedOrder = 0;
                         var parsedCatalogId = null;
@@ -453,6 +472,29 @@ window.MHRRevisionPage = (function () {
             html += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
             
             html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:24%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:36%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Lugar</th></tr></thead><tbody>';
+            function buildObservacionesPdf(observacionesRaw) {
+                var raw = (observacionesRaw || '').toString();
+                if (!raw.trim()) return '';
+                var lines = raw.split('\n');
+                var visibleLines = [];
+                var historySummary = '';
+                lines.forEach(function (ln) {
+                    if (/^\s*Historial JSON:\s*/i.test(ln)) {
+                        var jsonPart = ln.replace(/^\s*Historial JSON:\s*/i, '').trim();
+                        try {
+                            var parsed = JSON.parse(jsonPart);
+                            if (Array.isArray(parsed) && parsed.length) {
+                                var last = parsed[parsed.length - 1] || {};
+                                historySummary = 'Seguimiento: ' + (last.estado || 'N/A') + ' | ' + (last.usuario || 'N/A') + ' | ' + (last.fecha_utc || 'N/A');
+                            }
+                        } catch (e) { }
+                        return;
+                    }
+                    visibleLines.push(ln);
+                });
+                if (historySummary) visibleLines.push(historySummary);
+                return visibleLines.join('\n').trim();
+            }
             filled.forEach(function (f) {
                 var infoHtml = '', observacionesVal = '', lugarVal = '';
                 if (f.fields && f.fields.length) {
@@ -460,7 +502,9 @@ window.MHRRevisionPage = (function () {
                     infoHtml = '<ul style="margin:6px 0 6px 16px;padding:0;">';
                     f.fields.forEach(function (ff) {
                         var key = (ff.key || '').toString(), val = (ff.value || '').toString();
-                        if (/observac/i.test(key)) { observacionesVal = val; return; }
+                        if (/historial_observaciones_json/i.test(key)) { return; }
+                        if (/observaciones_seguimiento/i.test(key)) { return; }
+                        if (/^observaciones$/i.test(key)) { observacionesVal = val; return; }
                         if (/^lugar$/i.test(key)) { lugarVal = val; return; }
                         var dot = '';
                         if (/prioridad/i.test(key) && prioColor[val]) dot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + prioColor[val] + ';margin-left:8px;vertical-align:middle;"></span>';
@@ -469,7 +513,8 @@ window.MHRRevisionPage = (function () {
                     });
                     infoHtml += '</ul>';
                 } else { infoHtml = '<span class="muted">Sin campos adicionales</span>'; }
-                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesVal ? ('<div style="white-space:pre-wrap;">' + escapeHtml(observacionesVal) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
+                var observacionesPdf = buildObservacionesPdf(observacionesVal);
+                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesPdf ? ('<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(observacionesPdf) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
             });
             html += '</tbody></table>';
 
