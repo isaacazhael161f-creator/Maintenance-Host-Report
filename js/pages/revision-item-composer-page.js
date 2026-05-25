@@ -10,7 +10,6 @@
 
     var catalogTree = [];
     var itemMap = {};
-    var selectedIds = {};
 
     function esc(text) {
         return (text || '').toString().replace(/[&<>'"]/g, function (m) {
@@ -56,7 +55,6 @@
             var group = document.createElement('optgroup');
             group.label = cat.nombre;
             cat.items.forEach(function (item) {
-                if (selectedIds[item.id]) return;
                 var opt = document.createElement('option');
                 opt.value = item.id;
                 opt.textContent = item.nombre;
@@ -75,11 +73,6 @@
 
         select.addEventListener('change', function () {
             if (!select.value) return;
-            if (selectedIds[select.value]) {
-                alert('Ese ITEM ya fue agregado.');
-                select.value = '';
-                return;
-            }
             activateItem(select.value, row);
         });
 
@@ -181,7 +174,6 @@
         if (removeBtn) {
             removeBtn.addEventListener('click', function () {
                 if (!window.confirm('¿Deseas eliminar este ITEM de la lista actual?')) return;
-                selectedIds[item.id] = false;
                 card.remove();
                 ensureSingleComboRow();
             });
@@ -231,7 +223,6 @@
     function activateItem(itemId, comboRow) {
         var item = itemMap[itemId];
         if (!item) return;
-        selectedIds[itemId] = true;
         var card = buildItemCard(item, {});
         comboRow.replaceWith(card);
     }
@@ -322,18 +313,15 @@
         var client = await waitForSupabaseClient(7000);
         if (!client || !window.MHRReportService || !pista) return;
         selectedContainer.innerHTML = '';
-        selectedIds = {};
         ensureSingleComboRow();
         var resp = await window.MHRReportService.getLatestReportByPista(client, pista);
         if (resp.error || !resp.data) return;
         var items = Array.isArray(resp.data.report_inspection_items) ? resp.data.report_inspection_items : [];
         if (!items.length) return;
         selectedContainer.innerHTML = '';
-        selectedIds = {};
         items.forEach(function (it, idx) {
             var catalogId = it.item_catalogo_id || it.item_catalog_id;
-            if (!catalogId || selectedIds[catalogId] || !itemMap[catalogId]) return;
-            selectedIds[catalogId] = true;
+            if (!catalogId || !itemMap[catalogId]) return;
             var prefill = {
                 lugar: it.lugar || '',
                 hallazgo: it.hallazgo || '',
@@ -455,7 +443,7 @@
             return;
         }
         ensureSingleComboRow();
-        window.mhrDynamicItemCatalog = { catalogTree: catalogTree, selectedIds: selectedIds };
+        window.mhrDynamicItemCatalog = { catalogTree: catalogTree };
         Array.prototype.slice.call(document.querySelectorAll('input[name="pista"]')).forEach(function (r) {
             r.addEventListener('change', function () {
                 if (r.checked) loadLastReportForPista(r.value);
