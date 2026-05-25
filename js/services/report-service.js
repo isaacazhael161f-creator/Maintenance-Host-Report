@@ -27,6 +27,16 @@
         .eq('id', reportId)
         .single();
     },
+    async getLatestReportByPista(client, pista){
+      if (!pista) return { data: null, error: null };
+      return await client
+        .from('reports')
+        .select('*, report_inspection_items(*)')
+        .eq('pista', pista)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    },
     async getReportWithInspectionDataHydrated(client, reportId){
       var resp = await this.getReportWithInspectionData(client, reportId);
       if (resp.error || !resp.data) return resp;
