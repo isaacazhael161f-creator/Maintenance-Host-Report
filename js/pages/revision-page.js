@@ -514,7 +514,8 @@ window.MHRRevisionPage = (function () {
                     infoHtml += '</ul>';
                 } else { infoHtml = '<span class="muted">Sin campos adicionales</span>'; }
                 var observacionesPdf = buildObservacionesPdf(observacionesVal);
-                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesPdf ? ('<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(observacionesPdf) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
+                var itemNamePdf = (f.name || '').toString().replace(/\s{2,}/g, ' ').trim();
+                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;line-height:1.25;white-space:normal;word-break:break-word;overflow-wrap:anywhere;">' + escapeHtml(itemNamePdf || '-') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;line-height:1.3;word-break:break-word;overflow-wrap:anywhere;">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesPdf ? ('<div style="white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:1.3;">' + escapeHtml(observacionesPdf) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;line-height:1.25;word-break:break-word;overflow-wrap:anywhere;">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
             });
             html += '</tbody></table>';
 
