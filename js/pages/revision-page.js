@@ -471,7 +471,7 @@ window.MHRRevisionPage = (function () {
                     '<div style="min-width:120px;text-align:center;font-size:13px;color:#374151">Fecha<br><strong>' + fecha + '</strong></div></div>';
             html += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
             
-            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:24%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:36%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Lugar</th></tr></thead><tbody>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:24%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:36%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Lugar</th></tr></thead><tbody>';
             function buildObservacionesPdf(observacionesRaw) {
                 var raw = (observacionesRaw || '').toString();
                 if (!raw.trim()) return '';
@@ -496,7 +496,7 @@ window.MHRRevisionPage = (function () {
                 return visibleLines.join('\n').trim();
             }
             filled.forEach(function (f) {
-                var infoHtml = '', observacionesVal = '', lugarVal = '';
+                var infoHtml = '', observacionesVal = '', lugarVal = '', hallazgoItemVal = '';
                 if (f.fields && f.fields.length) {
                     var prioColor = { '1': '#28a745', '2': '#ffc107', '3': '#ff8c00' }, condColor = { 'Satisfactorio': '#28a745', 'No Satisfactorio': '#dc3545', 'N/A': '#6c757d' };
                     infoHtml = '<ul style="margin:6px 0 6px 16px;padding:0;">';
@@ -506,6 +506,7 @@ window.MHRRevisionPage = (function () {
                         if (/observaciones_seguimiento/i.test(key)) { return; }
                         if (/^observaciones$/i.test(key)) { observacionesVal = val; return; }
                         if (/^lugar$/i.test(key)) { lugarVal = val; return; }
+                        if (/^hallazgo$/i.test(key)) { hallazgoItemVal = val; return; }
                         var dot = '';
                         if (/prioridad/i.test(key) && prioColor[val]) dot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + prioColor[val] + ';margin-left:8px;vertical-align:middle;"></span>';
                         else if (/condici/i.test(key) && condColor[val]) dot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + condColor[val] + ';margin-left:8px;vertical-align:middle;"></span>';
@@ -515,7 +516,8 @@ window.MHRRevisionPage = (function () {
                 } else { infoHtml = '<span class="muted">Sin campos adicionales</span>'; }
                 var observacionesPdf = buildObservacionesPdf(observacionesVal);
                 var itemNamePdf = (f.name || '').toString().replace(/\s{2,}/g, ' ').trim();
-                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;line-height:1.25;white-space:normal;word-break:break-word;overflow-wrap:anywhere;">' + escapeHtml(itemNamePdf || '-') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;line-height:1.3;word-break:break-word;overflow-wrap:anywhere;">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesPdf ? ('<div style="white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:1.3;">' + escapeHtml(observacionesPdf) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;line-height:1.25;word-break:break-word;overflow-wrap:anywhere;">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
+                var itemDisplayPdf = hallazgoItemVal ? (itemNamePdf + ' — ' + hallazgoItemVal) : itemNamePdf;
+                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600;line-height:1.25;white-space:normal;word-break:break-word;overflow-wrap:anywhere;">' + escapeHtml(itemDisplayPdf || '-') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;line-height:1.3;word-break:break-word;overflow-wrap:anywhere;">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesPdf ? ('<div style="white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;line-height:1.3;">' + escapeHtml(observacionesPdf) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;line-height:1.25;word-break:break-word;overflow-wrap:anywhere;">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
             });
             html += '</tbody></table>';
 
