@@ -288,6 +288,9 @@
     async function loadLastReportForPista(pista) {
         var client = await waitForSupabaseClient(7000);
         if (!client || !window.MHRReportService || !pista) return;
+        selectedContainer.innerHTML = '';
+        selectedIds = {};
+        ensureSingleComboRow();
         var resp = await window.MHRReportService.getLatestReportByPista(client, pista);
         if (resp.error || !resp.data) return;
         var items = Array.isArray(resp.data.report_inspection_items) ? resp.data.report_inspection_items : [];
@@ -295,7 +298,7 @@
         selectedContainer.innerHTML = '';
         selectedIds = {};
         items.forEach(function (it, idx) {
-            var catalogId = it.item_catalog_id;
+            var catalogId = it.item_catalogo_id || it.item_catalog_id;
             if (!catalogId || selectedIds[catalogId] || !itemMap[catalogId]) return;
             selectedIds[catalogId] = true;
             var prefill = {
