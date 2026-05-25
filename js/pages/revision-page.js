@@ -263,10 +263,10 @@ window.MHRRevisionPage = (function () {
                             if (k.includes('lugar')) lugarVal = v;
                             else if (k.includes('hallazgo')) hallazgoVal = v;
                             else if (k.includes('condici')) condicionVal = v;
-                            else if (k.includes('observac')) observacionesVal = v;
                             else if (k.includes('estatus_atencion')) estatusAtencionVal = v;
                             else if (k.includes('observaciones_seguimiento')) observacionesSeguimientoVal = v;
                             else if (k.includes('historial_observaciones_json')) historialObsJsonVal = v;
+                            else if (k === 'observaciones' || k.endsWith('[observaciones]')) observacionesVal = v;
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
@@ -502,7 +502,9 @@ window.MHRRevisionPage = (function () {
                     infoHtml = '<ul style="margin:6px 0 6px 16px;padding:0;">';
                     f.fields.forEach(function (ff) {
                         var key = (ff.key || '').toString(), val = (ff.value || '').toString();
-                        if (/observac/i.test(key)) { observacionesVal = val; return; }
+                        if (/historial_observaciones_json/i.test(key)) { return; }
+                        if (/observaciones_seguimiento/i.test(key)) { return; }
+                        if (/^observaciones$/i.test(key)) { observacionesVal = val; return; }
                         if (/^lugar$/i.test(key)) { lugarVal = val; return; }
                         var dot = '';
                         if (/prioridad/i.test(key) && prioColor[val]) dot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + prioColor[val] + ';margin-left:8px;vertical-align:middle;"></span>';
