@@ -12,12 +12,13 @@ window.MHRPdfRenderer = (function () {
         container.innerHTML = html;
         container.style.display = 'block';
         container.style.position = 'fixed';
-        container.style.left = '0';
+        container.style.left = '-10000px';
         container.style.top = '0';
         container.style.width = '900px';
-        container.style.zIndex = '0';
+        container.style.zIndex = '-1';
         container.style.visibility = 'visible';
-        container.style.opacity = '0';
+        container.style.opacity = '1';
+        container.style.backgroundColor = '#ffffff';
         container.style.pointerEvents = 'none';
 
         var opt = {
