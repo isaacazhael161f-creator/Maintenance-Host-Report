@@ -12,10 +12,10 @@ window.MHRPdfRenderer = (function () {
         container.innerHTML = html;
         container.style.display = 'block';
         container.style.position = 'fixed';
-        container.style.left = '-20000px';
+        container.style.left = '0';
         container.style.top = '0';
         container.style.width = '900px';
-        container.style.zIndex = '-1';
+        container.style.zIndex = '0';
         container.style.visibility = 'visible';
         container.style.opacity = '0';
         container.style.pointerEvents = 'none';
@@ -73,6 +73,16 @@ window.MHRPdfRenderer = (function () {
             if (downloadBtn) downloadBtn.onclick = function () { var a = document.createElement('a'); a.href = url; a.download = filename; a.click(); };
             if (closeBtn) closeBtn.onclick = function () { if (preview) preview.style.display = 'none'; if (iframe) iframe.src = ''; };
 
+        }).catch(function (err) {
+            console.error('Error generando PDF:', err);
+            if (spinner) spinner.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
+                else submitBtn.value = originalBtnText;
+            }
+            alert('No se pudo generar el PDF. Reintenta.');
+        }).finally(function () {
             try {
                 container.innerHTML = '';
                 container.style.display = 'none';
