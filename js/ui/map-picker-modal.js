@@ -58,17 +58,20 @@
                     scrollWheelZoom: true
                 });
 
-                // Agregar capa de mapa
-                // Vista satelital tipo Google Earth (ESRI World Imagery — sin clave API)
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    attribution: 'Tiles &copy; Esri',
-                    maxZoom: 20
+                // Capa base: Google satelital (cobertura completa en aeropuertos a cualquier nivel de zoom)
+                L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                    subdomains: ['0', '1', '2', '3'],
+                    attribution: 'Map data &copy; Google',
+                    maxZoom: 21,
+                    maxNativeZoom: 20
                 }).addTo(mapInstance);
-                // Capa de etiquetas (nombres, calles, referencias) sobre el satélite
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                // Capa de etiquetas y vialidades de Google sobre el satélite
+                L.tileLayer('https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
+                    subdomains: ['0', '1', '2', '3'],
                     attribution: '',
-                    maxZoom: 20,
-                    opacity: 0.9
+                    maxZoom: 21,
+                    maxNativeZoom: 20,
+                    opacity: 0.85
                 }).addTo(mapInstance);
 
                 // Centrar en el aeródromo AIFA

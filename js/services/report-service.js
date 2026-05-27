@@ -48,6 +48,36 @@
     },
     getPublicUrl(client, bucket, filePath){
       return client.storage.from(bucket).getPublicUrl(filePath);
+    },
+    async getLatestReportByPista(client, pista){
+      // Obtener el último reporte para una pista específica con todos sus ítems de inspección
+      try {
+        var resp = await client
+          .from('reports')
+          .select('*, report_inspection_items(*)')
+          .eq('pista', pista)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        // Filtrar ítems: solo mostrar aquellos que NO están marcados como "Atendido"
+        if (resp.data && Array.isArray(resp.data.report_inspection_items)) {
+          resp.data.report_inspection_items = resp.data.report_inspection_items.filter(function(item) {
+            try {
+              var extra = item.datos_extra || {};
+              // Si el ítem tiene followup_status "Atendido satisfactoriamente", excluirlo
+              return extra.followup_status !== 'Atendido satisfactoriamente';
+            } catch (e) {
+              // Si hay error al parsear, incluir el ítem por defecto
+              return true;
+            }
+          });
+        }
+        
+        return resp;
+      } catch (e) {
+        return { data: null, error: e };
+      }
     }
   };
 })();

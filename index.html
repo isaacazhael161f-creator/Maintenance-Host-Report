@@ -26,6 +26,19 @@
 
 </head>
 <body>
+    <!-- Backdrop para el modal PDF -->
+    <div id="pdf-modal-backdrop" style="display:none;"></div>
+    <!-- Panel de vista previa del PDF (modal centrado) -->
+    <div id="pdf-preview-container" aria-hidden="true">
+        <div id="pdf-spinner">
+            <div class="spinner" aria-hidden="true"></div>
+        </div>
+        <div id="pdf-preview-actions">
+            <button id="pdf-download-btn" title="Descargar PDF">Descargar</button>
+            <button id="pdf-preview-close" title="Cerrar vista">Cerrar</button>
+        </div>
+        <iframe id="pdf-preview-frame" title="Vista previa del PDF"></iframe>
+    </div>
 
     <!-- Banner de estado de conexión -->
     <div id="offline-banner"></div>
@@ -721,6 +734,10 @@
                     </label><br>
                     <label>Código de Seguimiento: <input type="text" name="details[tipo_proteccion][codigo]"></label>
                 </div>
+                <h3>📝 Notas Generales</h3>
+                <textarea id="report-notas-generales" name="notas_generales" rows="5"
+                    placeholder="Observaciones generales del reporte, condiciones del área, comentarios adicionales..."
+                    style="width:100%; max-width:700px; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; font-size:14px; resize:vertical; line-height:1.5;"></textarea>
                 <h3>✍️ Firmas</h3>
                 <button type="button" id="firma-toggle-btn" class="firma-toggle-btn">📝 Mostrar Firmas</button>
                 <div class="firma-section">
@@ -1389,17 +1406,6 @@
     <!-- contenedor oculto para generar el PDF -->
     <div id="report-summary"
         style="display:none; padding:18px; background:#fff; max-width:900px; margin:0 auto; border-radius:6px;"></div>
-    <!-- Panel de vista previa del PDF (derecha) -->
-    <div id="pdf-preview-container" aria-hidden="true">
-        <div id="pdf-spinner">
-            <div class="spinner" aria-hidden="true"></div>
-        </div>
-        <div id="pdf-preview-actions">
-            <button id="pdf-download-btn" title="Descargar PDF">Descargar</button>
-            <button id="pdf-preview-close" title="Cerrar vista">Cerrar</button>
-        </div>
-        <iframe id="pdf-preview-frame" title="Vista previa del PDF"></iframe>
-    </div>
     <!-- Botón fijo: Limpiar todo (limpia todos los items seleccionados) -->
     <button id="clear-all-btn" class="clear-all-btn" title="Limpiar todo" aria-label="Limpiar todo">Limpiar
         todo</button>

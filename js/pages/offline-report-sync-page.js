@@ -180,6 +180,8 @@ window.MHROfflineReportSyncPage = (function () {
                 var observaciones = card.querySelector('.dynamic-observaciones');
                 var prioridad = card.querySelector('.dynamic-prioridad');
                 var codigo = card.querySelector('.dynamic-codigo');
+                var followupStatus = card.querySelector('.dynamic-followup-status');
+                var followupObs = card.querySelector('.dynamic-followup-observaciones');
                 if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim() });
                 var hallazgoVal = hallazgo ? hallazgo.value : '';
                 if (hallazgoVal === 'Otro' && hallazgoOtro && hallazgoOtro.value.trim()) hallazgoVal = hallazgoOtro.value.trim();
@@ -188,7 +190,9 @@ window.MHROfflineReportSyncPage = (function () {
                 if (observaciones && observaciones.value.trim()) fields.push({ key: 'observaciones', value: observaciones.value.trim() });
                 if (prioridad && prioridad.value.trim()) fields.push({ key: 'prioridad', value: prioridad.value.trim() });
                 if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
-                filled.push({ id: itemId, name: name, fields: fields });
+                if (followupStatus && followupStatus.value.trim()) fields.push({ key: 'followup_status', value: followupStatus.value.trim() });
+                if (followupObs && followupObs.value.trim()) fields.push({ key: 'followup_observaciones', value: followupObs.value.trim() });
+                filled.push({ id: itemId, name: name, fields: fields, followupStatus: followupStatus ? followupStatus.value : '', followupObs: followupObs ? followupObs.value : '' });
             });
 
             // Fotos: guardar como dataURL para poder re-subirlas al sincronizar
@@ -290,6 +294,12 @@ window.MHROfflineReportSyncPage = (function () {
                         else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                     });
                     var parsedCatalogId = (it.id && /^[0-9a-fA-F-]{36}$/.test(String(it.id))) ? it.id : null;
+                    
+                    // Construir datos_extra con estado de seguimiento
+                    var datosExtra = {};
+                    if (it.followupStatus) datosExtra.followup_status = it.followupStatus;
+                    if (it.followupObs) datosExtra.followup_observaciones = it.followupObs;
+                    
                     return {
                         report_id: reportId,
                         item_catalogo_id: parsedCatalogId,
@@ -300,7 +310,8 @@ window.MHROfflineReportSyncPage = (function () {
                         observaciones: observacionesVal || null,
                         prioridad: prioridadVal || null,
                         codigo_seguimiento: codigoVal || null,
-                        orden: idx
+                        orden: idx,
+                        datos_extra: Object.keys(datosExtra).length > 0 ? datosExtra : null
                     };
                 });
                 var itemsResult = await window.MHRReportService.insertReportItems(sc, itemsPayload);

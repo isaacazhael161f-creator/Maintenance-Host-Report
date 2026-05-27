@@ -132,6 +132,10 @@ window.MHRRevisionPage = (function () {
             var afacNameEl = document.getElementById('report-afac-name');
             if (afacNameEl) afacName = afacNameEl.value.trim();
 
+            var notasGenerales = '';
+            var notasEl = document.getElementById('report-notas-generales');
+            if (notasEl) notasGenerales = notasEl.value.trim();
+
             var tipos = Array.prototype.slice.call(document.querySelectorAll('input[name="tipo_inspeccion"]'))
                 .filter(function (i) { return i.checked; })
                 .map(function (i) {
@@ -192,6 +196,8 @@ window.MHRRevisionPage = (function () {
                 var observaciones = card.querySelector('.dynamic-observaciones');
                 var prioridad = card.querySelector('.dynamic-prioridad');
                 var codigo = card.querySelector('.dynamic-codigo');
+                var followupStatus = card.querySelector('.dynamic-followup-status');
+                var followupObs = card.querySelector('.dynamic-followup-observaciones');
                 if (lugar && lugar.value.trim()) fields.push({ key: 'lugar', value: lugar.value.trim(), mapImage: lugar.dataset.mapImage || '', mapsUrl: lugar.dataset.mapsUrl || '' });
                 var hallazgoVal = hallazgo ? hallazgo.value : '';
                 if (hallazgoVal === 'Otro' && hallazgoOtro && hallazgoOtro.value.trim()) hallazgoVal = hallazgoOtro.value.trim();
@@ -200,7 +206,9 @@ window.MHRRevisionPage = (function () {
                 if (observaciones && observaciones.value.trim()) fields.push({ key: 'observaciones', value: observaciones.value.trim() });
                 if (prioridad && prioridad.value.trim()) fields.push({ key: 'prioridad', value: prioridad.value.trim() });
                 if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
-                filled.push({ id: itemId, name: name, fields: fields });
+                if (followupStatus && followupStatus.value.trim()) fields.push({ key: 'followup_status', value: followupStatus.value.trim() });
+                if (followupObs && followupObs.value.trim()) fields.push({ key: 'followup_observaciones', value: followupObs.value.trim() });
+                filled.push({ id: itemId, name: name, fields: fields, followupStatus: followupStatus ? followupStatus.value : '', followupObs: followupObs ? followupObs.value : '' });
             });
 
             if (filled.length === 0) {
@@ -226,6 +234,7 @@ window.MHRRevisionPage = (function () {
                         folio: folio, fecha_local: fecha, fecha_utc: utcDateStr + ' ' + utcTimeStr,
                         tipo_inspeccion: tiposText, turno: turnoText, pista: pistaText, responsable: autor,
                         cargo: cargo, "Area_Representante": areaRep, "Area_Representante_Nombre": areaRepName,
+                        notas_generales: notasGenerales || null,
                         pdf_url: pdfUrl || null
                     };
 
@@ -264,6 +273,12 @@ window.MHRRevisionPage = (function () {
                         if (!isFinite(parsedOrder)) parsedOrder = 0;
                         var parsedCatalogId = null;
                         if (f.id && /^[0-9a-fA-F-]{36}$/.test(String(f.id))) parsedCatalogId = f.id;
+                        
+                        // Construir datos_extra con estado de seguimiento
+                        var datosExtra = {};
+                        if (f.followupStatus) datosExtra.followup_status = f.followupStatus;
+                        if (f.followupObs) datosExtra.followup_observaciones = f.followupObs;
+                        
                         var itemPayload = {
                             report_id: reportId,
                             item_catalogo_id: parsedCatalogId,
@@ -274,7 +289,8 @@ window.MHRRevisionPage = (function () {
                             observaciones: observacionesVal || null,
                             prioridad: prioridadVal || null,
                             codigo_seguimiento: codigoVal || null,
-                            orden: parsedOrder
+                            orden: parsedOrder,
+                            datos_extra: Object.keys(datosExtra).length > 0 ? datosExtra : null
                         };
                         var candidates = [itemPayload];
                         var inserted = null, lastErr = null;
@@ -432,24 +448,49 @@ window.MHRRevisionPage = (function () {
                 });
             } catch (e) { }
 
-            html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-            html += '<div style="min-width:180px;">';
-            if (membreteLines.length) { html += '<div style="font-size:12px;color:#1f2937;line-height:1.1">'; membreteLines.forEach(function (line) { html += '<div>' + line + '</div>'; }); html += '</div>'; }
-            html += '</div><div style="flex:1;text-align:center;padding:0 12px">';
-            if (logoSrc) { html += '<img src="' + logoSrc + '" style="height:120px;display:block;margin:0 auto 6px">'; } else { html += inlineLogo; }
-            html += '<h2 style="color:#0b66c3;margin:0;font-size:20px;">Reporte de Inspección en Área de Movimiento y Maniobras</h2>';
-            html += '<div style="margin-top:6px;font-size:14px;color:#111;font-weight:700;">RWY: ' + (pistaText || '-') + '</div></div>';
-            html += '<div style="text-align:right;color:#6b7280;font-size:12px;min-width:120px"><div><strong>' + utcTimeStr + '</strong></div><div style="font-size:12px;color:#6b7280;margin-top:6px">' + utcDateStr + '</div><div style="margin-top:8px;color:#374151;font-weight:600">Folio: ' + (folio || '') + '</div></div></div>';
+            html += '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;"><tbody><tr>';
+            html += '<td style="width:190px;vertical-align:top;padding-right:10px;">';
+            if (membreteLines.length) {
+                var membreteStyles = [
+                    'font-size:14px;font-weight:700;color:#0f1724;margin-bottom:3px;',
+                    'font-size:12px;font-weight:700;color:#374151;margin-bottom:2px;',
+                    'font-size:12px;font-weight:700;color:#374151;margin-bottom:2px;',
+                    'font-size:10px;font-weight:400;color:#6b7280;margin-top:5px;letter-spacing:0.3px;'
+                ];
+                html += '<div style="line-height:1.45">';
+                membreteLines.forEach(function (line, i) {
+                    var s = membreteStyles[i] || 'font-size:11px;font-weight:600;color:#374151;';
+                    html += '<div style="' + s + '">' + line + '</div>';
+                });
+                html += '</div>';
+            }
+            html += '</td>';
+            html += '<td style="text-align:center;vertical-align:middle;padding:0 12px;">';
+            if (logoSrc) { html += '<img src="' + logoSrc + '" style="height:80px;display:block;margin:0 auto 6px">'; } else { html += inlineLogo; }
+            html += '<h2 style="color:#0b66c3;margin:4px 0 0 0;font-size:18px;">Reporte de Inspección en Área de Movimiento y Maniobras</h2>';
+            html += '<div style="margin-top:4px;font-size:13px;color:#111;font-weight:700;">RWY: ' + (pistaText || '-') + '</div>';
+            html += '</td>';
+            html += '<td style="width:160px;text-align:right;vertical-align:top;font-size:12px;color:#6b7280;white-space:nowrap;">';
+            html += '<div><strong>' + utcTimeStr + '</strong></div>';
+            html += '<div style="margin-top:4px;">' + utcDateStr + '</div>';
+            html += '<div style="margin-top:6px;color:#374151;font-weight:600;white-space:nowrap;">Folio: ' + (folio || '') + '</div>';
+            html += '</td></tr></tbody></table>';
 
-            html += '<div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:12px;align-items:center">';
-            var sep = '<div style="width:1px;height:28px;background:#e6eef9;margin:0 8px;display:inline-block;vertical-align:middle"></div>';
-            html += '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Tipo de Inspección<br><strong>' + (tiposText || '-') + '</strong></div>' + sep +
-                    '<div style="min-width:120px;text-align:center;font-size:13px;color:#374151">Turno<br><strong>' + (turnoText || '-') + '</strong></div>' + sep +
-                    '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Pista<br><strong>' + (pistaText || '-') + '</strong></div>' + sep +
-                    '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Responsable<br><strong>' + (autor || '-') + '</strong></div>' + sep +
-                    '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Cargo<br><strong>' + (cargo || '-') + '</strong></div>' + sep +
-                    '<div style="min-width:160px;text-align:center;font-size:13px;color:#374151">Representante de Área<br><strong>' + (areaRep || '-') + (areaRepName ? '<br>' + areaRepName : '') + '</strong></div>' + sep +
-                    '<div style="min-width:120px;text-align:center;font-size:13px;color:#374151">Fecha<br><strong>' + fecha + '</strong></div></div>';
+            var mc  = 'vertical-align:top;text-align:center;padding:7px 5px;border-right:1px solid #d1dce8;';
+            var mcL = 'vertical-align:top;text-align:center;padding:7px 5px;';
+            var metaLabel = 'style="display:block;font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;"';
+            var metaValue = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;"';
+            var metaValueNowrap = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;white-space:nowrap;"';
+            html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #d1dce8;border-top:3px solid #0b66c3;table-layout:fixed;">';
+            html += '<tbody><tr style="background:#f0f0f0;">';
+            html += '<td style="' + mc  + 'width:11%;"><span ' + metaLabel + '>Tipo de Inspecci\u00f3n</span><span ' + metaValue + '>' + (tiposText || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:8%;"><span ' + metaLabel + '>Turno</span><span ' + metaValue + '>' + (turnoText || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:10%;"><span ' + metaLabel + '>Pista</span><span ' + metaValueNowrap + '>' + (pistaText || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:17%;"><span ' + metaLabel + '>Responsable</span><span ' + metaValue + '>' + (autor || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:17%;"><span ' + metaLabel + '>Cargo</span><span ' + metaValue + '>' + (cargo || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:14%;"><span ' + metaLabel + '>Representante de \u00c1rea</span><span ' + metaValue + '>' + (areaRep || '-') + (areaRepName ? '<br>' + areaRepName : '') + '</span></td>';
+            html += '<td style="' + mcL + 'width:13%;"><span ' + metaLabel + '>Fecha Local</span><span ' + metaValue + '>' + fecha + '</span></td>';
+            html += '</tr></tbody></table>';
             html += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
             
             html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:24%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:36%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Lugar</th></tr></thead><tbody>';
@@ -473,21 +514,126 @@ window.MHRRevisionPage = (function () {
             });
             html += '</tbody></table>';
 
+            if (notasGenerales) {
+                html += '<div style="margin-top:18px;padding:12px 16px;border:1px solid #d1dce8;border-left:4px solid #0b66c3;background:#f7faff;border-radius:0 4px 4px 0;">';
+                html += '<div style="font-size:10px;font-weight:700;color:#0b66c3;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Notas Generales</div>';
+                html += '<div style="font-size:12px;color:#0f1724;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(notasGenerales) + '</div>';
+                html += '</div>';
+            }
+
             var firmas = (window.obtenerFirmas && window.obtenerFirmas()) || {};
-            html += '<div style="display:flex;justify-content:space-around;gap:24px;margin-top:22px">';
+            html += '<table style="width:100%;border-collapse:collapse;margin-top:22px;">';
+            html += '<tbody><tr>';
             if (areaRep && areaRepName) {
                 // Firmas Area / AIFA / AFAC
-                html += `<div style="flex:1;border:1px solid #e6eef9;padding:14px;border-radius:6px;min-height:120px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:13px;color:#17325a;text-align:center;font-weight:700">${areaRep || 'Área'}</div><div>${firmas.area ? `<div style="height:40px;margin:4px 0;display:flex;align-items:center;justify-content:center"><img src="${firmas.area}" style="max-height:50px;max-width:100%;object-fit:contain;"></div>` : `<div style="border-top:1px solid #cbdcec;margin-bottom:6px;padding-top:4px;text-align:center;color:#17325a">Firma</div>`}<div style="font-size:12px;color:#374151;text-align:center;font-weight:600">${areaRepName || '-'}</div></div></div>`;
-                html += `<div style="flex:1;border:1px solid #e6eef9;padding:14px;border-radius:6px;min-height:120px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:13px;color:#17325a;text-align:center;font-weight:700">AIFA</div><div>${firmas.aifa ? `<div style="height:40px;margin:4px 0;display:flex;align-items:center;justify-content:center"><img src="${firmas.aifa}" style="max-height:50px;max-width:100%;object-fit:contain;"></div>` : `<div style="border-top:1px solid #cbdcec;margin-bottom:6px;padding-top:4px;text-align:center;color:#17325a">Firma</div>`}<div style="font-size:12px;color:#374151;text-align:center;font-weight:600">${autor || '-'}</div><div style="font-size:11px;color:#6b7280;text-align:center">${cargo || '-'}</div></div></div>`;
-                html += `<div style="flex:1;border:1px solid #e6eef9;padding:14px;border-radius:6px;min-height:120px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:13px;color:#17325a;text-align:center;font-weight:700">AFAC</div><div>${firmas.afac ? `<div style="height:40px;margin:4px 0;display:flex;align-items:center;justify-content:center"><img src="${firmas.afac}" style="max-height:50px;max-width:100%;object-fit:contain;"></div>` : `<div style="border-top:1px solid #cbdcec;margin-top:10px;padding-top:8px;text-align:center;color:#17325a">Firma</div>`}<div style="font-size:12px;color:#374151;text-align:center;font-weight:600">${afacName || '-'}</div></div></div>`;
+                html += '<td style="width:33%;border:1px solid #e6eef9;padding:14px;vertical-align:top;text-align:center;">';
+                html += '<div style="font-size:13px;color:#17325a;font-weight:700;margin-bottom:8px;">' + (areaRep || 'Área') + '</div>';
+                if (firmas.area) { html += '<img src="' + firmas.area + '" style="max-height:50px;max-width:100%;display:block;margin:4px auto;">'; } else { html += '<div style="border-top:1px solid #cbdcec;padding-top:4px;color:#17325a;margin:8px 0;">Firma</div>'; }
+                html += '<div style="font-size:12px;color:#374151;font-weight:600;">' + (areaRepName || '-') + '</div>';
+                html += '</td>';
+
+                html += '<td style="width:33%;border:1px solid #e6eef9;padding:14px;vertical-align:top;text-align:center;">';
+                html += '<div style="font-size:13px;color:#17325a;font-weight:700;margin-bottom:8px;">AIFA</div>';
+                if (firmas.aifa) { html += '<img src="' + firmas.aifa + '" style="max-height:50px;max-width:100%;display:block;margin:4px auto;">'; } else { html += '<div style="border-top:1px solid #cbdcec;padding-top:4px;color:#17325a;margin:8px 0;">Firma</div>'; }
+                html += '<div style="font-size:12px;color:#374151;font-weight:600;">' + (autor || '-') + '</div>';
+                html += '<div style="font-size:11px;color:#6b7280;">' + (cargo || '-') + '</div>';
+                html += '</td>';
+
+                html += '<td style="width:33%;border:1px solid #e6eef9;padding:14px;vertical-align:top;text-align:center;">';
+                html += '<div style="font-size:13px;color:#17325a;font-weight:700;margin-bottom:8px;">AFAC</div>';
+                if (firmas.afac) { html += '<img src="' + firmas.afac + '" style="max-height:50px;max-width:100%;display:block;margin:4px auto;">'; } else { html += '<div style="border-top:1px solid #cbdcec;padding-top:8px;color:#17325a;margin:10px 0;">Firma</div>'; }
+                html += '<div style="font-size:12px;color:#374151;font-weight:600;">' + (afacName || '-') + '</div>';
+                html += '</td>';
             } else {
                 // Firmas AFAC / AIFA
-                html += `<div style="flex:1;border:1px solid #e6eef9;padding:14px;border-radius:6px;min-height:120px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:13px;color:#17325a;text-align:center;font-weight:700">AFAC</div><div>${firmas.afac ? `<div style="height:40px;margin:4px 0;display:flex;align-items:center;justify-content:center"><img src="${firmas.afac}" style="max-height:50px;max-width:100%;object-fit:contain;"></div>` : `<div style="border-top:1px solid #cbdcec;margin-top:10px;padding-top:8px;text-align:center;color:#17325a">Firma</div>`}<div style="font-size:12px;color:#374151;text-align:center;font-weight:600">${afacName || '-'}</div></div></div>`;
-                html += `<div style="flex:1.2;border:1px solid #e6eef9;padding:14px;border-radius:6px;min-height:120px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:13px;color:#17325a;text-align:center;font-weight:700">AIFA</div><div>${firmas.aifa ? `<div style="height:40px;margin:4px 0;display:flex;align-items:center;justify-content:center"><img src="${firmas.aifa}" style="max-height:50px;max-width:100%;object-fit:contain;"></div>` : `<div style="border-top:1px solid #cbdcec;margin-bottom:6px;padding-top:4px;text-align:center;color:#17325a">Firma</div>`}<div style="font-size:12px;color:#374151;text-align:center;font-weight:600">${autor || '-'}</div><div style="font-size:11px;color:#6b7280;text-align:center">${cargo || '-'}</div></div></div>`;
-            }
-            html += '</div><p style="margin-top:18px;font-size:12px;color:#6b7280">Generado desde el formulario interno.</p></div>';
+                html += '<td style="width:50%;border:1px solid #e6eef9;padding:14px;vertical-align:top;text-align:center;">';
+                html += '<div style="font-size:13px;color:#17325a;font-weight:700;margin-bottom:8px;">AFAC</div>';
+                if (firmas.afac) { html += '<img src="' + firmas.afac + '" style="max-height:50px;max-width:100%;display:block;margin:4px auto;">'; } else { html += '<div style="border-top:1px solid #cbdcec;padding-top:8px;color:#17325a;margin:10px 0;">Firma</div>'; }
+                html += '<div style="font-size:12px;color:#374151;font-weight:600;">' + (afacName || '-') + '</div>';
+                html += '</td>';
 
-                        var fnameDate = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                html += '<td style="width:50%;border:1px solid #e6eef9;padding:14px;vertical-align:top;text-align:center;">';
+                html += '<div style="font-size:13px;color:#17325a;font-weight:700;margin-bottom:8px;">AIFA</div>';
+                if (firmas.aifa) { html += '<img src="' + firmas.aifa + '" style="max-height:50px;max-width:100%;display:block;margin:4px auto;">'; } else { html += '<div style="border-top:1px solid #cbdcec;padding-top:4px;color:#17325a;margin:6px 0;">Firma</div>'; }
+                html += '<div style="font-size:12px;color:#374151;font-weight:600;">' + (autor || '-') + '</div>';
+                html += '<div style="font-size:11px;color:#6b7280;">' + (cargo || '-') + '</div>';
+                html += '</td>';
+            }
+            html += '</tr></tbody></table>';
+            html += '<p style="margin-top:18px;font-size:12px;color:#6b7280">Generado desde el formulario interno.</p>';
+            html += '</div>';
+
+            // --- Construcción de páginas de evidencias fotográficas (landscape) ---
+            var photoPageHtmls = (function () {
+                var sections = [];
+                for (var _i = 0; _i < filled.length; _i++) {
+                    var _f = filled[_i];
+                    var _photos = (window.mhr && window.mhr.getItemPhotos)
+                        ? window.mhr.getItemPhotos(_f.id)
+                        : ((window.itemPhotos && window.itemPhotos[_f.id]) || []);
+                    if (_photos && _photos.length > 0)
+                        sections.push({ itemName: _f.name, photos: _photos });
+                }
+                if (!sections.length) return null;
+
+                // Aplanar a celdas individuales (ordenadas por item)
+                var allCells = [];
+                sections.forEach(function (sec) {
+                    sec.photos.forEach(function (ph, idx) {
+                        allCells.push({
+                            itemName: sec.itemName,
+                            dataURL: ph.dataURL,
+                            caption: ph.name || ('Foto ' + (idx + 1))
+                        });
+                    });
+                });
+
+                var PER_PAGE = 8; // 4 col × 2 rows = 1/8 de página por foto
+                var totalPages = Math.ceil(allCells.length / PER_PAGE);
+                var pages = [];
+
+                for (var _pp = 0; _pp < totalPages; _pp++) {
+                    var cells = allCells.slice(_pp * PER_PAGE, (_pp + 1) * PER_PAGE);
+                    while (cells.length < PER_PAGE) cells.push(null);
+
+                    // 1122 × 794 px = A4 landscape a 96 dpi
+                    var ph = '<div style="width:1122px;height:794px;padding:22px 24px 14px 24px;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;background:#fff;overflow:hidden;">';
+
+                    // Cabecera de página
+                    ph += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;"><tbody><tr>';
+                    ph += '<td style="vertical-align:bottom;">';
+                    ph += '<span style="font-size:16px;font-weight:700;color:#0b66c3;">Evidencias Fotogr\u00e1ficas</span>';
+                    ph += '<span style="font-size:11px;color:#6b7280;margin-left:12px;">Folio: ' + escapeHtml(folio) + '</span>';
+                    ph += '</td>';
+                    ph += '<td style="text-align:right;vertical-align:bottom;font-size:11px;color:#6b7280;">P\u00e1gina ' + (_pp + 1) + ' de ' + totalPages + '</td>';
+                    ph += '</tr></tbody></table>';
+                    ph += '<div style="border-top:2px solid #0b66c3;margin-bottom:8px;"></div>';
+
+                    // Rejilla 4 × 2
+                    ph += '<table style="width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed;">';
+                    ph += '<tbody>';
+                    for (var _row = 0; _row < 2; _row++) {
+                        ph += '<tr>';
+                        for (var _col = 0; _col < 4; _col++) {
+                            var _cell = cells[_row * 4 + _col];
+                            ph += '<td style="width:25%;vertical-align:top;border:1px solid #d1dce8;border-radius:3px;padding:5px;background:#fafcff;">';
+                            if (_cell) {
+                                ph += '<div style="font-size:9px;font-weight:700;color:#0b66c3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;" title="' + escapeHtml(_cell.itemName) + '">' + escapeHtml(_cell.itemName) + '</div>';
+                                ph += '<img src="' + _cell.dataURL + '" style="width:100%;height:283px;object-fit:cover;display:block;border-radius:2px;">';
+                                ph += '<div style="font-size:8px;color:#6b7280;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(_cell.caption) + '</div>';
+                            }
+                            ph += '</td>';
+                        }
+                        ph += '</tr>';
+                    }
+                    ph += '</tbody></table>';
+                    ph += '</div>';
+                    pages.push(ph);
+                }
+                return pages;
+            }());
+
+            var fnameDate = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
             var filename = 'Reporte-' + fnameDate + '.pdf';
 
             if (!window.MHRPdfRenderer || typeof window.MHRPdfRenderer.renderRevisionPdf !== 'function') {
@@ -501,8 +647,8 @@ window.MHRRevisionPage = (function () {
             }
 
             window.MHRPdfRenderer.renderRevisionPdf({
-                container: container,
                 html: html,
+                photosHtml: photoPageHtmls,
                 filename: filename,
                 submitBtn: submitBtn,
                 originalBtnText: originalBtnText,
