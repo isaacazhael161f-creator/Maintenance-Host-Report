@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1027,20 +1028,26 @@
                         <div class="filter-multi-toggle" tabindex="0" data-target="filter-responsable">Seleccionar responsable</div>
                         <select id="filter-responsable" multiple size="4" class="filter-multi-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);background:#fff;"></select>
                     </div>
-                    <div style="flex:1;min-width:180px;" class="filter-multi">
-                        <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">Tipo inspección</label>
-                        <div class="filter-multi-toggle" tabindex="0" data-target="filter-tipo">Seleccionar tipo</div>
-                        <select id="filter-tipo" multiple size="4" class="filter-multi-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);background:#fff;"></select>
+                    <div style="flex:1;min-width:160px;">
+                        <label style="font-size:12px;color:#334155;display:block;margin-bottom:6px;">Tipo inspección</label>
+                        <div class="filter-chip-group" id="filter-tipo-group">
+                            <button type="button" class="filter-chip" data-value="Primaria">Primaria</button>
+                            <button type="button" class="filter-chip" data-value="Secundaria">Secundaria</button>
+                        </div>
                     </div>
-                    <div style="flex:1;min-width:180px;" class="filter-multi">
-                        <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">Turno</label>
-                        <div class="filter-multi-toggle" tabindex="0" data-target="filter-turno">Seleccionar turno</div>
-                        <select id="filter-turno" multiple size="4" class="filter-multi-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);background:#fff;"></select>
+                    <div style="flex:1;min-width:160px;">
+                        <label style="font-size:12px;color:#334155;display:block;margin-bottom:6px;">Turno</label>
+                        <div class="filter-chip-group" id="filter-turno-group">
+                            <button type="button" class="filter-chip filter-chip--day" data-value="Diurno">☀️ Diurno</button>
+                            <button type="button" class="filter-chip filter-chip--night" data-value="Nocturno">🌙 Nocturno</button>
+                        </div>
                     </div>
-                    <div style="flex:1;min-width:180px;" class="filter-multi">
-                        <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">RWY</label>
-                        <div class="filter-multi-toggle" tabindex="0" data-target="filter-pista">Seleccionar RWY</div>
-                        <select id="filter-pista" multiple size="4" class="filter-multi-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);background:#fff;"></select>
+                    <div style="flex:1;min-width:160px;">
+                        <label style="font-size:12px;color:#334155;display:block;margin-bottom:6px;">RWY</label>
+                        <div class="filter-chip-group" id="filter-pista-group">
+                            <button type="button" class="filter-chip filter-chip--rwy" data-value="04C - 22C">04C – 22C</button>
+                            <button type="button" class="filter-chip filter-chip--rwy" data-value="04L - 22R">04L – 22R</button>
+                        </div>
                     </div>
                     <div style="display:flex;gap:8px;">
                         <button id="filter-apply-btn" class="btn btn-primary" style="padding:8px 12px;">Filtrar</button>
@@ -1055,6 +1062,9 @@
                             <th>Folio</th>
                             <th>Responsable</th>
                             <th>Representante de Área</th>
+                            <th>Tipo Inspección</th>
+                            <th>Turno</th>
+                            <th>RWY</th>
                             <th>PDF</th>
                         </tr>
                     </thead>
@@ -1462,6 +1472,7 @@
         </div>
     </div>
 
+    <script src="./js/pages/historial-so-page.js"></script>
     <script src="./js/pages/auth-session-page.js"></script>
     <script src="./js/pages/main-tabs-page.js"></script>
     <script src="./js/pages/offline-report-sync-page.js"></script>

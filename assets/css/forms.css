@@ -207,6 +207,65 @@
             display: block;
         }
 
+        /* ===== FILTER CHIP GROUPS ===== */
+        .filter-chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(100, 116, 139, 0.35);
+            background: #f5f8fc;
+            color: #334155;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .filter-chip:hover {
+            background: #e0e7f0;
+            border-color: rgba(100, 116, 139, 0.6);
+        }
+
+        .filter-chip.active {
+            background: rgba(29, 78, 216, 0.12);
+            border-color: #1d4ed8;
+            color: #1d4ed8;
+            font-weight: 700;
+            box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.15);
+        }
+
+        .filter-chip--day.active {
+            background: rgba(251, 191, 36, 0.15);
+            border-color: #d97706;
+            color: #92400e;
+            box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15);
+        }
+
+        .filter-chip--night.active {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: #6366f1;
+            color: #4338ca;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+        }
+
+        .filter-chip--rwy.active {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #059669;
+            color: #065f46;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+        }
+
         textarea {
             min-height: 84px;
             resize: vertical;

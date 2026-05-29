@@ -4,6 +4,9 @@
             var selectedLatLng = null;
             var marker = null;
             var currentLugarField = null;
+            var isComparisonMode = false;
+            var storedCompLat = NaN;
+            var storedCompLng = NaN;
 
             function openMapModal(lugarInputEl) {
                 currentLugarField = lugarInputEl;
@@ -43,6 +46,32 @@
             function closeMapModal() {
                 var modal = document.getElementById('map-modal');
                 if (modal) modal.classList.remove('open');
+                if (isComparisonMode) {
+                    isComparisonMode = false;
+                    storedCompLat = NaN;
+                    storedCompLng = NaN;
+                    var title = document.getElementById('map-modal-title');
+                    if (title) title.textContent = 'Seleccionar Lugar en el Mapa';
+                    var confirmBtn = document.getElementById('map-modal-confirm');
+                    if (confirmBtn) confirmBtn.style.display = '';
+                    var gpsBtn = document.getElementById('map-gps-btn');
+                    if (gpsBtn) {
+                        gpsBtn.disabled = false;
+                        gpsBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" opacity=".3"/></svg> Mi ubicación actual';
+                    }
+                    var infoEl = document.getElementById('map-info');
+                    if (infoEl) infoEl.innerHTML = '<strong>Haz clic en el mapa</strong> para seleccionar la ubicación, o usa el botón <em>Mi ubicación actual</em> para marcar donde estás.';
+                }
+            }
+
+            function haversineDistance(lat1, lng1, lat2, lng2) {
+                var R = 6371000;
+                var dLat = (lat2 - lat1) * Math.PI / 180;
+                var dLng = (lng2 - lng1) * Math.PI / 180;
+                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             }
 
             function initMap() {
@@ -136,7 +165,19 @@
                         if (infoEl) {
                             infoEl.innerHTML = '<strong>📍 Ubicación GPS obtenida:</strong><br>' +
                                 'Latitud: ' + lat.toFixed(6) + ' &nbsp; Longitud: ' + lng.toFixed(6) +
-                                '<br><span style="font-size:11px;color:#6b7280">Precisión: ±' + Math.round(accuracy) + ' m &nbsp;·&nbsp; Puedes arrastrar el marcador para ajustar.</span>';
+                                '<br><span style="font-size:11px;color:#6b7280">Precisi\u00f3n: \u00b1' + Math.round(accuracy) + ' m &nbsp;\u00b7&nbsp; Puedes arrastrar el marcador para ajustar.</span>';
+                        }
+
+                        // En modo comparación: mostrar distancia al punto registrado
+                        if (isComparisonMode && infoEl && !isNaN(storedCompLat) && !isNaN(storedCompLng)) {
+                            var dist = haversineDistance(storedCompLat, storedCompLng, lat, lng);
+                            var distStr = dist < 1000 ? dist.toFixed(0) + ' m' : (dist / 1000).toFixed(2) + ' km';
+                            var distColor = dist <= 50 ? '#16a34a' : dist <= 200 ? '#d97706' : '#dc2626';
+                            infoEl.innerHTML =
+                                '<strong>\ud83d\udccb Registrado:</strong> ' + storedCompLat.toFixed(6) + ', ' + storedCompLng.toFixed(6) +
+                                '<br><strong>\ud83d\udccd Tu posici\u00f3n:</strong> ' + lat.toFixed(6) + ', ' + lng.toFixed(6) +
+                                '<br><span style="font-size:11px;color:#6b7280">Precisi\u00f3n GPS: \u00b1' + Math.round(accuracy) + ' m</span>' +
+                                '<br><strong>\ud83d\udccf Distancia al punto registrado:</strong> <span style="font-size:16px;font-weight:bold;color:' + distColor + ';">' + distStr + '</span>';
                         }
 
                         if (gpsBtn) {
@@ -162,6 +203,7 @@
             }
 
             function confirmLocation() {
+                if (isComparisonMode) return;
 
                 if (!selectedLatLng) {
                     alert('Por favor selecciona una ubicación en el mapa haciendo clic.');
@@ -325,6 +367,74 @@
                 }
             }, 100);
 
-            // Exponer función para abrir el modal
+            function openMapComparison(storedLugar) {
+                var parts = (storedLugar || '').split(',');
+                storedCompLat = (parts.length >= 2) ? parseFloat(parts[0].trim()) : NaN;
+                storedCompLng = (parts.length >= 2) ? parseFloat(parts[1].trim()) : NaN;
+                isComparisonMode = true;
+                currentLugarField = null;
+                selectedLatLng = null;
+
+                var modal = document.getElementById('map-modal');
+                if (!modal) return;
+
+                var title = document.getElementById('map-modal-title');
+                if (title) title.textContent = 'Comparar Ubicaci\u00f3n';
+
+                var confirmBtn = document.getElementById('map-modal-confirm');
+                if (confirmBtn) confirmBtn.style.display = 'none';
+
+                var gpsBtn = document.getElementById('map-gps-btn');
+                if (gpsBtn) {
+                    gpsBtn.disabled = false;
+                    gpsBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" opacity=".3"/></svg> Ver mi ubicaci\u00f3n actual';
+                }
+
+                modal.classList.add('open');
+
+                setTimeout(function () {
+                    try {
+                        if (!mapInstance) {
+                            initMap();
+                        } else {
+                            mapInstance.eachLayer(function (layer) {
+                                if (layer instanceof L.Marker) {
+                                    try { mapInstance.removeLayer(layer); } catch (e) { }
+                                }
+                            });
+                        }
+                        mapInstance.invalidateSize();
+                        marker = null;
+
+                        var infoEl = document.getElementById('map-info');
+                        if (!isNaN(storedCompLat) && !isNaN(storedCompLng)) {
+                            var storedIcon = L.divIcon({
+                                html: '<div style="background:#f59e0b;color:white;font-size:14px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);">' +
+                                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+                                    '</div>',
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 32],
+                                className: ''
+                            });
+                            L.marker([storedCompLat, storedCompLng], { icon: storedIcon })
+                                .addTo(mapInstance)
+                                .bindPopup('<strong>\ud83d\udccb Ubicaci\u00f3n registrada</strong><br>' + storedCompLat.toFixed(6) + ', ' + storedCompLng.toFixed(6))
+                                .openPopup();
+                            mapInstance.setView([storedCompLat, storedCompLng], 18);
+                            if (infoEl) infoEl.innerHTML =
+                                '<strong>\ud83d\udccb Ubicaci\u00f3n registrada:</strong> ' + storedCompLat.toFixed(6) + ', ' + storedCompLng.toFixed(6) +
+                                '<br><span style="color:#6b7280;font-size:12px;">Presiona <em>Ver mi ubicaci\u00f3n actual</em> para comparar con tu posici\u00f3n GPS.</span>';
+                        } else {
+                            mapInstance.setView([19.7470, -99.0125], 15);
+                            if (infoEl) infoEl.innerHTML = '<em style="color:#6b7280;">No hay coordenadas registradas para este \u00edtem.</em><br><span style="font-size:12px;">Presiona el bot\u00f3n para ver tu posici\u00f3n actual.</span>';
+                        }
+                    } catch (e) {
+                        console.error('Error abriendo comparaci\u00f3n de mapa:', e);
+                    }
+                }, 150);
+            }
+
+            // Exponer funciones p\u00fablicas
             window.openMapPicker = openMapModal;
+            window.openMapComparison = openMapComparison;
         })();

@@ -30,6 +30,7 @@ window.MHRMainTabsPage = (function () {
               if (typeof cargarCatalogosFauna === 'function') cargarCatalogosFauna();
             } else if (targetTab === 'historial') {
               mainTitle.textContent = 'Historial de Reportes';
+              if (typeof window.resetHistorialFilters === 'function') window.resetHistorialFilters();
             } else if (targetTab === 'estadistica') {
               mainTitle.textContent = 'Estadísticas';
             } else if (targetTab === 'estadistica-fauna') {

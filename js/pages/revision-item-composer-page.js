@@ -128,19 +128,26 @@
             (isPrefilled ? '<div style="background:#f59e0b; color:white; padding:6px 10px; border-radius:6px; font-size:13px; font-weight:600; margin-bottom:8px;">📋 ÍTEM DE SEGUIMIENTO (Reporte Anterior)</div>' : '') +
             '<button type="button" class="btn btn-ghost item-card-toggle" style="margin-bottom:8px;">▼ ' + esc(item.categoria) + ' / ' + esc(item.nombre) + '</button>' +
             '<div class="item-card-body">' +
-            '  <label>Lugar: <input type="text" name="dynamic_lugar" class="dynamic-lugar" placeholder="Click para seleccionar en mapa"></label><br>' +
-            '  <label>Hallazgo: <select class="dynamic-hallazgo">' + hallazgoOptions + '</select></label><br>' +
-            '  <input type="text" class="dynamic-hallazgo-otro" placeholder="Especifique otro hallazgo" style="display:none; width:100%; margin:6px 0;">' +
-            '  <label>Condición: <select class="condicion-select dynamic-condicion">' + getConditionOptionsHtml() + '</select></label><br>' +
-            '  <div class="dynamic-photo-upload-area" style="margin:10px 0;">' +
-            '    <div style="font-size:13px;color:#374151;margin-bottom:4px;">📷 Evidencia Fotográfica <span style="color:#6b7280;">(opcional)</span></div>' +
-            '    <div style="display:flex;gap:10px;">' +
-            '      <label style="flex:1;text-align:center;border:2px dashed #3b82f6;color:#1d4ed8;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📁 Archivo<input type="file" class="dynamic-evidencias dynamic-evidencias-file" multiple accept="image/*" style="display:none;"></label>' +
-            '      <label style="flex:1;text-align:center;border:2px dashed #10b981;color:#065f46;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📸 Foto<input type="file" class="dynamic-evidencias dynamic-evidencias-camera" accept="image/*" capture="environment" style="display:none;"></label>' +
-            '    </div>' +
-            '    <div class="dynamic-photo-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>' +
-            '  </div>' +
-            '  <label>Observaciones:<br><textarea class="dynamic-observaciones" rows="3">' + esc(prefill.observaciones || '') + '</textarea></label><br>' +
+            (isPrefilled ? '  <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:12px;color:#92400e;">🔒 Datos de solo lectura. Solo puedes modificar el <strong>Estado de Seguimiento</strong>.</div>' : '') +
+            (isPrefilled
+              ? '  <div style="margin-bottom:8px;"><div style="font-size:12px;color:#92400e;font-weight:600;margin-bottom:4px;">📍 Ubicación registrada</div><div style="display:flex;gap:6px;align-items:center;"><input type="text" name="dynamic_lugar" class="dynamic-lugar" readonly style="flex:1;background:#fef3c7;color:#374151;cursor:default;border:1px solid #f59e0b;padding:6px 8px;border-radius:6px;font-size:13px;"><button type="button" class="btn-compare-loc" style="padding:6px 12px;background:#0ea5e9;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:500;flex-shrink:0;">🗺️ Comparar</button></div></div>'
+              : '  <label>Lugar: <input type="text" name="dynamic_lugar" class="dynamic-lugar" placeholder="Click para seleccionar en mapa"></label><br>'
+            ) +
+            '  <label>Hallazgo: <select class="dynamic-hallazgo"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + hallazgoOptions + '</select></label><br>' +
+            '  <input type="text" class="dynamic-hallazgo-otro" placeholder="Especifique otro hallazgo" style="display:none; width:100%; margin:6px 0;"' + (isPrefilled ? ' disabled' : '') + '>' +
+            '  <label>Condición: <select class="condicion-select dynamic-condicion"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + getConditionOptionsHtml() + '</select></label><br>' +
+            (isPrefilled
+              ? '  <div style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;"><span style="font-size:13px;color:#6b7280;">📷 Las fotos se registraron en el reporte anterior.</span></div>'
+              : '  <div class="dynamic-photo-upload-area" style="margin:10px 0;">' +
+                '    <div style="font-size:13px;color:#374151;margin-bottom:4px;">📷 Evidencia Fotográfica <span style="color:#6b7280;">(opcional)</span></div>' +
+                '    <div style="display:flex;gap:10px;">' +
+                '      <label style="flex:1;text-align:center;border:2px dashed #3b82f6;color:#1d4ed8;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📁 Archivo<input type="file" class="dynamic-evidencias dynamic-evidencias-file" multiple accept="image/*" style="display:none;"></label>' +
+                '      <label style="flex:1;text-align:center;border:2px dashed #10b981;color:#065f46;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📸 Foto<input type="file" class="dynamic-evidencias dynamic-evidencias-camera" accept="image/*" capture="environment" style="display:none;"></label>' +
+                '    </div>' +
+                '    <div class="dynamic-photo-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>' +
+                '  </div>'
+            ) +
+            '  <label>Observaciones:<br><textarea class="dynamic-observaciones" rows="3"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;resize:none;"' : '') + '>' + esc(prefill.observaciones || '') + '</textarea></label><br>' +
             (isPrefilled 
               ? '<div style="background:#f3f4f6; padding:10px; border-radius:8px; border-left:4px solid #f59e0b; margin:10px 0;">' +
                 '  <div style="font-weight:600; color:#92400e; margin-bottom:8px;">✅ ESTADO DE SEGUIMIENTO</div>' +
@@ -163,13 +170,15 @@
                 '  <label>Observaciones de seguimiento:<br><textarea class="dynamic-followup-observaciones" rows="2">' + esc(followupObs) + '</textarea></label><br>'
             ) +
             '  <input type="hidden" class="dynamic-historial-json" value="' + esc(prefill.historial_json || '') + '">' +
-            '  <label>Prioridad: <select class="priority-select dynamic-prioridad">' + getPriorityOptionsHtml() + '</select></label><br>' +
-            '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo" value="' + esc(prefill.codigo || '') + '"></label>' +
+            '  <label>Prioridad: <select class="priority-select dynamic-prioridad"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + getPriorityOptionsHtml() + '</select></label><br>' +
+            '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo" value="' + esc(prefill.codigo || '') + '"' + (isPrefilled ? ' readonly style="background:#f3f4f6;color:#6b7280;"' : '') + '></label>' +
             '</div>' +
             (isPrefilled
-                ? '<div style="display:none;"></div>'
+                ? ''
                 : '<button type="button" class="btn btn-ghost dynamic-remove" style="margin-top:8px;">🗑️ Eliminar item</button>') +
-            '<div class="item-card-actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost dynamic-add-next">➕ Agregar Item</button></div>';
+            (isPrefilled
+                ? ''
+                : '<div class="item-card-actions" style="margin-top:8px;"><button type="button" class="btn btn-ghost dynamic-add-next">➕ Agregar Item</button></div>');
 
         var toggle = card.querySelector('.item-card-toggle');
         var body = card.querySelector('.item-card-body');
@@ -186,8 +195,18 @@
             if (hallSel.value !== 'Otro') hallOther.value = '';
         });
 
-        bindDynamicLugarInput(card.querySelector('.dynamic-lugar'));
-        bindDynamicPhotoInputs(card, item.id);
+        if (isPrefilled) {
+            var compareBtn = card.querySelector('.btn-compare-loc');
+            var lugarInputForCompare = card.querySelector('.dynamic-lugar');
+            if (compareBtn && lugarInputForCompare) {
+                compareBtn.addEventListener('click', function () {
+                    if (window.openMapComparison) window.openMapComparison(lugarInputForCompare.value);
+                });
+            }
+        } else {
+            bindDynamicLugarInput(card.querySelector('.dynamic-lugar'));
+            bindDynamicPhotoInputs(card, item.id);
+        }
 
         var removeBtn = card.querySelector('.dynamic-remove');
         if (removeBtn) {
@@ -198,10 +217,14 @@
             });
         }
 
-        card.querySelector('.dynamic-add-next').addEventListener('click', function () {
-            card.querySelector('.item-card-actions').remove();
-            ensureSingleComboRow(card);
-        });
+        var addNextBtn = card.querySelector('.dynamic-add-next');
+        if (addNextBtn) {
+            addNextBtn.addEventListener('click', function () {
+                var actionsEl = card.querySelector('.item-card-actions');
+                if (actionsEl) actionsEl.remove();
+                ensureSingleComboRow(card);
+            });
+        }
 
         var lugar = card.querySelector('.dynamic-lugar');
         var hallazgo = card.querySelector('.dynamic-hallazgo');
