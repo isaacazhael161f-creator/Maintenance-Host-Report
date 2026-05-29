@@ -395,7 +395,9 @@ window.MHRRevisionPage = (function () {
                     var filename = 'report_' + folio + '_' + new Date().getTime() + '.pdf';
                     var { error } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'reports', filename, blob, { cacheControl: '3600', upsert: false });
                     if (error) { console.error('Error subiendo PDF:', error); return null; }
-                    return filename;
+                    var publicUrlResult = window.MHRReportService.getPublicUrl(window.supabaseClient, 'reports', filename);
+                    var publicUrl = publicUrlResult && publicUrlResult.data && publicUrlResult.data.publicUrl;
+                    return publicUrl || null;
                 } catch (e) { return null; }
             };
 

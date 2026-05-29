@@ -21,6 +21,26 @@
     }
 
     /**
+     * Resuelve pdf_url: si ya es una URL completa la devuelve tal cual;
+     * si es solo un nombre de archivo (registros antiguos) construye la URL
+     * pública del bucket 'reports' usando el cliente de Supabase.
+     */
+    function resolvePdfUrl(rawUrl) {
+        if (!rawUrl) return null;
+        if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+        // Compatibilidad con registros antiguos que solo guardan el filename
+        var client = window.supabaseClient;
+        if (!client) return null;
+        try {
+            var result = client.storage.from('reports').getPublicUrl(rawUrl);
+            return (result && result.data && result.data.publicUrl) ? result.data.publicUrl : null;
+        } catch (e) {
+            return null;
+        }
+    }
+    }
+
+    /**
      * Convierte "DD/MM/YYYY HH:MM:SS" o ISO a objeto Date.
      * Devuelve null si no se puede parsear.
      */
@@ -253,8 +273,9 @@
             var pista = esc(r.pista || '-');
 
             var pdfCell;
-            if (r.pdf_url) {
-                pdfCell = '<a href="' + esc(r.pdf_url) + '" target="_blank" rel="noopener noreferrer" ' +
+            var resolvedPdfUrl = resolvePdfUrl(r.pdf_url);
+            if (resolvedPdfUrl) {
+                pdfCell = '<a href="' + esc(resolvedPdfUrl) + '" target="_blank" rel="noopener noreferrer" ' +
                     'style="color:#1d4ed8;text-decoration:underline;font-weight:500;">Ver PDF</a>';
             } else {
                 pdfCell = '<span style="color:#9ca3af;font-size:12px;">Sin PDF</span>';

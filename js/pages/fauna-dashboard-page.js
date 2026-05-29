@@ -742,7 +742,15 @@ window.MHRFaunaDashboardPage = (function () {
                                 // Crear link de PDF si existe
                                 let pdfLink = '<a href="#" style="color:#6b7280;text-decoration:none;font-size:12px;">-</a>';
                                 if (report.pdf_url && report.pdf_url.trim() !== '') {
-                                    pdfLink = '<a href="' + report.pdf_url + '" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:12px;font-weight:600;">📄 Ver PDF</a>';
+                                    var _rawPdf = report.pdf_url.trim();
+                                    var _pdfHref = _rawPdf;
+                                    if (!/^https?:\/\//i.test(_rawPdf) && window.supabaseClient) {
+                                        try {
+                                            var _r = window.supabaseClient.storage.from('fauna-reports').getPublicUrl('fauna/' + _rawPdf.replace(/^fauna\//, ''));
+                                            if (_r && _r.data && _r.data.publicUrl) _pdfHref = _r.data.publicUrl;
+                                        } catch (e) { }
+                                    }
+                                    pdfLink = '<a href="' + _pdfHref + '" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:12px;font-weight:600;">📄 Ver PDF</a>';
                                 } else {
                                     console.warn('⚠️ Sin PDF para folio', report.folio, '- pdf_url:', report.pdf_url);
                                 }
