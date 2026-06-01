@@ -71,12 +71,10 @@ window.MHRPdfRenderer = (function () {
                         fadeAnimation: false,
                         zoomAnimation: false
                     });
-                    var _tileLayer = window.L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                    window.L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
                         subdomains: ['mt0','mt1','mt2','mt3'],
                         maxZoom: 20,
-                        crossOrigin: true,
-                        tileSize: 256,
-                        updateWhenIdle: false
+                        crossOrigin: true
                     }).addTo(_tempMap);
 
                     // Agregar pins numerados
@@ -99,25 +97,21 @@ window.MHRPdfRenderer = (function () {
                         _latlngs.push([lat, lng]);
                     });
 
-                    // Siempre mostrar la extensión completa del aeródromo AIFA,
-                    // independientemente de cuántos pines haya o dónde estén.
-                    var _airportBounds = window.L.latLngBounds(
-                        [19.730, -99.035],   // SW corner
-                        [19.767, -98.985]    // NE corner
-                    );
-                    _tempMap.fitBounds(_airportBounds, { padding: [10, 10] });
+                    if (_latlngs.length === 1) {
+                        _tempMap.setView(_latlngs[0], 17);
+                    } else if (_latlngs.length > 1) {
+                        _tempMap.fitBounds(_latlngs, { padding: [80, 80] });
+                    }
 
-                    // Esperar a que todos los tiles del TileLayer carguen (máx 10 s)
-                    // Se usa el evento 'load' del TileLayer (no del mapa) que dispara
-                    // cuando TODOS los tiles visibles han terminado de cargarse.
+                    // Esperar a que carguen los tiles (máx 6 s)
                     await new Promise(function (resolve) {
                         var _done = false;
                         function _finish() { if (!_done) { _done = true; resolve(); } }
-                        _tileLayer.once('load', _finish);
-                        setTimeout(_finish, 10000);
+                        _tempMap.once('load', _finish);
+                        setTimeout(_finish, 6000);
                     });
-                    // Pausa extra para garantizar que el canvas de Leaflet se haya pintado
-                    await new Promise(function (resolve) { setTimeout(resolve, 1500); });
+                    // Pausa extra para que el canvas de Leaflet se pinte
+                    await new Promise(function (resolve) { setTimeout(resolve, 800); });
 
                     var _mapCanvas = await window.html2canvas(_mapWrap, {
                         scale: 2,

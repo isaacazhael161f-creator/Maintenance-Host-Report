@@ -477,13 +477,13 @@ window.MHRRevisionPage = (function () {
             html += '<div style="margin-top:6px;color:#374151;font-weight:600;white-space:nowrap;">Folio: ' + (folio || '') + '</div>';
             html += '</td></tr></tbody></table>';
 
-            var mc  = 'vertical-align:top;text-align:center;padding:7px 5px;border-right:1px solid #d1dce8;';
+            var mc  = 'vertical-align:top;text-align:center;padding:7px 5px;border-right:1px solid #e0e0e0;';
             var mcL = 'vertical-align:top;text-align:center;padding:7px 5px;';
             var metaLabel = 'style="display:block;font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;"';
             var metaValue = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;"';
             var metaValueNowrap = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;white-space:nowrap;"';
-            html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #d1dce8;border-top:3px solid #0b66c3;table-layout:fixed;">';
-            html += '<tbody><tr style="background:#f0f0f0;">';
+            html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #e0e0e0;table-layout:fixed;">';
+            html += '<tbody><tr>';
             html += '<td style="' + mc  + 'width:11%;"><span ' + metaLabel + '>Tipo de Inspecci\u00f3n</span><span ' + metaValue + '>' + (tiposText || '-') + '</span></td>';
             html += '<td style="' + mc  + 'width:8%;"><span ' + metaLabel + '>Turno</span><span ' + metaValue + '>' + (turnoText || '-') + '</span></td>';
             html += '<td style="' + mc  + 'width:10%;"><span ' + metaLabel + '>Pista</span><span ' + metaValueNowrap + '>' + (pistaText || '-') + '</span></td>';
@@ -494,7 +494,7 @@ window.MHRRevisionPage = (function () {
             html += '</tr></tbody></table>';
             html += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
             
-            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:center;padding:8px;border-bottom:1px solid #e6eef9;width:4%">#</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:22%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:34%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e6eef9;width:20%">Lugar</th></tr></thead><tbody>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:center;padding:8px;border-bottom:1px solid #e0e0e0;width:4%">#</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:22%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:34%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:20%">Lugar</th></tr></thead><tbody>';
             filled.forEach(function (f, _itemIdx) {
                 var infoHtml = '', observacionesVal = '', lugarVal = '';
                 if (f.fields && f.fields.length) {
@@ -511,12 +511,12 @@ window.MHRRevisionPage = (function () {
                     });
                     infoHtml += '</ul>';
                 } else { infoHtml = '<span class="muted">Sin campos adicionales</span>'; }
-                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;text-align:center;"><div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#0b66c3;color:#fff;font-size:11px;font-weight:700;">' + (_itemIdx + 1) + '</div></td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + (observacionesVal ? ('<div style="white-space:pre-wrap;">' + escapeHtml(observacionesVal) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #f0f6ff">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
+                html += '<tr><td style="vertical-align:top;padding:10px;border-bottom:1px solid #e0e0e0;text-align:center;"><div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#0b66c3;color:#fff;font-size:11px;font-weight:700;">' + (_itemIdx + 1) + '</div></td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #e0e0e0;font-weight:600">' + f.name + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #e0e0e0">' + infoHtml + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #e0e0e0">' + (observacionesVal ? ('<div style="white-space:pre-wrap;">' + escapeHtml(observacionesVal) + '</div>') : '<span class="muted">-</span>') + '</td><td style="vertical-align:top;padding:10px;border-bottom:1px solid #e0e0e0">' + buildLugarHtml(f, lugarVal) + '</td></tr>';
             });
             html += '</tbody></table>';
 
             if (notasGenerales) {
-                html += '<div style="margin-top:18px;padding:12px 16px;border:1px solid #d1dce8;border-left:4px solid #0b66c3;background:#f7faff;border-radius:0 4px 4px 0;">';
+                html += '<div style="margin-top:18px;padding:12px 16px;border:1px solid #e0e0e0;border-left:3px solid #0b66c3;border-radius:0 4px 4px 0;">';
                 html += '<div style="font-size:10px;font-weight:700;color:#0b66c3;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Notas Generales</div>';
                 html += '<div style="font-size:12px;color:#0f1724;line-height:1.6;white-space:pre-wrap;">' + escapeHtml(notasGenerales) + '</div>';
                 html += '</div>';
@@ -564,10 +564,9 @@ window.MHRRevisionPage = (function () {
             html += '<p style="margin-top:18px;font-size:12px;color:#6b7280">Generado desde el formulario interno.</p>';
             html += '</div>';
 
-            // --- Construcción de página de mapa con pins numerados (landscape) ---
-            var mapPageHtml = (function () {
-                // Recoger ítems que tienen coordenadas o mapImage (no se requiere captura)
-                var itemsWithLocation = [];
+            // --- Ítems con ubicación para mapa unificado ---
+            var mapItems = (function () {
+                var items = [];
                 filled.forEach(function (f, idx) {
                     var placeField = null;
                     if (f.fields) {
@@ -575,71 +574,12 @@ window.MHRRevisionPage = (function () {
                             if (/^lugar$/i.test(String(f.fields[i].key || ''))) { placeField = f.fields[i]; break; }
                         }
                     }
-                    if (placeField && (placeField.value || placeField.mapImage || placeField.mapsUrl)) {
-                        itemsWithLocation.push({ num: idx + 1, name: f.name, mapImage: placeField.mapImage || '', mapsUrl: placeField.mapsUrl || '', coords: placeField.value || '' });
+                    if (placeField && placeField.value) {
+                        items.push({ num: idx + 1, name: f.name, coords: placeField.value, mapsUrl: placeField.mapsUrl || '' });
                     }
                 });
-                if (!itemsWithLocation.length) return null;
-
-                // Una página landscape por cada ítem con ubicación
-                var pages = [];
-                itemsWithLocation.forEach(function (item) {
-                    // 1122 × 794 px = A4 landscape a 96 dpi
-                    var mp = '<div style="width:1122px;height:794px;padding:18px 22px 14px 22px;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;background:#fff;overflow:hidden;">';
-
-                    // Cabecera
-                    mp += '<table style="width:100%;border-collapse:collapse;margin-bottom:8px;"><tbody><tr>';
-                    mp += '<td style="vertical-align:bottom;">';
-                    mp += '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#0b66c3;color:#fff;font-size:13px;font-weight:700;margin-right:10px;">' + item.num + '</span>';
-                    mp += '<span style="font-size:16px;font-weight:700;color:#0b66c3;">' + escapeHtml(item.name) + '</span>';
-                    mp += '<span style="font-size:11px;color:#6b7280;margin-left:14px;">Folio: ' + escapeHtml(folio) + '</span>';
-                    mp += '</td>';
-                    mp += '<td style="text-align:right;vertical-align:bottom;font-size:11px;color:#6b7280;">Ubicaci\u00f3n del hallazgo</td>';
-                    mp += '</tr></tbody></table>';
-                    mp += '<div style="border-top:2px solid #0b66c3;margin-bottom:8px;"></div>';
-
-                    if (item.mapImage) {
-                        // Captura de mapa disponible: imagen + pin centrado
-                        mp += '<div style="position:relative;width:100%;height:680px;">';
-                        mp += '<img src="' + item.mapImage + '" style="width:100%;height:680px;object-fit:cover;border-radius:4px;border:1px solid #d1dce8;display:block;">';
-                        mp += '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);">';
-                        mp += '<div style="display:flex;flex-direction:column;align-items:center;">';
-                        mp += '<div style="background:#dc2626;color:#fff;font-size:14px;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);">' + item.num + '</div>';
-                        mp += '<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:12px solid #dc2626;margin-top:-1px;"></div>';
-                        mp += '</div></div>';
-                        mp += '</div>';
-                        // Coords + link al pie
-                        if (item.coords || item.mapsUrl) {
-                            mp += '<div style="margin-top:4px;font-size:10px;color:#6b7280;">';
-                            if (item.coords) mp += 'Coordenadas: ' + escapeHtml(item.coords) + '&nbsp;&nbsp;';
-                            if (item.mapsUrl) mp += '<span style="color:#0b66c3;">' + escapeHtml(item.mapsUrl) + '</span>';
-                            mp += '</div>';
-                        }
-                    } else {
-                        // Sin captura: bloque informativo con coordenadas y link
-                        mp += '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:640px;border:2px dashed #d1dce8;border-radius:8px;background:#f8faff;">';
-                        mp += '<div style="text-align:center;max-width:700px;padding:0 24px;">';
-                        // Pin grande
-                        mp += '<div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:#dc2626;color:#fff;font-size:28px;font-weight:700;box-shadow:0 4px 16px rgba(220,38,38,0.35);margin-bottom:20px;">' + item.num + '</div>';
-                        mp += '<div style="font-size:20px;font-weight:700;color:#0b66c3;margin-bottom:16px;">' + escapeHtml(item.name) + '</div>';
-                        if (item.coords) {
-                            mp += '<div style="font-size:16px;color:#374151;margin-bottom:16px;font-family:monospace;background:#f0f4ff;padding:10px 20px;border-radius:6px;display:inline-block;border:1px solid #c7d7f5;">' + escapeHtml(item.coords) + '</div>';
-                        }
-                        if (item.mapsUrl) {
-                            mp += '<div style="margin-top:12px;font-size:12px;color:#0b66c3;word-break:break-all;background:#fff;padding:8px 14px;border-radius:6px;border:1px solid #c7d7f5;display:inline-block;">';
-                            mp += '\uD83C\uDF10 ' + escapeHtml(item.mapsUrl);
-                            mp += '</div>';
-                        }
-                        mp += '<div style="font-size:11px;color:#9ca3af;margin-top:24px;">Use el enlace de arriba para ver la ubicación exacta en Google Maps (vista satelital).</div>';
-                        mp += '</div></div>';
-                    }
-
-                    mp += '</div>';
-                    pages.push(mp);
-                });
-                return pages;
+                return items.length ? items : null;
             }());
-
             // --- Construcción de páginas de evidencias fotográficas (landscape) ---
             var photoPageHtmls = (function () {
                 var sections = [];
@@ -725,7 +665,8 @@ window.MHRRevisionPage = (function () {
 
             window.MHRPdfRenderer.renderRevisionPdf({
                 html: html,
-                mapHtml: mapPageHtml,
+                mapItems: mapItems,
+                mapCaption: 'Folio: ' + folio + '  ·  RWY: ' + (pistaText || '-'),
                 photosHtml: photoPageHtmls,
                 filename: filename,
                 submitBtn: submitBtn,

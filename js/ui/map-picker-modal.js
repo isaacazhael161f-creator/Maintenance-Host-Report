@@ -332,40 +332,40 @@
                 }
             }
 
-            // Wiring botones del modal (con delay para asegurar que DOM esté listo)
-            setTimeout(function () {
+            // Wiring botones del modal — solo una vez al cargar el DOM
+            var _modalWired = false;
+            function _wireModalButtons() {
+                if (_modalWired) return;
                 var closeBtn = document.getElementById('map-modal-close');
                 var confirmBtn = document.getElementById('map-modal-confirm');
                 var modal = document.getElementById('map-modal');
-
                 var gpsBtn = document.getElementById('map-gps-btn');
+                if (!closeBtn || !confirmBtn || !modal) return; // DOM aún no listo
+                _modalWired = true;
+
                 if (gpsBtn) {
                     gpsBtn.addEventListener('click', function (e) {
                         e.preventDefault();
                         useMyLocation();
                     });
                 }
-
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        closeMapModal();
-                    });
-                }
-
-                if (confirmBtn) {
-                    confirmBtn.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        confirmLocation();
-                    });
-                }
-
-                if (modal) {
-                    modal.addEventListener('click', function (e) {
-                        if (e.target === modal) closeMapModal();
-                    });
-                }
-            }, 100);
+                closeBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closeMapModal();
+                });
+                confirmBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    confirmLocation();
+                });
+                modal.addEventListener('click', function (e) {
+                    if (e.target === modal) closeMapModal();
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', _wireModalButtons);
+            } else {
+                setTimeout(_wireModalButtons, 100);
+            }
 
             function openMapComparison(storedLugar) {
                 var parts = (storedLugar || '').split(',');
