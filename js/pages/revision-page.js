@@ -217,6 +217,28 @@ window.MHRRevisionPage = (function () {
                 return;
             }
 
+            // Validar que cada ítem de seguimiento (del reporte anterior) tenga nueva evidencia fotográfica
+            var prefilledCards = Array.prototype.slice.call(document.querySelectorAll('.dynamic-item-card[data-prefilled="1"]'));
+            var missingPhotoItems = [];
+            prefilledCards.forEach(function (card) {
+                var itemId = card.dataset.itemCatalogId;
+                var photos = (window.itemPhotos && window.itemPhotos[itemId]) ? window.itemPhotos[itemId] : [];
+                if (photos.length === 0) {
+                    var titleBtn = card.querySelector('.item-card-toggle');
+                    var name = titleBtn ? titleBtn.textContent.replace(/^[▼▶]\s*/, '').trim() : itemId;
+                    missingPhotoItems.push(name);
+                }
+            });
+            if (missingPhotoItems.length > 0) {
+                alert('Los siguientes ítems de seguimiento requieren nueva evidencia fotográfica:\n\n• ' + missingPhotoItems.join('\n• ') + '\n\nAdjunta al menos una foto nueva a cada ítem antes de continuar.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
+                    else submitBtn.value = originalBtnText;
+                }
+                return;
+            }
+
             // Helper: generar miniatura base64 para almacenar en datos_extra sin depender de storage
             function makeThumb(dataURL) {
                 return new Promise(function (resolve) {

@@ -181,7 +181,7 @@
                 <h3>🧑‍✈️ Responsable(s) que elaboran el reporte</h3>
                 <!-- Select para Responsable: reemplaza la lista de botones -->
                 <select id="report-authors-select" name="report_authors" title="Seleccionar Responsable">
-                    <option value="">-- Seleccionar Responsable --</option>
+                    <option value="" disabled selected>-- Seleccionar Responsable --</option>
                 </select>
                 <button type="button" id="report-authors-reset" style="display:none; margin-top:6px;">Cambiar
                     responsable</button>
@@ -203,7 +203,7 @@
                 <input type="text" id="report-afac-name" name="report_afac_name" placeholder="Nombre del representante AFAC" style="margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
                 <h3>� Representante de Área</h3>
                 <select id="report-area-rep" name="report_area_rep" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                    <option value="">-- Seleccionar representante de área --</option>
+                    <option value="" disabled selected>-- Seleccionar representante de área --</option>
                     <option value="N/A">N/A</option>
                     <option value="Ingeniería Civil">Ingeniería Civil</option>
                     <option value="Ingeniería Electromecánica">Ingeniería Electromecánica</option>
@@ -810,7 +810,7 @@
                     <button type="button" id="fauna_pista-change-btn" style="display:none; margin-top:6px;">Cambiar pista</button>
                     <h3>🧑‍✈️ Responsable(s) que elaboran el reporte</h3>
                     <select id="fauna_report-authors-select" name="fauna_report_authors" title="Seleccionar Responsable">
-                        <option value="">-- Seleccionar Responsable --</option>
+                        <option value="" disabled selected>-- Seleccionar Responsable --</option>
                         <option value="Daniel Mejia">Daniel Mejia</option>
                         <option value="Cesar Cisneros">Cesar Cisneros</option>
                         <option value="Alejandro Jimenez">Alejandro Jimenez</option>
@@ -835,7 +835,7 @@
                     <div id="fauna_impacto_parte_avion_wrap">
                         <h3>🛩️ Parte del avión impactada</h3>
                         <select id="fauna_report-parte-avion" name="fauna_report_parte_avion" title="Seleccionar Parte del Avión" disabled style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                            <option value="">-- Seleccionar Parte del Avión --</option>
+                            <option value="" disabled selected>-- Seleccionar Parte del Avión --</option>
                         </select>
                         <small id="fauna_report-parte-avion-hint" style="display:block; margin-top:6px; color:#64748b;">
                             Selecciona primero el evento "Impacto" para habilitar este campo.
@@ -843,7 +843,7 @@
                     </div>
                     <h3>📍 Zona</h3>
                     <select id="fauna_report-ubicacion" name="fauna_report_ubicacion" title="Seleccionar Ubicación" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                        <option value="">-- Seleccionar Zona --</option>
+                        <option value="" disabled selected>-- Seleccionar Zona --</option>
                         <optgroup label="Sector A">
                             <option value="A3 - A5">A3 - A5</option>
                             <option value="A5 - A6">A5 - A6</option>
@@ -864,7 +864,7 @@
                         <label>Ubicación: <input type="text" name="fauna_details[avistamiento][lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
                         <label>Especie:
                             <select name="fauna_details[avistamiento][especie]" class="fauna-especie-select">
-                                <option value="">-- Seleccionar Especie --</option>
+                                <option value="" disabled selected>-- Seleccionar Especie --</option>
                                 <option value="Alondra cornuda (Eremophila alpestris)">Alondra cornuda (Eremophila alpestris)</option>
                                 <option value="Bisbita norteamericana (Anthus rubescens)">Bisbita norteamericana (Anthus rubescens)</option>
                                 <option value="Tecolote llanero (Athene cunicularia)">Tecolote llanero (Athene cunicularia)</option>
@@ -926,7 +926,7 @@
                 <div class="fauna-tab-content" data-fauna-tab-content="rescate">
                     <h3>🧑‍✈️ Responsable(s) que elaboran el reporte</h3>
                     <select id="fauna_report-authors-select-rescate" name="fauna_report_authors_rescate" title="Seleccionar Responsable">
-                        <option value="">-- Seleccionar Responsable --</option>
+                        <option value="" disabled selected>-- Seleccionar Responsable --</option>
                         <option value="Daniel Mejia">Daniel Mejia</option>
                         <option value="Cesar Cisneros">Cesar Cisneros</option>
                         <option value="Alejandro Jimenez">Alejandro Jimenez</option>
@@ -948,19 +948,19 @@
                     <label>🏘️ Sitio de Rescate: <input type="text" name="fauna_rescate[lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
                     <label>🦁 Clase: 
                         <select id="fauna_rescate_clase" name="fauna_rescate[clase]" style="display:block; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                            <option value="">-- Seleccionar Clase --</option>
+                            <option value="" disabled selected>-- Seleccionar Clase --</option>
                         </select>
                     </label>
                     <input type="text" id="fauna_rescate_clase_otro" name="fauna_rescate_clase_otro" placeholder="Especifique otra clase" style="display:none; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" /><br>
                     <label>🔬 Especie: 
                         <select id="fauna_rescate_especie" name="fauna_rescate[especie]" style="display:block; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                            <option value="">-- Seleccionar Especie --</option>
+                            <option value="" disabled selected>-- Seleccionar Especie --</option>
                         </select>
                     </label><br>
 
                     <label>📍 Sitio de Reubicación: 
                         <select id="fauna_rescate_sitio_reubicacion" name="fauna_rescate[sitio_reubicacion]" style="display:block; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
-                            <option value="">-- Seleccionar Sitio de Reubicación --</option>
+                            <option value="" disabled selected>-- Seleccionar Sitio de Reubicación --</option>
                         </select>
                     </label><br>
                     <p style="font-size:14px; font-weight:600; margin-bottom:12px;">📸 Evidencia Fotográfica <span style="font-size:12px; color:#6b7280; font-weight:400;">(opcional)</span></p>

@@ -78,7 +78,8 @@
             try {
               if ('checked' in rec) el.checked = !!rec.checked;
               else if ('value' in rec) el.value = rec.value;
-              el.disabled = !!rec.disabled;
+              var _hasVal = ('checked' in rec) ? !!rec.checked : !!(el.value);
+              el.disabled = !!rec.disabled && _hasVal;
               el.dispatchEvent(new Event('change', { bubbles: true }));
             } catch (e) {}
           } else if (k.indexOf('name::') === 0) {
@@ -89,7 +90,7 @@
             try {
               if (el0.type === 'checkbox' || el0.type === 'radio') Array.prototype.slice.call(nodeList).forEach(function (n) { n.checked = !!rec.checked; });
               else nodeList.forEach(function (n) { n.value = rec.value; });
-              Array.prototype.slice.call(nodeList).forEach(function (n) { n.disabled = !!rec.disabled; n.dispatchEvent(new Event('change', { bubbles: true })); });
+              Array.prototype.slice.call(nodeList).forEach(function (n) { var _hasVal = (el0.type === 'checkbox' || el0.type === 'radio') ? !!rec.checked : !!(n.value); n.disabled = !!rec.disabled && _hasVal; n.dispatchEvent(new Event('change', { bubbles: true })); });
             } catch (e) {}
           }
         });

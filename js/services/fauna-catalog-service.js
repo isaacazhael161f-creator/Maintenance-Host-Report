@@ -37,6 +37,7 @@
     var placeholderOption = document.createElement('option');
     placeholderOption.value = '';
     placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
     selectElement.appendChild(placeholderOption);
 
     var cache = getCache();

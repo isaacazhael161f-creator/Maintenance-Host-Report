@@ -218,8 +218,9 @@
             '  <label>Prioridad: <select class="priority-select dynamic-prioridad"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + getPriorityOptionsHtml() + '</select></label><br>' +
             '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo" value="' + esc(prefill.codigo || '') + '"' + (isPrefilled ? ' readonly style="background:#f3f4f6;color:#6b7280;"' : '') + '></label>' +
             (isPrefilled
-                ? '  <div class="dynamic-photo-upload-area" style="margin:12px 0 4px;">' +
-                  '    <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px;">📷 Nueva Evidencia de Seguimiento <span style="font-weight:400;color:#6b7280;">(opcional)</span></div>' +
+                ? '  <div class="dynamic-photo-upload-area" style="margin:12px 0 4px;border:2px solid #dc2626;border-radius:10px;padding:10px;background:#fff5f5;">' +
+                  '    <div style="font-size:13px;font-weight:600;color:#dc2626;margin-bottom:4px;">📷 Nueva Evidencia de Seguimiento <span style="font-weight:700;color:#dc2626;">* (requerida)</span></div>' +
+                  '    <div style="font-size:12px;color:#7c3aed;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;padding:5px 8px;margin-bottom:8px;">ℹ️ Para dar continuidad al reporte debes adjuntar al menos una foto nueva de este ítem.</div>' +
                   '    <div style="display:flex;gap:10px;">' +
                   '      <label style="flex:1;text-align:center;border:2px dashed #3b82f6;color:#1d4ed8;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📁 Archivo<input type="file" class="dynamic-evidencias dynamic-evidencias-file" multiple accept="image/*" style="display:none;"></label>' +
                   '      <label style="flex:1;text-align:center;border:2px dashed #10b981;color:#065f46;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📸 Foto<input type="file" class="dynamic-evidencias dynamic-evidencias-camera" accept="image/*" capture="environment" style="display:none;"></label>' +

@@ -178,7 +178,7 @@ window.MHRAuthSessionPage = (function () {
                             return a.localeCompare(b, 'es', { sensitivity: 'base' });
                         });
 
-                        select.innerHTML = '<option value="">-- Seleccionar Responsable --</option>';
+                        select.innerHTML = '<option value="" disabled selected>-- Seleccionar Responsable --</option>';
                         usuariosFiltrados.forEach(function (nombre) {
                             var option = document.createElement('option');
                             option.value = nombre;

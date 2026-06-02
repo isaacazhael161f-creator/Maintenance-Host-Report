@@ -74,6 +74,25 @@
                 return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             }
 
+            // Calcula porcentaje de correspondencia basado en distancia:
+            // 0 m → 100%,  50 m → 85%,  150 m → 50%,  300 m → 15%,  ≥500 m → 0%
+            function calcCorrespondencePct(distMeters) {
+                if (distMeters <= 0) return 100;
+                if (distMeters <= 50)  return Math.round(100 - (distMeters / 50) * 15);
+                if (distMeters <= 150) return Math.round(85  - ((distMeters - 50)  / 100) * 35);
+                if (distMeters <= 300) return Math.round(50  - ((distMeters - 150) / 150) * 35);
+                if (distMeters <= 500) return Math.round(15  - ((distMeters - 300) / 200) * 15);
+                return 0;
+            }
+
+            function corrLabel(pct) {
+                if (pct >= 85) return { text: 'Coincidencia muy alta — mismo ítem', color: '#16a34a', icon: '✅' };
+                if (pct >= 60) return { text: 'Coincidencia alta — ítem muy cercano', color: '#65a30d', icon: '✓' };
+                if (pct >= 40) return { text: 'Coincidencia moderada — revisar con atención', color: '#d97706', icon: '⚠️' };
+                if (pct >= 20) return { text: 'Coincidencia baja — posible diferencia de ubicación', color: '#ea580c', icon: '⚠️' };
+                return { text: 'Coincidencia muy baja — ubicación diferente', color: '#dc2626', icon: '❌' };
+            }
+
             function initMap() {
                 if (mapInstance) return;
 
@@ -168,16 +187,23 @@
                                 '<br><span style="font-size:11px;color:#6b7280">Precisi\u00f3n: \u00b1' + Math.round(accuracy) + ' m &nbsp;\u00b7&nbsp; Puedes arrastrar el marcador para ajustar.</span>';
                         }
 
-                        // En modo comparación: mostrar distancia al punto registrado
+                        // En modo comparación: mostrar distancia al punto registrado + % correspondencia
                         if (isComparisonMode && infoEl && !isNaN(storedCompLat) && !isNaN(storedCompLng)) {
                             var dist = haversineDistance(storedCompLat, storedCompLng, lat, lng);
                             var distStr = dist < 1000 ? dist.toFixed(0) + ' m' : (dist / 1000).toFixed(2) + ' km';
                             var distColor = dist <= 50 ? '#16a34a' : dist <= 200 ? '#d97706' : '#dc2626';
+                            var pct = calcCorrespondencePct(dist);
+                            var corr = corrLabel(pct);
                             infoEl.innerHTML =
                                 '<strong>\ud83d\udccb Registrado:</strong> ' + storedCompLat.toFixed(6) + ', ' + storedCompLng.toFixed(6) +
                                 '<br><strong>\ud83d\udccd Tu posici\u00f3n:</strong> ' + lat.toFixed(6) + ', ' + lng.toFixed(6) +
                                 '<br><span style="font-size:11px;color:#6b7280">Precisi\u00f3n GPS: \u00b1' + Math.round(accuracy) + ' m</span>' +
-                                '<br><strong>\ud83d\udccf Distancia al punto registrado:</strong> <span style="font-size:16px;font-weight:bold;color:' + distColor + ';">' + distStr + '</span>';
+                                '<br><strong>\ud83d\udccf Distancia al punto registrado:</strong> <span style="font-weight:bold;color:' + distColor + ';">' + distStr + '</span>' +
+                                '<br><div style="margin-top:8px;padding:8px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">' +
+                                '<div style="font-size:11px;color:#6b7280;margin-bottom:2px;">Correspondencia con el \u00edtem reportado:</div>' +
+                                '<div style="font-size:26px;font-weight:bold;color:' + corr.color + ';line-height:1.2;">' + pct + '%</div>' +
+                                '<div style="font-size:12px;color:' + corr.color + ';font-weight:600;margin-top:2px;">' + corr.icon + ' ' + corr.text + '</div>' +
+                                '</div>';
                         }
 
                         if (gpsBtn) {
@@ -431,6 +457,8 @@
                     } catch (e) {
                         console.error('Error abriendo comparaci\u00f3n de mapa:', e);
                     }
+                    // Auto-obtener ubicación GPS para comparar de inmediato
+                    setTimeout(function () { useMyLocation(); }, 400);
                 }, 150);
             }
 
