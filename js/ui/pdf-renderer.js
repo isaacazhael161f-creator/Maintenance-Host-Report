@@ -13,9 +13,9 @@ window.MHRPdfRenderer = (function () {
         var opt = {
             margin: [8, 8, 8, 8],
             filename: filename,
-            image: { type: 'jpeg', quality: 0.95 },
+            image: { type: 'jpeg', quality: 0.82 },
             html2canvas: {
-                scale: 2,
+                scale: 1.5,
                 useCORS: true,
                 allowTaint: true,
                 logging: false
@@ -97,24 +97,26 @@ window.MHRPdfRenderer = (function () {
                         _latlngs.push([lat, lng]);
                     });
 
-                    if (_latlngs.length === 1) {
-                        _tempMap.setView(_latlngs[0], 17);
-                    } else if (_latlngs.length > 1) {
-                        _tempMap.fitBounds(_latlngs, { padding: [80, 80] });
-                    }
+                    // Siempre encuadrar el aeródromo AIFA completo (bounds fijos)
+                    // independientemente de cuántos pines haya o dónde estén.
+                    var _airportBounds = window.L.latLngBounds(
+                        [19.730, -99.035],   // SW corner
+                        [19.767, -98.985]    // NE corner
+                    );
+                    _tempMap.fitBounds(_airportBounds, { padding: [10, 10] });
 
-                    // Esperar a que carguen los tiles (máx 6 s)
+                    // Esperar a que carguen los tiles (máx 2 s)
                     await new Promise(function (resolve) {
                         var _done = false;
                         function _finish() { if (!_done) { _done = true; resolve(); } }
                         _tempMap.once('load', _finish);
-                        setTimeout(_finish, 6000);
+                        setTimeout(_finish, 2000);
                     });
                     // Pausa extra para que el canvas de Leaflet se pinte
-                    await new Promise(function (resolve) { setTimeout(resolve, 800); });
+                    await new Promise(function (resolve) { setTimeout(resolve, 200); });
 
                     var _mapCanvas = await window.html2canvas(_mapWrap, {
-                        scale: 2,
+                        scale: 1.5,
                         useCORS: true,
                         allowTaint: true,
                         logging: false,
@@ -127,7 +129,7 @@ window.MHRPdfRenderer = (function () {
                     _mapWrap = null;
 
                     pdf.addPage([297, 210], 'l');
-                    pdf.addImage(_mapCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 297, 210);
+                    pdf.addImage(_mapCanvas.toDataURL('image/jpeg', 0.82), 'JPEG', 0, 0, 297, 210);
 
                 } catch (_mapErr) {
                     try { if (_tempMap) _tempMap.remove(); } catch(e) {}
@@ -136,36 +138,38 @@ window.MHRPdfRenderer = (function () {
                 }
             }
 
-            // --- Páginas de evidencias fotográficas (landscape A4) ---
+            // --- Páginas de evidencias fotográficas (landscape A4) — renderizado en paralelo ---
             var photosHtml = options.photosHtml;
             if (photosHtml && photosHtml.length > 0 && typeof window.html2canvas === 'function') {
-                for (var _ppi = 0; _ppi < photosHtml.length; _ppi++) {
-                    var _tempDiv;
-                    try {
-                        _tempDiv = document.createElement('div');
-                        _tempDiv.style.cssText = 'position:fixed;top:0;left:-1200px;width:1122px;height:794px;overflow:hidden;background:#fff;';
-                        _tempDiv.innerHTML = photosHtml[_ppi];
-                        document.body.appendChild(_tempDiv);
-
-                        var _photoCanvas = await window.html2canvas(_tempDiv, {
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true,
-                            logging: false,
-                            width: 1122,
-                            height: 794
-                        });
-
-                        document.body.removeChild(_tempDiv);
-                        _tempDiv = null;
-
-                        pdf.addPage([297, 210], 'l');
-                        pdf.addImage(_photoCanvas.toDataURL('image/jpeg', 0.88), 'JPEG', 0, 0, 297, 210);
-                    } catch (_photoErr) {
-                        if (_tempDiv && _tempDiv.parentNode) _tempDiv.parentNode.removeChild(_tempDiv);
-                        console.warn('Error al añadir página de evidencias:', _photoErr);
-                    }
-                }
+                // Lanzar todos los renders simultáneamente
+                var _photoTasks = photosHtml.map(function (pageHtml) {
+                    var _div = document.createElement('div');
+                    _div.style.cssText = 'position:fixed;top:0;left:-1200px;width:1122px;height:794px;overflow:hidden;background:#fff;';
+                    _div.innerHTML = pageHtml;
+                    document.body.appendChild(_div);
+                    return window.html2canvas(_div, {
+                        scale: 1.5,
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: false,
+                        width: 1122,
+                        height: 794
+                    }).then(function (canvas) {
+                        document.body.removeChild(_div);
+                        return canvas;
+                    }).catch(function (_photoErr) {
+                        if (_div.parentNode) document.body.removeChild(_div);
+                        console.warn('Error al renderizar página de evidencias:', _photoErr);
+                        return null;
+                    });
+                });
+                // Esperar todos y agregar al PDF en orden
+                var _photoCanvases = await Promise.all(_photoTasks);
+                _photoCanvases.forEach(function (canvas) {
+                    if (!canvas) return;
+                    pdf.addPage([297, 210], 'l');
+                    pdf.addImage(canvas.toDataURL('image/jpeg', 0.82), 'JPEG', 0, 0, 297, 210);
+                });
             }
 
             var blob;
@@ -175,9 +179,13 @@ window.MHRPdfRenderer = (function () {
                 blob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' });
             }
 
-            if (blob && typeof onBlobReady === 'function') {
-                try { await onBlobReady(blob); } catch (e) { console.error(e); }
-            }
+            if (!blob) return;
+
+            // Mostrar vista previa de inmediato — no esperar a Supabase
+            var url = URL.createObjectURL(blob);
+            var iframe = document.getElementById('pdf-preview-frame');
+            var downloadBtn = document.getElementById('pdf-download-btn');
+            var closeBtn = document.getElementById('pdf-preview-close');
 
             if (spinner) spinner.style.display = 'none';
             if (submitBtn) {
@@ -186,21 +194,13 @@ window.MHRPdfRenderer = (function () {
                 else submitBtn.value = originalBtnText;
             }
 
-            if (!blob) return;
-            var url = URL.createObjectURL(blob);
-            var iframe = document.getElementById('pdf-preview-frame');
-            var downloadBtn = document.getElementById('pdf-download-btn');
-            var closeBtn = document.getElementById('pdf-preview-close');
-
             if (iframe) iframe.src = url;
             if (preview) {
                 preview.style.setProperty('display', 'flex', 'important');
                 preview.setAttribute('aria-hidden', 'false');
             }
             var backdrop = document.getElementById('pdf-modal-backdrop');
-            if (backdrop) {
-                backdrop.style.setProperty('display', 'block', 'important');
-            }
+            if (backdrop) backdrop.style.setProperty('display', 'block', 'important');
 
             if (downloadBtn) {
                 downloadBtn.onclick = function () {
@@ -216,6 +216,11 @@ window.MHRPdfRenderer = (function () {
                     if (backdrop) backdrop.style.setProperty('display', 'none', 'important');
                     if (iframe) iframe.src = '';
                 };
+            }
+
+            // Guardar en Supabase en segundo plano (no bloquea la vista previa)
+            if (typeof onBlobReady === 'function') {
+                onBlobReady(blob).catch(function (e) { console.error('Error al guardar reporte en Supabase:', e); });
             }
         });
     }

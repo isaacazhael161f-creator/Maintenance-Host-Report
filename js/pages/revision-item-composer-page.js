@@ -92,11 +92,56 @@
         return createComboRow(afterNode);
     }
 
+    function openPrevPhotoModal(url, name) {
+        var modal = document.getElementById('mhr-prev-photo-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'mhr-prev-photo-modal';
+            modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;flex-direction:column;cursor:pointer;';
+            modal.innerHTML =
+                '<div style="position:relative;cursor:default;" onclick="event.stopPropagation()">' +
+                '  <img id="mhr-prev-photo-img" src="" style="width:min(500px,92vw);height:min(500px,80vh);object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,0.6);display:block;background:#111;" alt="">' +
+                '  <div id="mhr-prev-photo-name" style="color:#e5e7eb;text-align:center;margin-top:10px;font-size:13px;font-family:Arial,sans-serif;"></div>' +
+                '  <button type="button" id="mhr-prev-photo-close" style="position:absolute;top:-14px;right:-14px;width:34px;height:34px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #fff;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);">×</button>' +
+                '</div>';
+            document.body.appendChild(modal);
+            document.getElementById('mhr-prev-photo-close').addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+            modal.addEventListener('click', function () { modal.style.display = 'none'; });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal.style.display !== 'none') modal.style.display = 'none';
+            });
+        }
+        document.getElementById('mhr-prev-photo-img').src = url;
+        document.getElementById('mhr-prev-photo-img').alt = name || '';
+        document.getElementById('mhr-prev-photo-name').textContent = name || '';
+        modal.style.display = 'flex';
+    }
+
     function buildItemCard(item, prefill) {
         prefill = prefill || {};
         var followupStatus = prefill.followup_status || '';
         var followupObs = prefill.followup_observaciones || '';
+        var previousPhotos = prefill.previousPhotos || [];
         if (!item) return;
+
+        // HTML de miniaturas de fotos anteriores (o mensaje de fallback)
+        var prevPhotosHtml;
+        if (previousPhotos.length > 0) {
+            prevPhotosHtml = '<div class="prev-photos-block" style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;">' +
+                '<span style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px;">📷 Fotos del reporte anterior (' + previousPhotos.length + '):</span>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+            previousPhotos.forEach(function (p) {
+                prevPhotosHtml += '<img src="' + esc(p.url) + '" data-prev-url="' + esc(p.url) + '" data-prev-name="' + esc(p.name) + '" ' +
+                    'class="prev-photo-thumb" ' +
+                    'style="width:300px;height:300px;object-fit:cover;border-radius:6px;border:2px solid #d1d5db;cursor:pointer;transition:border-color 0.15s,transform 0.15s;" ' +
+                    'title="' + esc(p.name) + ' — clic para ampliar">';
+            });
+            prevPhotosHtml += '</div></div>';
+        } else {
+            prevPhotosHtml = '<div style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;"><span style="font-size:13px;color:#6b7280;">📷 Las fotos se registraron en el reporte anterior.</span></div>';
+        }
 
         var hallazgoOptions = '<option value="">Seleccione hallazgo</option>';
         (item.hallazgos || []).forEach(function (h) {
@@ -137,7 +182,7 @@
             '  <input type="text" class="dynamic-hallazgo-otro" placeholder="Especifique otro hallazgo" style="display:none; width:100%; margin:6px 0;"' + (isPrefilled ? ' disabled' : '') + '>' +
             '  <label>Condición: <select class="condicion-select dynamic-condicion"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + getConditionOptionsHtml() + '</select></label><br>' +
             (isPrefilled
-              ? '  <div style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;"><span style="font-size:13px;color:#6b7280;">📷 Las fotos se registraron en el reporte anterior.</span></div>'
+              ? '  ' + prevPhotosHtml
               : '  <div class="dynamic-photo-upload-area" style="margin:10px 0;">' +
                 '    <div style="font-size:13px;color:#374151;margin-bottom:4px;">📷 Evidencia Fotográfica <span style="color:#6b7280;">(opcional)</span></div>' +
                 '    <div style="display:flex;gap:10px;">' +
@@ -172,6 +217,16 @@
             '  <input type="hidden" class="dynamic-historial-json" value="' + esc(prefill.historial_json || '') + '">' +
             '  <label>Prioridad: <select class="priority-select dynamic-prioridad"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + getPriorityOptionsHtml() + '</select></label><br>' +
             '  <label>Código de Seguimiento: <input type="text" class="dynamic-codigo" value="' + esc(prefill.codigo || '') + '"' + (isPrefilled ? ' readonly style="background:#f3f4f6;color:#6b7280;"' : '') + '></label>' +
+            (isPrefilled
+                ? '  <div class="dynamic-photo-upload-area" style="margin:12px 0 4px;">' +
+                  '    <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px;">📷 Nueva Evidencia de Seguimiento <span style="font-weight:400;color:#6b7280;">(opcional)</span></div>' +
+                  '    <div style="display:flex;gap:10px;">' +
+                  '      <label style="flex:1;text-align:center;border:2px dashed #3b82f6;color:#1d4ed8;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📁 Archivo<input type="file" class="dynamic-evidencias dynamic-evidencias-file" multiple accept="image/*" style="display:none;"></label>' +
+                  '      <label style="flex:1;text-align:center;border:2px dashed #10b981;color:#065f46;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:15px;">📸 Foto<input type="file" class="dynamic-evidencias dynamic-evidencias-camera" accept="image/*" capture="environment" style="display:none;"></label>' +
+                  '    </div>' +
+                  '    <div class="dynamic-photo-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>' +
+                  '  </div>'
+                : '') +
             '</div>' +
             (isPrefilled
                 ? ''
@@ -203,6 +258,7 @@
                     if (window.openMapComparison) window.openMapComparison(lugarInputForCompare.value);
                 });
             }
+            bindDynamicPhotoInputs(card, item.id);
         } else {
             bindDynamicLugarInput(card.querySelector('.dynamic-lugar'));
             bindDynamicPhotoInputs(card, item.id);
@@ -239,6 +295,19 @@
         }
         if (condicion && prefill.condicion) condicion.value = prefill.condicion;
         if (prioridad && prefill.prioridad) prioridad.value = prefill.prioridad;
+
+        // Vincular clic en miniaturas de fotos anteriores
+        if (isPrefilled && previousPhotos.length > 0) {
+            var thumbs = card.querySelectorAll('.prev-photo-thumb');
+            Array.prototype.forEach.call(thumbs, function (thumb) {
+                thumb.addEventListener('mouseenter', function () { thumb.style.borderColor = '#0ea5e9'; thumb.style.transform = 'scale(1.08)'; });
+                thumb.addEventListener('mouseleave', function () { thumb.style.borderColor = '#d1d5db'; thumb.style.transform = ''; });
+                thumb.addEventListener('click', function () {
+                    openPrevPhotoModal(thumb.getAttribute('data-prev-url'), thumb.getAttribute('data-prev-name'));
+                });
+            });
+        }
+
         return card;
     }
 
@@ -338,7 +407,6 @@
         var resp = await window.MHRReportService.getLatestReportByPista(client, pista);
         
         if (resp.error || !resp.data) {
-            // Si no hay reporte anterior, simplemente mostrar combo para agregar
             ensureSingleComboRow();
             return;
         }
@@ -364,11 +432,26 @@
                 observaciones: it.observaciones || '',
                 prioridad: it.prioridad || '',
                 codigo: it.codigo_seguimiento || '',
-                followup_status: '', // Vacío para que usuario defina nuevo estado
+                followup_status: '',
                 followup_observaciones: ''
             };
             prefill.is_prefilled_from_previous = true;
             prefill.historial_json = it.observaciones ? JSON.stringify([{ tipo: 'observacion_previa', texto: it.observaciones }]) : '[]';
+            // Fotos: prioridad a URLs firmadas; fallback a miniaturas guardadas en datos_extra.thumbs
+            var itPhotos = Array.isArray(it.report_inspection_item_photos) ? it.report_inspection_item_photos : [];
+            var fromStorage = itPhotos
+                .filter(function (p) { return p.public_url && !(p.storage_path || '').includes('/signatures/'); })
+                .map(function (p) { return { url: p.public_url, name: p.original_filename || 'Foto' }; });
+            var fromThumbs = [];
+            try {
+                var extraData = it.datos_extra || {};
+                if (Array.isArray(extraData.thumbs)) {
+                    fromThumbs = extraData.thumbs
+                        .filter(function (t) { return t && t.dataURL; })
+                        .map(function (t) { return { url: t.dataURL, name: t.name || 'Foto' }; });
+                }
+            } catch (e) {}
+            prefill.previousPhotos = fromStorage.length > 0 ? fromStorage : fromThumbs;
             var card = buildItemCard(itemMap[catalogId], prefill);
             selectedContainer.appendChild(card);
             
@@ -505,6 +588,11 @@
             return;
         }
         ensureSingleComboRow();
+        window.mhr = window.mhr || {};
+        window.mhr.resetItemSelector = function () {
+            selectedContainer.innerHTML = '';
+            ensureSingleComboRow();
+        };
         window.mhrDynamicItemCatalog = { catalogTree: catalogTree };
         Array.prototype.slice.call(document.querySelectorAll('input[name="pista"]')).forEach(function (r) {
             r.addEventListener('change', function () {

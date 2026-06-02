@@ -3,8 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!btn) return;
     btn.addEventListener('click', function (e) {
         try { e.preventDefault(); e.stopPropagation(); } catch (err) { }
-        var ok = window.confirm('¿Estás seguro que deseas limpiar TODOS los campos de la sección actual?');
-        if (!ok) return;
 
         var revisionSection = document.getElementById('revision-section');
         var faunaSection = document.getElementById('fauna-section');
@@ -142,7 +140,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 removeDuplicateItems();
                 Array.prototype.slice.call(document.querySelectorAll('[id^="details_"]')).forEach(function (d) { try { d.style.display = 'none'; } catch (e) { } });
                 if (window.itemPhotos) window.itemPhotos = {};
-                Array.prototype.slice.call(document.querySelectorAll('.photo-previews')).forEach(function (p) { try { p.innerHTML = ''; } catch (e) { } });
+                Array.prototype.slice.call(document.querySelectorAll('.photo-previews, .dynamic-photo-previews')).forEach(function (p) { try { p.innerHTML = ''; } catch (e) { } });
+                var selCont = document.getElementById('item-selected-container');
+                if (selCont) selCont.innerHTML = '';
+                if (window.mhr && typeof window.mhr.resetItemSelector === 'function') {
+                    try { window.mhr.resetItemSelector(); } catch (e) { }
+                }
             } catch (e) { }
         }
         try {

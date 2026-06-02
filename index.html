@@ -24,7 +24,6 @@
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="./assets/css/main.css">
-
 </head>
 <body>
     <!-- Backdrop para el modal PDF -->
@@ -40,12 +39,10 @@
         </div>
         <iframe id="pdf-preview-frame" title="Vista previa del PDF"></iframe>
     </div>
-
     <!-- Banner de estado de conexión -->
     <div id="offline-banner"></div>
     <!-- Badge de reportes pendientes de sincronizar -->
     <div id="pending-badge"></div>
-
     <!-- Login Modal -->
     <div id="login-modal">
         <!-- Left: Background image + branding -->
@@ -57,7 +54,6 @@
                 <div class="brand-footer">AIFA-DO-SSO-GSO-MHR-F1 &nbsp;·&nbsp; Aeropuerto Internacional Felipe Ángeles</div>
             </div>
         </div>
-
         <!-- Right: Login form -->
         <div id="login-box">
             <div id="login-icon">✈️</div>
@@ -83,7 +79,6 @@
             </div>
         </div>
     </div>
-
     <!-- Menu toggle button (visible when sidebar is hidden) -->
     <button id="menu-toggle-btn" title="Mostrar menú">☰</button>
     <!-- Sidebar -->
@@ -1382,26 +1377,11 @@
     <script src="./js/mhr-utils.js"></script>
     <!-- Scripts: fecha/hora, bloqueo Cargo y comportamiento Turno -->
     <script src="./js/ui/dashboard-ui.js"></script>
-
     <script src="./js/pages/revision-basic-ui-page.js"></script>
-
-
-
     <script src="./js/pages/revision-duplicate-page.js"></script>
-
-
-
     <script src="./js/pages/revision-item-composer-page.js"></script>
-
-
-
     <script src="./js/pages/fauna-impact-item-controls-page.js"></script>
-
-
-
     <script src="./js/pages/revision-item-photos-page.js"></script>
-
-
 
     <!-- Script: Captura de Firmas en Canvas -->
     <script src="./js/ui/signature-manager.js"></script>
@@ -1419,36 +1399,21 @@
     <!-- Botón fijo: Limpiar todo (limpia todos los items seleccionados) -->
     <button id="clear-all-btn" class="clear-all-btn" title="Limpiar todo" aria-label="Limpiar todo">Limpiar
         todo</button>
-
     <script src="./js/pages/clear-all-page.js"></script>
-
     <!-- html2pdf CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
     <!-- html2canvas CDN (para captura de mapas) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
     <script src="./js/ui/pdf-renderer.js"></script>
     <script src="./js/pages/revision-page.js"></script>
     <script src="./js/pages/app-bootstrap-page.js"></script>
-
     <script src="./js/pages/form-state-page.js"></script>
     <script src="./js/pages/clear-saved-page.js"></script>
     <script src="./js/pages/role-selector-page.js"></script>
     <script src="./js/pages/revision-item-lock-page.js"></script>
     <script src="./js/pages/revision-hallazgo-page.js"></script>
-
-
-
-
-
-
-
-
-
-
     <script src="./js/ui/map-picker-modal.js"></script>
     <script src="./js/ui/select-colorizer.js"></script>
-
     <!-- Modal del mapa interactivo para seleccionar Lugar -->
     <div id="map-modal">
         <div id="map-modal-content">
@@ -1471,17 +1436,15 @@
             </div>
         </div>
     </div>
-
     <script src="./js/pages/historial-so-page.js"></script>
     <script src="./js/pages/auth-session-page.js"></script>
     <script src="./js/pages/main-tabs-page.js"></script>
     <script src="./js/pages/offline-report-sync-page.js"></script>
     <script src="./js/pages/fauna-submit-page.js"></script>
     <script src="./js/pages/fauna-dashboard-page.js"></script>
+    <script src="./js/pages/estadistica-so-page.js"></script>
     <script src="./js/pages/supabase-orchestrator-page.js"></script>
-
     <script src="./js/supabase-client.js"></script>
-
     <script>
         (function () {
             if (window.MHRSupabaseOrchestratorPage && typeof window.MHRSupabaseOrchestratorPage.init === 'function') {

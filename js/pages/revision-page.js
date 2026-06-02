@@ -217,6 +217,26 @@ window.MHRRevisionPage = (function () {
                 return;
             }
 
+            // Helper: generar miniatura base64 para almacenar en datos_extra sin depender de storage
+            function makeThumb(dataURL) {
+                return new Promise(function (resolve) {
+                    try {
+                        var img = new Image();
+                        img.onload = function () {
+                            var MAX = 600;
+                            var scale = Math.min(MAX / img.width, MAX / img.height, 1);
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.max(1, Math.round(img.width * scale));
+                            canvas.height = Math.max(1, Math.round(img.height * scale));
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.80));
+                        };
+                        img.onerror = function () { resolve(null); };
+                        img.src = dataURL;
+                    } catch (e) { resolve(null); }
+                });
+            }
+
             // --- Funciones internas de guardado ---
             var saveToSupabase = async function (pdfUrl) {
                 try {
@@ -254,11 +274,12 @@ window.MHRRevisionPage = (function () {
                     if (reportError) { alert('Error guardando en base de datos: ' + reportError.message); return null; }
                     var reportId = reportData[0].id;
 
+                    // Insertar todos los items en paralelo
                     var insertedItems = [];
                     var insertedItemsByCatalogId = {};
                     var insertedItemsByFormItemKey = {};
-                    for (var itx = 0; itx < filled.length; itx++) {
-                        var f = filled[itx];
+
+                    var itemInsertResults = await Promise.all(filled.map(async function (f, itx) {
                         var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
                         (f.fields || []).forEach(function (ff) {
                             var k = (ff.key || '').toLowerCase(), v = ff.value;
@@ -269,16 +290,24 @@ window.MHRRevisionPage = (function () {
                             else if (k.includes('prioridad')) prioridadVal = v;
                             else if (k.includes('codigo') || k.includes('seguimiento')) codigoVal = v;
                         });
-                        var parsedOrder = parseInt(itx, 10);
-                        if (!isFinite(parsedOrder)) parsedOrder = 0;
-                        var parsedCatalogId = null;
-                        if (f.id && /^[0-9a-fA-F-]{36}$/.test(String(f.id))) parsedCatalogId = f.id;
-                        
-                        // Construir datos_extra con estado de seguimiento
+                        var parsedCatalogId = (f.id && /^[0-9a-fA-F-]{36}$/.test(String(f.id))) ? f.id : null;
                         var datosExtra = {};
                         if (f.followupStatus) datosExtra.followup_status = f.followupStatus;
                         if (f.followupObs) datosExtra.followup_observaciones = f.followupObs;
-                        
+                        // Generar miniaturas y almacenarlas en datos_extra para que el
+                        // siguiente ciclo las muestre sin necesitar acceso a storage
+                        var fPhotos = (window.mhr && window.mhr.getItemPhotos)
+                            ? window.mhr.getItemPhotos(f.id)
+                            : ((window.itemPhotos && window.itemPhotos[f.id]) || []);
+                        if (fPhotos.length > 0) {
+                            var thumbArr = await Promise.all(fPhotos.slice(0, 5).map(function (ph) {
+                                return makeThumb(ph.dataURL).then(function (t) {
+                                    return t ? { dataURL: t, name: ph.name || 'foto' } : null;
+                                });
+                            }));
+                            var validThumbs = thumbArr.filter(Boolean);
+                            if (validThumbs.length > 0) datosExtra.thumbs = validThumbs;
+                        }
                         var itemPayload = {
                             report_id: reportId,
                             item_catalogo_id: parsedCatalogId,
@@ -289,75 +318,74 @@ window.MHRRevisionPage = (function () {
                             observaciones: observacionesVal || null,
                             prioridad: prioridadVal || null,
                             codigo_seguimiento: codigoVal || null,
-                            orden: parsedOrder,
+                            orden: itx,
                             datos_extra: Object.keys(datosExtra).length > 0 ? datosExtra : null
                         };
-                        var candidates = [itemPayload];
-                        var inserted = null, lastErr = null;
-                        for (var ci = 0; ci < candidates.length; ci++) {
-                            var r = await window.MHRReportService.insertReportItems(window.supabaseClient, [candidates[ci]]);
-                            if (!r.error && r.data && r.data.length) { inserted = r.data[0]; break; }
-                            lastErr = r.error || lastErr;
-                        }
-                        if (!inserted) {
-                            console.warn('No se pudo guardar item de inspección; se continuará con el flujo del reporte.', {
-                                item: f,
-                                error: lastErr
+                        return window.MHRReportService.insertReportItems(window.supabaseClient, [itemPayload])
+                            .then(function (r) {
+                                if (!r.error && r.data && r.data.length) return { f: f, inserted: r.data[0], catalogId: parsedCatalogId };
+                                console.warn('No se pudo guardar item de inspección:', { item: f, error: r.error });
+                                return { f: f, inserted: null, catalogId: parsedCatalogId };
+                            })
+                            .catch(function (err) {
+                                console.warn('Error al insertar item:', err);
+                                return { f: f, inserted: null, catalogId: parsedCatalogId };
                             });
-                        } else {
-                            insertedItems.push(inserted);
-                            insertedItemsByFormItemKey[String(f.id)] = inserted;
-                            if (parsedCatalogId) insertedItemsByCatalogId[String(parsedCatalogId)] = inserted;
-                        }
-                    }
+                    }));
 
-                    // Subir evidencias fotográficas
-                    try {
-                        var photosToInsert = [];
-                        for (var fi = 0; fi < filled.length; fi++) {
-                            var f = filled[fi];
-                            var photos = (window.mhr && window.mhr.getItemPhotos) ? window.mhr.getItemPhotos(f.id) : [];
-                            if (!photos || photos.length === 0) continue;
-                            for (var pi = 0; pi < photos.length; pi++) {
-                                var photo = photos[pi];
-                                try {
-                                    var arr = photo.dataURL.split(',');
-                                    var mime = (arr[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
-                                    var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-                                    while (n--) u8arr[n] = bstr.charCodeAt(n);
-                                    var photoBlob = new Blob([u8arr], { type: mime });
-                                    var ext = mime.split('/')[1] || 'jpg';
-                                    var relatedItem = insertedItemsByFormItemKey[String(f.id)] || insertedItemsByCatalogId[String(f.id)] || (insertedItems && insertedItems[fi] ? insertedItems[fi] : null);
-                                    var photoFilename = reportId + '/' + (relatedItem ? relatedItem.id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
-                                    var { error: photoUploadErr } = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime });
-                                    if (!photoUploadErr) {
-                                        var relItemId = relatedItem ? relatedItem.id : null;
-                                        if (relItemId) {
-                                            photosToInsert.push({
-                                                report_inspection_item_id: relItemId,
-                                                bucket: 'report-evidencias',
-                                                storage_path: photoFilename,
-                                                original_filename: photo.name || photoFilename,
-                                                mime_type: mime,
-                                                size_bytes: photoBlob.size
-                                            });
-                                        }
-                                    }
-                                } catch (photoErr) {}
-                            }
+                    itemInsertResults.forEach(function (res) {
+                        if (res.inserted) {
+                            insertedItems.push(res.inserted);
+                            insertedItemsByFormItemKey[String(res.f.id)] = res.inserted;
+                            if (res.catalogId) insertedItemsByCatalogId[String(res.catalogId)] = res.inserted;
                         }
+                    });
+
+                    // Subir evidencias fotográficas en paralelo
+                    try {
+                        // Preparar todas las subidas de fotos como promesas simultáneas
+                        var photoUploadTasks = [];
+                        filled.forEach(function (f, fi) {
+                            var photos = (window.mhr && window.mhr.getItemPhotos) ? window.mhr.getItemPhotos(f.id) : [];
+                            if (!photos || photos.length === 0) return;
+                            var relatedItem = insertedItemsByFormItemKey[String(f.id)] || insertedItemsByCatalogId[String(f.id)] || (insertedItems[fi] || null);
+                            photos.forEach(function (photo, pi) {
+                                photoUploadTasks.push((function (f, fi, photo, pi, relatedItem) {
+                                    return Promise.resolve().then(function () {
+                                        var arr = photo.dataURL.split(',');
+                                        var mime = (arr[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+                                        var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+                                        while (n--) u8arr[n] = bstr.charCodeAt(n);
+                                        var photoBlob = new Blob([u8arr], { type: mime });
+                                        var ext = mime.split('/')[1] || 'jpg';
+                                        var photoFilename = reportId + '/' + (relatedItem ? relatedItem.id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
+                                        return window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime })
+                                            .then(function (upRes) {
+                                                if (!upRes.error && relatedItem && relatedItem.id) {
+                                                    return { report_inspection_item_id: relatedItem.id, bucket: 'report-evidencias', storage_path: photoFilename, original_filename: photo.name || photoFilename, mime_type: mime, size_bytes: photoBlob.size };
+                                                }
+                                                return null;
+                                            });
+                                    }).catch(function () { return null; });
+                                })(f, fi, photo, pi, relatedItem));
+                            });
+                        });
+
+                        var photoResults = await Promise.allSettled(photoUploadTasks);
+                        var photosToInsert = photoResults
+                            .filter(function (r) { return r.status === 'fulfilled' && r.value; })
+                            .map(function (r) { return r.value; });
                         if (photosToInsert.length > 0) await window.MHRReportService.insertItemPhotosBulk(window.supabaseClient, photosToInsert);
 
-                        // Subir firmas como imágenes para conservarlas en edición/consulta
+                        // Subir firmas en paralelo
                         var firmasToUpload = (window.obtenerFirmas && window.obtenerFirmas()) || {};
                         var signatureItemId = (insertedItems[0] && insertedItems[0].id) ? insertedItems[0].id : null;
                         if (!signatureItemId) console.warn('No hay item de inspección para relacionar firmas; se omite guardado de firmas en BD.');
                         var signatureKeys = ['area', 'aifa', 'afac'];
-                        for (var si = 0; si < signatureKeys.length; si++) {
-                            var sigKey = signatureKeys[si];
+                        var sigTasks = signatureKeys.map(function (sigKey) {
                             var sigData = firmasToUpload[sigKey];
-                            if (!sigData || typeof sigData !== 'string' || sigData.indexOf('data:image/') !== 0) continue;
-                            try {
+                            if (!sigData || typeof sigData !== 'string' || sigData.indexOf('data:image/') !== 0) return Promise.resolve();
+                            return Promise.resolve().then(function () {
                                 var sigArr = sigData.split(',');
                                 var sigMime = (sigArr[0].match(/:(.*?);/) || [])[1] || 'image/png';
                                 var sigBstr = atob(sigArr[1]), sigN = sigBstr.length, sigU8 = new Uint8Array(sigN);
@@ -365,19 +393,15 @@ window.MHRRevisionPage = (function () {
                                 var sigBlob = new Blob([sigU8], { type: sigMime });
                                 var sigExt = sigMime.split('/')[1] || 'png';
                                 var sigPath = reportId + '/signatures/' + sigKey + '_' + Date.now() + '.' + sigExt;
-                                var upSig = await window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', sigPath, sigBlob, { cacheControl: '3600', upsert: false, contentType: sigMime });
-                                if (!upSig.error && signatureItemId) {
-                                    await window.MHRReportService.insertItemPhoto(window.supabaseClient, {
-                                        report_inspection_item_id: signatureItemId,
-                                        bucket: 'report-evidencias',
-                                        storage_path: sigPath,
-                                        original_filename: 'firma_' + sigKey + '.' + sigExt,
-                                        mime_type: sigMime,
-                                        size_bytes: sigBlob.size
+                                return window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', sigPath, sigBlob, { cacheControl: '3600', upsert: false, contentType: sigMime })
+                                    .then(function (upSig) {
+                                        if (!upSig.error && signatureItemId) {
+                                            return window.MHRReportService.insertItemPhoto(window.supabaseClient, { report_inspection_item_id: signatureItemId, bucket: 'report-evidencias', storage_path: sigPath, original_filename: 'firma_' + sigKey + '.' + sigExt, mime_type: sigMime, size_bytes: sigBlob.size });
+                                        }
                                     });
-                                }
-                            } catch (sigErr) {}
-                        }
+                            }).catch(function (sigErr) { console.warn('Error al subir firma ' + sigKey + ':', sigErr); });
+                        });
+                        await Promise.allSettled(sigTasks);
                     } catch (allPhotosErr) { console.warn('Error general en subida de evidencias:', allPhotosErr); }
 
                     return reportId;
@@ -678,6 +702,11 @@ window.MHRRevisionPage = (function () {
                         else submitBtn.value = 'Guardando datos...';
                     }
                     await saveToSupabase(pdfUrl);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
+                        else submitBtn.value = originalBtnText;
+                    }
                     try {
                         var clearAllBtn = document.getElementById('clear-all-btn');
                         if (clearAllBtn) clearAllBtn.click();

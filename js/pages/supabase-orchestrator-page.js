@@ -15,12 +15,18 @@ window.MHRSupabaseOrchestratorPage = (function () {
       window.MHRAuthSessionPage.init({ supabase: supabase });
     }
 
+    // Inicializar módulo de Estadísticas SO y capturar su API
+    var estadisticaSoApi = null;
+    if (window.MHREstadisticaSoPage && typeof window.MHREstadisticaSoPage.init === 'function') {
+      estadisticaSoApi = window.MHREstadisticaSoPage.init();
+    }
+
     if (window.MHRMainTabsPage && typeof window.MHRMainTabsPage.init === 'function') {
       window.MHRMainTabsPage.init({
         cargarCatalogosFauna: window.cargarCatalogosFauna,
         loadFaunaStatistics: window.loadFaunaStatistics,
         loadFaunaReports: window.loadFaunaReports,
-        loadEstadisticas: window.loadEstadisticas
+        loadEstadisticas: estadisticaSoApi ? estadisticaSoApi.loadEstadisticas : null
       });
     }
 
