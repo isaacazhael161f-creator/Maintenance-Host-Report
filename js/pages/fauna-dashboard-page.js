@@ -615,8 +615,11 @@ window.MHRFaunaDashboardPage = (function () {
             }
 
             async function loadFaunaHallazgosClaseEspecieCombos() {
-                await cargarCatalogoSelect('catalogo_clase', faunaClaseSelect, 'Todas las clases');
-                await cargarEspeciesPorClase(faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
+                var svc = window.MHRFaunaCatalogService;
+                var client = window.supabaseClient;
+                if (!svc || !client) return;
+                await svc.cargarCatalogoSelect(client, 'catalogo_clase', faunaClaseSelect, 'Todas las clases');
+                await svc.cargarEspeciesPorClase(client, faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
             }
 
             function formatFaunaHistorico(resumenMap) {
@@ -728,7 +731,9 @@ window.MHRFaunaDashboardPage = (function () {
             faunaYearSelect?.addEventListener('change', function () { loadFaunaHallazgosMapData(); });
             faunaMonthSelect?.addEventListener('change', function () { loadFaunaHallazgosMapData(); });
             faunaClaseSelect?.addEventListener('change', async function () {
-                await cargarEspeciesPorClase(faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
+                var svc = window.MHRFaunaCatalogService;
+                var client = window.supabaseClient;
+                if (svc && client) await svc.cargarEspeciesPorClase(client, faunaClaseSelect, faunaEspecieSelect, 'Todas las especies');
                 loadFaunaHallazgosMapData();
             });
             faunaEspecieSelect?.addEventListener('change', function () { loadFaunaHallazgosMapData(); });

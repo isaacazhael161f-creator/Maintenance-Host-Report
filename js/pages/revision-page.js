@@ -282,15 +282,18 @@ window.MHRRevisionPage = (function () {
 
                     var { data: reportData, error: reportError } = await window.MHRReportService.insertReport(window.supabaseClient, reportPayload);
                     
-                    if (reportError && reportError.message && (reportError.message.includes('area_representante') || reportError.message.includes('schema'))) {
-                        var reportPayloadBasic = {
-                            folio: folio, fecha_local: fecha, fecha_utc: utcDateStr + ' ' + utcTimeStr,
-                            tipo_inspeccion: tiposText, turno: turnoText, pista: pistaText, responsable: autor,
-                            cargo: cargo, pdf_url: pdfUrl || null
-                        };
-                        var result = await window.MHRReportService.insertReport(window.supabaseClient, reportPayloadBasic);
-                        reportData = result.data;
-                        reportError = result.error;
+                    if (reportError) {
+                        var _errMsg = (reportError.message || '').toLowerCase();
+                        if (_errMsg.includes('area_representante') || _errMsg.includes('schema') || _errMsg.includes('does not exist') || _errMsg.includes('column') || _errMsg.includes('unknown')) {
+                            var reportPayloadBasic = {
+                                folio: folio, fecha_local: fecha, fecha_utc: utcDateStr + ' ' + utcTimeStr,
+                                tipo_inspeccion: tiposText, turno: turnoText, pista: pistaText, responsable: autor,
+                                cargo: cargo, pdf_url: pdfUrl || null
+                            };
+                            var result = await window.MHRReportService.insertReport(window.supabaseClient, reportPayloadBasic);
+                            reportData = result.data;
+                            reportError = result.error;
+                        }
                     }
 
                     if (reportError) { alert('Error guardando en base de datos: ' + reportError.message); return null; }
