@@ -444,7 +444,7 @@ window.MHRRevisionPage = (function () {
 
             // --- Generación HTML para PDF ---
             var container = document.getElementById('report-summary');
-            var html = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;">';
+            var html = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;padding-top:10mm;">';
             function escapeHtml(str) {
                 try {
                     return str.toString()
@@ -519,21 +519,30 @@ window.MHRRevisionPage = (function () {
             html += '<div style="margin-top:6px;color:#374151;font-weight:600;white-space:nowrap;">Folio: ' + (folio || '') + '</div>';
             html += '</td></tr></tbody></table>';
 
-            var mc  = 'vertical-align:top;text-align:center;padding:7px 5px;border-right:1px solid #e0e0e0;';
-            var mcL = 'vertical-align:top;text-align:center;padding:7px 5px;';
+            var mc  = 'vertical-align:top;text-align:center;padding:9px 8px;border-right:1px solid transparent;border-bottom:1px solid transparent;';
+            var mcL = 'vertical-align:top;text-align:center;padding:9px 8px;border-bottom:1px solid transparent;';
             var metaLabel = 'style="display:block;font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;"';
             var metaValue = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;"';
             var metaValueNowrap = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;white-space:nowrap;"';
-            html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #e0e0e0;table-layout:fixed;">';
-            html += '<tbody><tr>';
-            html += '<td style="' + mc  + 'width:11%;"><span ' + metaLabel + '>Tipo de Inspecci\u00f3n</span><span ' + metaValue + '>' + (tiposText || '-') + '</span></td>';
-            html += '<td style="' + mc  + 'width:8%;"><span ' + metaLabel + '>Turno</span><span ' + metaValue + '>' + (turnoText || '-') + '</span></td>';
-            html += '<td style="' + mc  + 'width:10%;"><span ' + metaLabel + '>Pista</span><span ' + metaValueNowrap + '>' + (pistaText || '-') + '</span></td>';
-            html += '<td style="' + mc  + 'width:17%;"><span ' + metaLabel + '>Responsable</span><span ' + metaValue + '>' + (autor || '-') + '</span></td>';
-            html += '<td style="' + mc  + 'width:17%;"><span ' + metaLabel + '>Cargo</span><span ' + metaValue + '>' + (cargo || '-') + '</span></td>';
-            html += '<td style="' + mc  + 'width:14%;"><span ' + metaLabel + '>Representante de \u00c1rea</span><span ' + metaValue + '>' + (areaRep || '-') + (areaRepName ? '<br>' + areaRepName : '') + '</span></td>';
-            html += '<td style="' + mcL + 'width:13%;"><span ' + metaLabel + '>Fecha Local</span><span ' + metaValue + '>' + fecha + '</span></td>';
-            html += '</tr></tbody></table>';
+            html += '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid transparent;table-layout:fixed;">';
+            html += '<tbody>';
+            // Fila 1: Tipo de Inspección | Turno | Pista
+            html += '<tr>';
+            html += '<td style="' + mc  + 'width:33%;"><span ' + metaLabel + '>Tipo de Inspecci\u00f3n</span><span ' + metaValue + '>' + (tiposText || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:33%;"><span ' + metaLabel + '>Turno</span><span ' + metaValue + '>' + (turnoText || '-') + '</span></td>';
+            html += '<td style="' + mcL + 'width:34%;"><span ' + metaLabel + '>Pista</span><span ' + metaValueNowrap + '>' + (pistaText || '-') + '</span></td>';
+            html += '</tr>';
+            // Fila 2: Responsable | Cargo | Representante de Área
+            html += '<tr>';
+            html += '<td style="' + mc  + 'width:33%;"><span ' + metaLabel + '>Responsable</span><span ' + metaValue + '>' + (autor || '-') + '</span></td>';
+            html += '<td style="' + mc  + 'width:33%;"><span ' + metaLabel + '>Cargo</span><span ' + metaValue + '>' + (cargo || '-') + '</span></td>';
+            html += '<td style="' + mcL + 'width:34%;"><span ' + metaLabel + '>Representante de \u00c1rea</span><span ' + metaValue + '>' + (areaRep || '-') + (areaRepName ? '<br>' + areaRepName : '') + '</span></td>';
+            html += '</tr>';
+            // Fila 3: Fecha Local (centrada)
+            html += '<tr>';
+            html += '<td colspan="3" style="vertical-align:top;text-align:center;padding:9px 8px;"><span ' + metaLabel + '>Fecha Local</span><span ' + metaValue + '>' + fecha + '</span></td>';
+            html += '</tr>';
+            html += '</tbody></table>';
             html += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
             
             html += '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="text-align:center;padding:8px;border-bottom:1px solid #e0e0e0;width:4%">#</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:22%">Item</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:34%">Información</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:20%">Observaciones</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e0e0e0;width:20%">Lugar</th></tr></thead><tbody>';

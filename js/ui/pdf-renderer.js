@@ -11,7 +11,7 @@ window.MHRPdfRenderer = (function () {
         try { if (spinner) spinner.style.display = 'flex'; } catch (e) { }
 
         var opt = {
-            margin: [8, 8, 8, 8],
+            margin: [24, 8, 8, 8],
             filename: filename,
             image: { type: 'jpeg', quality: 0.82 },
             html2canvas: {

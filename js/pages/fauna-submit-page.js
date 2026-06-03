@@ -114,7 +114,7 @@ window.MHRFaunaSubmitPage = (function () {
 
                             // Generar HTML del reporte impacto para PDF con formato profesional (similar a revisión)
                             var impactoReportSummary = document.createElement('div');
-                            var impactoHtml = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;max-width:210mm;margin:0 auto;padding:12mm;">';
+                            var impactoHtml = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;">';
                             
                             // Obtener membrete (similar a revisión)
                             var membreteLines = [];
@@ -126,48 +126,49 @@ window.MHRFaunaSubmitPage = (function () {
                                 });
                             } catch (e) { }
 
-                            // Header: membrete izquierda, logo+titulo centrado, folio derecha (estilo revisión)
-                            impactoHtml += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-                            // membrete (izq)
-                            impactoHtml += '<div style="min-width:180px;">';
-                            if (membreteLines.length) { 
-                                impactoHtml += '<div style="font-size:12px;color:#1f2937;line-height:1.1">'; 
-                                membreteLines.forEach(function (line) { impactoHtml += '<div>' + line + '</div>'; }); 
-                                impactoHtml += '</div>'; 
+                            // Header: membrete izquierda, logo+titulo centrado, folio derecha (igual que revisión)
+                            var utcTimeStr = pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ':' + pad(now.getUTCSeconds()) + ' UTC';
+                            var utcDateStr = pad(now.getUTCDate()) + '/' + pad(now.getUTCMonth() + 1) + '/' + now.getUTCFullYear();
+                            impactoHtml += '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;"><tbody><tr>';
+                            impactoHtml += '<td style="width:190px;vertical-align:top;padding-right:10px;">';
+                            if (membreteLines.length) {
+                                var membreteStyles = [
+                                    'font-size:14px;font-weight:700;color:#0f1724;margin-bottom:3px;',
+                                    'font-size:12px;font-weight:700;color:#374151;margin-bottom:2px;',
+                                    'font-size:12px;font-weight:700;color:#374151;margin-bottom:2px;',
+                                    'font-size:10px;font-weight:400;color:#6b7280;margin-top:5px;letter-spacing:0.3px;'
+                                ];
+                                impactoHtml += '<div style="line-height:1.45">';
+                                membreteLines.forEach(function (line, i) {
+                                    var s = membreteStyles[i] || 'font-size:11px;font-weight:600;color:#374151;';
+                                    impactoHtml += '<div style="' + s + '">' + line + '</div>';
+                                });
+                                impactoHtml += '</div>';
                             }
-                            impactoHtml += '</div>';
-
-                            // centro: logo sobre título (centrado)
-                            impactoHtml += '<div style="flex:1;text-align:center;padding:0 12px">';
-                            if (logoSrc) { 
-                                impactoHtml += '<img src="' + logoSrc + '" style="height:120px;display:block;margin:0 auto 6px">'; 
-                            } else { 
-                                impactoHtml += inlineLogo; 
-                            }
-                            impactoHtml += '<h2 style="color:#0b66c3;margin:0;font-size:20px;">Reporte de Control de Fauna</h2>';
-                            impactoHtml += '<div style="margin-top:6px;font-size:14px;color:#111;font-weight:700;">Impacto Faunístico</div>';
-                            impactoHtml += '</div>';
-
-                            // derecha: UTC time (hora) con fecha debajo, y folio
-                            impactoHtml += '<div style="text-align:right;color:#6b7280;font-size:12px;min-width:120px">';
-                            impactoHtml += '<div><strong>' + folio + '</strong></div>';
-                            impactoHtml += '<div style="font-size:12px;color:#6b7280;margin-top:6px">' + (new Date().toISOString().split('T')[0]) + '</div>';
-                            impactoHtml += '</div>';
-                            impactoHtml += '</div>';
-
-                            // Mostrar Evento, Fase, Pista, Responsable, Cargo distribuidos horizontalmente (flex)
-                            impactoHtml += '<div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:12px;align-items:center">';
-                            var sep = '<div style="width:1px;height:28px;background:#e6eef9;margin:0 8px;display:inline-block;vertical-align:middle"></div>';
-                            impactoHtml += '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Tipo de Evento<br><strong>' + (evento || '-') + '</strong></div>';
-                            impactoHtml += sep;
-                            impactoHtml += '<div style="min-width:120px;text-align:center;font-size:13px;color:#374151">Fase de Vuelo<br><strong>' + (faseVuelo || '-') + '</strong></div>';
-                            impactoHtml += sep;
-                            impactoHtml += '<div style="min-width:100px;text-align:center;font-size:13px;color:#374151">Pista<br><strong>' + (pista || '-') + '</strong></div>';
-                            impactoHtml += sep;
-                            impactoHtml += '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Responsable<br><strong>' + (responsable || '-') + '</strong></div>';
-                            impactoHtml += sep;
-                            impactoHtml += '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Cargo<br><strong>' + (cargo || '-') + '</strong></div>';
-                            impactoHtml += '</div>';
+                            impactoHtml += '</td>';
+                            impactoHtml += '<td style="text-align:center;vertical-align:middle;padding:0 12px;">';
+                            if (logoSrc) { impactoHtml += '<img src="' + logoSrc + '" style="height:80px;display:block;margin:0 auto 6px">'; } else { impactoHtml += inlineLogo; }
+                            impactoHtml += '<h2 style="color:#0b66c3;margin:4px 0 0 0;font-size:18px;">Reporte de Control de Fauna</h2>';
+                            impactoHtml += '<div style="margin-top:4px;font-size:13px;color:#111;font-weight:700;">Impacto Faunístico</div>';
+                            impactoHtml += '</td>';
+                            impactoHtml += '<td style="width:160px;text-align:right;vertical-align:top;font-size:12px;color:#6b7280;white-space:nowrap;">';
+                            impactoHtml += '<div><strong>' + utcTimeStr + '</strong></div>';
+                            impactoHtml += '<div style="margin-top:4px;">' + utcDateStr + '</div>';
+                            impactoHtml += '<div style="margin-top:6px;color:#374151;font-weight:600;white-space:nowrap;">Folio: ' + (folio || '') + '</div>';
+                            impactoHtml += '</td></tr></tbody></table>';
+                            var _mc  = 'vertical-align:top;text-align:center;padding:7px 5px;border-right:1px solid #e0e0e0;';
+                            var _mcL = 'vertical-align:top;text-align:center;padding:7px 5px;';
+                            var _mL  = 'style="display:block;font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;"';
+                            var _mV  = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;"';
+                            impactoHtml += '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #e0e0e0;table-layout:fixed;">';
+                            impactoHtml += '<tbody><tr>';
+                            impactoHtml += '<td style="' + _mc  + 'width:16%;"><span ' + _mL + '>Tipo de Evento</span><span ' + _mV + '>' + (evento || '-') + '</span></td>';
+                            impactoHtml += '<td style="' + _mc  + 'width:14%;"><span ' + _mL + '>Fase de Vuelo</span><span ' + _mV + '>' + (faseVuelo || '-') + '</span></td>';
+                            impactoHtml += '<td style="' + _mc  + 'width:12%;"><span ' + _mL + '>Pista</span><span ' + _mV + '>' + (pista || '-') + '</span></td>';
+                            impactoHtml += '<td style="' + _mc  + 'width:20%;"><span ' + _mL + '>Responsable</span><span ' + _mV + '>' + (responsable || '-') + '</span></td>';
+                            impactoHtml += '<td style="' + _mc  + 'width:18%;"><span ' + _mL + '>Cargo</span><span ' + _mV + '>' + (cargo || '-') + '</span></td>';
+                            impactoHtml += '<td style="' + _mcL + 'width:20%;"><span ' + _mL + '>Aerol\u00ednea</span><span ' + _mV + '>' + (aerolinea || '-') + '</span></td>';
+                            impactoHtml += '</tr></tbody></table>';
                             impactoHtml += '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
 
                             // Tabla de información detallada
@@ -370,7 +371,7 @@ window.MHRFaunaSubmitPage = (function () {
 
                             var filename = 'Reporte-Fauna-' + folio + '.pdf';
                             var opt = {
-                                margin: [5, 5, 5, 5],
+                                margin: [8, 8, 8, 8],
                                 filename: filename,
                                 image: { type: 'jpeg', quality: 0.98 },
                                 html2canvas: { scale: 2, logging: false, useCORS: true, allowTaint: true },
@@ -662,83 +663,45 @@ window.MHRFaunaSubmitPage = (function () {
                             document.body.appendChild(reportSummary);
                         }
 
-                        // Construir HTML del reporte con formato profesional (similar a revisión)
-                        reportSummary.innerHTML = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;max-width:210mm;margin:0 auto;padding:12mm;">' +
-                            
-                            // Obtener membrete (similar a revisión)
-                            (function() {
-                                var membreteHtml = '';
-                                try {
-                                    var membreteLines = [];
-                                    document.querySelectorAll('.report-header .meta > div').forEach(function(d) {
-                                        if (d.querySelector && d.querySelector('#report-date')) return;
-                                        if (d.querySelector && d.querySelector('button')) return;
-                                        var txt = d.textContent.trim(); if (txt) membreteLines.push(txt);
-                                    });
-                                    
-                                    if (membreteLines.length) {
-                                        membreteHtml = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
-                                            '<div style="min-width:180px;font-size:12px;color:#1f2937;line-height:1.1">';
-                                        membreteLines.forEach(function (line) { membreteHtml += '<div>' + line + '</div>'; });
-                                        membreteHtml += '</div>' +
-                                            '<div style="flex:1;text-align:center;padding:0 12px">';
-                                        
-                                        var logoSrc = '';
-                                        if (window.logoBase64) {
-                                            logoSrc = window.logoBase64;
-                                        } else {
-                                            try { 
-                                                var logoEl = document.querySelector('.report-header .left img'); 
-                                                if (logoEl) {
-                                                    var src = logoEl.getAttribute('src');
-                                                    if (src && !src.startsWith('http') && !src.startsWith('data:')) {
-                                                        var baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-                                                        logoSrc = baseUrl + '/' + src;
-                                                    } else {
-                                                        logoSrc = src;
-                                                    }
-                                                }
-                                            } catch (e) { }
-                                        }
-                                        if (logoSrc) {
-                                            membreteHtml += '<img src="' + logoSrc + '" style="height:120px;display:block;margin:0 auto 6px">';
-                                        } else {
-                                            membreteHtml += '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="70" viewBox="0 0 180 70" style="display:block;margin:0 auto;">' +
-                                                '<rect width="100%" height="100%" fill="#0b66c3" rx="6" />' +
-                                                '<g transform="translate(12,10)">' +
-                                                '<circle cx="20" cy="20" r="16" fill="#fff" />' +
-                                                '<path d="M 20 8 L 28 20 L 24 20 L 24 28 L 16 28 L 16 20 L 12 20 Z" fill="#0b66c3"/>' +
-                                                '</g>' +
-                                                '<text x="95" y="28" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="bold">Fauna</text>' +
-                                                '<text x="95" y="48" font-family="Arial, sans-serif" font-size="11" fill="#e8f1f8">Rescate</text>' +
-                                                '</svg>';
-                                        }
-                                        
-                                        membreteHtml += '<h2 style="color:#0b66c3;margin:0;font-size:20px;">Reporte de Control de Fauna</h2>' +
-                                            '<div style="margin-top:6px;font-size:14px;color:#111;font-weight:700;">Rescate y Reubicación</div>' +
-                                            '</div>' +
-                                            '<div style="text-align:right;color:#6b7280;font-size:12px;min-width:120px">' +
-                                            '<div><strong>' + folio + '</strong></div>' +
-                                            '<div style="font-size:12px;color:#6b7280;margin-top:6px">' + fechaLocal.split(' ')[0] + '</div>' +
-                                            '</div>' +
-                                            '</div>';
-                                    }
-                                } catch (membreteErr) {
-                                    console.warn('No se pudo construir membrete de fauna:', membreteErr);
-                                }
-                                return membreteHtml;
-                            })() +
-                            
-                            '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">' +
-                            
-                            '<div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:12px;align-items:center">' +
-                                '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Responsable<br><strong>' + (responsable || '-') + '</strong></div>' +
-                                '<div style="width:1px;height:28px;background:#e6eef9;margin:0 8px;display:inline-block;vertical-align:middle"></div>' +
-                                '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Cargo<br><strong>' + (cargo || '-') + '</strong></div>' +
-                                '<div style="width:1px;height:28px;background:#e6eef9;margin:0 8px;display:inline-block;vertical-align:middle"></div>' +
-                                '<div style="min-width:140px;text-align:center;font-size:13px;color:#374151">Institución<br><strong>' + (institucion || '-') + '</strong></div>' +
-                            '</div>' +
-                            '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">' +
+                        // Pre-computar cabecera al estilo revisión
+                        var _utcTR = pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ':' + pad(now.getUTCSeconds()) + ' UTC';
+                        var _utcDR = pad(now.getUTCDate()) + '/' + pad(now.getUTCMonth() + 1) + '/' + now.getUTCFullYear();
+                        var _lR = window.logoBase64 || (function() {
+                            try { var el = document.querySelector('.report-header .left img'); if (el) { var s = el.getAttribute('src'); return (s && !s.startsWith('http') && !s.startsWith('data:')) ? (window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/' + s) : s; } } catch(e) {} return '';
+                        })();
+                        var _mR = [];
+                        try { document.querySelectorAll('.report-header .meta > div').forEach(function(d) { if (d.querySelector && (d.querySelector('#report-date') || d.querySelector('button'))) return; var t = d.textContent.trim(); if (t) _mR.push(t); }); } catch(e) {}
+                        var _msR = ['font-size:14px;font-weight:700;color:#0f1724;margin-bottom:3px;','font-size:12px;font-weight:700;color:#374151;margin-bottom:2px;','font-size:12px;font-weight:700;color:#374151;margin-bottom:2px;','font-size:10px;font-weight:400;color:#6b7280;margin-top:5px;letter-spacing:0.3px;'];
+                        var _cR  = 'vertical-align:top;text-align:center;padding:7px 5px;border-right:1px solid #e0e0e0;';
+                        var _cLR = 'vertical-align:top;text-align:center;padding:7px 5px;';
+                        var _lbR = 'style="display:block;font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;"';
+                        var _vR  = 'style="display:block;font-size:11px;color:#0f1724;font-weight:700;"';
+                        var _rHdr = '<table style="width:100%;border-collapse:collapse;margin-bottom:6px;"><tbody><tr>' +
+                            '<td style="width:190px;vertical-align:top;padding-right:10px;">' +
+                            (_mR.length ? '<div style="line-height:1.45">' + _mR.map(function(l,i){return '<div style="'+(_msR[i]||'font-size:11px;font-weight:600;color:#374151;')+'">'+l+'</div>';}).join('') + '</div>' : '') +
+                            '</td>' +
+                            '<td style="text-align:center;vertical-align:middle;padding:0 12px;">' +
+                            (_lR ? '<img src="' + _lR + '" style="height:80px;display:block;margin:0 auto 6px">' : '') +
+                            '<h2 style="color:#0b66c3;margin:4px 0 0 0;font-size:18px;">Reporte de Control de Fauna</h2>' +
+                            '<div style="margin-top:4px;font-size:13px;color:#111;font-weight:700;">Rescate y Reubicaci\u00f3n</div>' +
+                            '</td>' +
+                            '<td style="width:160px;text-align:right;vertical-align:top;font-size:12px;color:#6b7280;white-space:nowrap;">' +
+                            '<div><strong>' + _utcTR + '</strong></div>' +
+                            '<div style="margin-top:4px;">' + _utcDR + '</div>' +
+                            '<div style="margin-top:6px;color:#374151;font-weight:600;white-space:nowrap;">Folio: ' + folio + '</div>' +
+                            '</td></tr></tbody></table>' +
+                            '<table style="width:100%;border-collapse:collapse;margin-top:8px;border:1px solid #e0e0e0;table-layout:fixed;">' +
+                            '<tbody><tr>' +
+                            '<td style="' + _cR + 'width:20%;"><span ' + _lbR + '>Responsable</span><span ' + _vR + '>' + (responsable || '-') + '</span></td>' +
+                            '<td style="' + _cR + 'width:18%;"><span ' + _lbR + '>Cargo</span><span ' + _vR + '>' + (cargo || '-') + '</span></td>' +
+                            '<td style="' + _cR + 'width:22%;"><span ' + _lbR + '>Instituci\u00f3n</span><span ' + _vR + '>' + (institucion || '-') + '</span></td>' +
+                            '<td style="' + _cR + 'width:18%;"><span ' + _lbR + '>Clase</span><span ' + _vR + '>' + (clase || '-') + '</span></td>' +
+                            '<td style="' + _cLR + 'width:22%;"><span ' + _lbR + '>Especie</span><span ' + _vR + '>' + (especie || '-') + '</span></td>' +
+                            '</tr></tbody></table>' +
+                            '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
+                        // Construir HTML del reporte con formato profesional
+                        reportSummary.innerHTML = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;">' +
+                            _rHdr +
                             
                             '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
                                 '<thead><tr>' +
@@ -775,7 +738,7 @@ window.MHRFaunaSubmitPage = (function () {
                         // Configurar html2pdf
                         var filename = 'Reporte-Fauna-' + folio + '.pdf';
                         var opt = {
-                            margin: [5, 5, 5, 5],
+                            margin: [8, 8, 8, 8],
                             filename: filename,
                             image: { type: 'jpeg', quality: 0.98 },
                             html2canvas: { scale: 2, logging: false, useCORS: true, allowTaint: true },
