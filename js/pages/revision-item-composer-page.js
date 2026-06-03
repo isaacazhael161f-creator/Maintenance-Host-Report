@@ -205,14 +205,7 @@
                 '  </label>' +
                 '  <label style="display:block;">Observaciones de seguimiento:<br><textarea class="dynamic-followup-observaciones" rows="2" style="width:100%; padding:6px; margin-top:4px; border:1px solid #d1d5db; border-radius:6px;">' + esc(followupObs) + '</textarea></label>' +
                 '</div>'
-              : '<label>Estatus de atención:' +
-                '    <select class="dynamic-followup-status">' +
-                '      <option value="">Seleccione estatus</option>' +
-                '      <option value="Atendido satisfactoriamente"' + (followupStatus === 'Atendido satisfactoriamente' ? ' selected' : '') + '>Atendido satisfactoriamente</option>' +
-                '      <option value="Sigue activo"' + (followupStatus === 'Sigue activo' ? ' selected' : '') + '>Sigue activo</option>' +
-                '    </select>' +
-                '  </label><br>' +
-                '  <label>Observaciones de seguimiento:<br><textarea class="dynamic-followup-observaciones" rows="2">' + esc(followupObs) + '</textarea></label><br>'
+              : ''
             ) +
             '  <input type="hidden" class="dynamic-historial-json" value="' + esc(prefill.historial_json || '') + '">' +
             '  <label>Prioridad: <select class="priority-select dynamic-prioridad"' + (isPrefilled ? ' disabled style="background:#f3f4f6;color:#6b7280;"' : '') + '>' + getPriorityOptionsHtml() + '</select></label><br>' +
@@ -438,21 +431,12 @@
             };
             prefill.is_prefilled_from_previous = true;
             prefill.historial_json = it.observaciones ? JSON.stringify([{ tipo: 'observacion_previa', texto: it.observaciones }]) : '[]';
-            // Fotos: prioridad a URLs firmadas; fallback a miniaturas guardadas en datos_extra.thumbs
+            // Fotos: usar URLs firmadas desde report_inspection_item_photos
             var itPhotos = Array.isArray(it.report_inspection_item_photos) ? it.report_inspection_item_photos : [];
             var fromStorage = itPhotos
-                .filter(function (p) { return p.public_url && !(p.storage_path || '').includes('/signatures/'); })
+                .filter(function (p) { return !!p.public_url; })
                 .map(function (p) { return { url: p.public_url, name: p.original_filename || 'Foto' }; });
-            var fromThumbs = [];
-            try {
-                var extraData = it.datos_extra || {};
-                if (Array.isArray(extraData.thumbs)) {
-                    fromThumbs = extraData.thumbs
-                        .filter(function (t) { return t && t.dataURL; })
-                        .map(function (t) { return { url: t.dataURL, name: t.name || 'Foto' }; });
-                }
-            } catch (e) {}
-            prefill.previousPhotos = fromStorage.length > 0 ? fromStorage : fromThumbs;
+            prefill.previousPhotos = fromStorage;
             var card = buildItemCard(itemMap[catalogId], prefill);
             selectedContainer.appendChild(card);
             

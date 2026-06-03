@@ -61,10 +61,11 @@
           .single();
 
         if (resp.data && Array.isArray(resp.data.report_inspection_items)) {
-          // Filtrar ítems atendidos
+          // Filtrar ítems atendidos e ítem virtual de firmas
           resp.data.report_inspection_items = resp.data.report_inspection_items.filter(function(item) {
             try {
-              return (item.datos_extra || {}).followup_status !== 'Atendido satisfactoriamente';
+              return item.item_nombre !== '__firmas__'
+                && (item.datos_extra || {}).followup_status !== 'Atendido satisfactoriamente';
             } catch (e) { return true; }
           });
 

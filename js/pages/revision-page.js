@@ -239,26 +239,6 @@ window.MHRRevisionPage = (function () {
                 return;
             }
 
-            // Helper: generar miniatura base64 para almacenar en datos_extra sin depender de storage
-            function makeThumb(dataURL) {
-                return new Promise(function (resolve) {
-                    try {
-                        var img = new Image();
-                        img.onload = function () {
-                            var MAX = 600;
-                            var scale = Math.min(MAX / img.width, MAX / img.height, 1);
-                            var canvas = document.createElement('canvas');
-                            canvas.width = Math.max(1, Math.round(img.width * scale));
-                            canvas.height = Math.max(1, Math.round(img.height * scale));
-                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                            resolve(canvas.toDataURL('image/jpeg', 0.80));
-                        };
-                        img.onerror = function () { resolve(null); };
-                        img.src = dataURL;
-                    } catch (e) { resolve(null); }
-                });
-            }
-
             // --- Funciones internas de guardado ---
             var saveToSupabase = async function (pdfUrl) {
                 try {
@@ -304,7 +284,7 @@ window.MHRRevisionPage = (function () {
                     var insertedItemsByCatalogId = {};
                     var insertedItemsByFormItemKey = {};
 
-                    var itemInsertResults = await Promise.all(filled.map(async function (f, itx) {
+                    var itemInsertResults = await Promise.all(filled.map(function (f, itx) {
                         var lugarVal = '', hallazgoVal = '', condicionVal = '', observacionesVal = '', prioridadVal = '', codigoVal = '';
                         (f.fields || []).forEach(function (ff) {
                             var k = (ff.key || '').toLowerCase(), v = ff.value;
@@ -319,20 +299,6 @@ window.MHRRevisionPage = (function () {
                         var datosExtra = {};
                         if (f.followupStatus) datosExtra.followup_status = f.followupStatus;
                         if (f.followupObs) datosExtra.followup_observaciones = f.followupObs;
-                        // Generar miniaturas y almacenarlas en datos_extra para que el
-                        // siguiente ciclo las muestre sin necesitar acceso a storage
-                        var fPhotos = (window.mhr && window.mhr.getItemPhotos)
-                            ? window.mhr.getItemPhotos(f.id)
-                            : ((window.itemPhotos && window.itemPhotos[f.id]) || []);
-                        if (fPhotos.length > 0) {
-                            var thumbArr = await Promise.all(fPhotos.slice(0, 5).map(function (ph) {
-                                return makeThumb(ph.dataURL).then(function (t) {
-                                    return t ? { dataURL: t, name: ph.name || 'foto' } : null;
-                                });
-                            }));
-                            var validThumbs = thumbArr.filter(Boolean);
-                            if (validThumbs.length > 0) datosExtra.thumbs = validThumbs;
-                        }
                         var itemPayload = {
                             report_id: reportId,
                             item_catalogo_id: parsedCatalogId,
@@ -371,7 +337,9 @@ window.MHRRevisionPage = (function () {
                         // Preparar todas las subidas de fotos como promesas simultáneas
                         var photoUploadTasks = [];
                         filled.forEach(function (f, fi) {
-                            var photos = (window.mhr && window.mhr.getItemPhotos) ? window.mhr.getItemPhotos(f.id) : [];
+                            var photos = (window.mhr && window.mhr.getItemPhotos)
+                                ? window.mhr.getItemPhotos(f.id)
+                                : ((window.itemPhotos && window.itemPhotos[f.id]) || []);
                             if (!photos || photos.length === 0) return;
                             var relatedItem = insertedItemsByFormItemKey[String(f.id)] || insertedItemsByCatalogId[String(f.id)] || (insertedItems[fi] || null);
                             photos.forEach(function (photo, pi) {
@@ -386,12 +354,17 @@ window.MHRRevisionPage = (function () {
                                         var photoFilename = reportId + '/' + (relatedItem ? relatedItem.id : ('item-' + (fi + 1))) + '/' + folio + '_' + pi + '_' + Date.now() + '.' + ext;
                                         return window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', photoFilename, photoBlob, { cacheControl: '3600', upsert: false, contentType: mime })
                                             .then(function (upRes) {
-                                                if (!upRes.error && relatedItem && relatedItem.id) {
-                                                    return { report_inspection_item_id: relatedItem.id, bucket: 'report-evidencias', storage_path: photoFilename, original_filename: photo.name || photoFilename, mime_type: mime, size_bytes: photoBlob.size };
+                                                if (upRes.error) {
+                                                    console.error('Error subiendo foto a storage:', upRes.error, { archivo: photo.name, item: f.id, ruta: photoFilename });
+                                                    return null;
                                                 }
-                                                return null;
+                                                if (!relatedItem || !relatedItem.id) {
+                                                    console.warn('No se encontró item de BD para la foto:', { item: f.id, foto: photo.name });
+                                                    return null;
+                                                }
+                                                return { report_inspection_item_id: relatedItem.id, bucket: 'report-evidencias', storage_path: photoFilename, original_filename: photo.name || photoFilename, mime_type: mime, size_bytes: photoBlob.size };
                                             });
-                                    }).catch(function () { return null; });
+                                    }).catch(function (err) { console.error('Excepción al subir foto:', err, { archivo: photo.name, item: f.id }); return null; });
                                 })(f, fi, photo, pi, relatedItem));
                             });
                         });
@@ -402,10 +375,26 @@ window.MHRRevisionPage = (function () {
                             .map(function (r) { return r.value; });
                         if (photosToInsert.length > 0) await window.MHRReportService.insertItemPhotosBulk(window.supabaseClient, photosToInsert);
 
-                        // Subir firmas en paralelo
+                        // Crear item virtual para firmas y subir en paralelo
                         var firmasToUpload = (window.obtenerFirmas && window.obtenerFirmas()) || {};
-                        var signatureItemId = (insertedItems[0] && insertedItems[0].id) ? insertedItems[0].id : null;
-                        if (!signatureItemId) console.warn('No hay item de inspección para relacionar firmas; se omite guardado de firmas en BD.');
+                        var signatureItemId = null;
+                        var _hasSignatures = Object.keys(firmasToUpload).some(function (k) {
+                            var v = firmasToUpload[k];
+                            return v && typeof v === 'string' && v.indexOf('data:image/') === 0;
+                        });
+                        if (_hasSignatures) {
+                            var sigItemResult = await window.MHRReportService.insertReportItems(window.supabaseClient, [{
+                                report_id: reportId,
+                                item_nombre: '__firmas__',
+                                orden: filled.length,
+                                datos_extra: null
+                            }]);
+                            if (!sigItemResult.error && sigItemResult.data && sigItemResult.data[0]) {
+                                signatureItemId = sigItemResult.data[0].id;
+                            } else {
+                                console.warn('No se pudo crear item virtual para firmas; se omiten en BD.', sigItemResult.error);
+                            }
+                        }
                         var signatureKeys = ['area', 'aifa', 'afac'];
                         var sigTasks = signatureKeys.map(function (sigKey) {
                             var sigData = firmasToUpload[sigKey];
@@ -420,7 +409,11 @@ window.MHRRevisionPage = (function () {
                                 var sigPath = reportId + '/signatures/' + sigKey + '_' + Date.now() + '.' + sigExt;
                                 return window.MHRReportService.uploadToBucket(window.supabaseClient, 'report-evidencias', sigPath, sigBlob, { cacheControl: '3600', upsert: false, contentType: sigMime })
                                     .then(function (upSig) {
-                                        if (!upSig.error && signatureItemId) {
+                                        if (upSig.error) {
+                                            console.error('Error subiendo firma a storage:', upSig.error, { firma: sigKey, ruta: sigPath });
+                                            return;
+                                        }
+                                        if (signatureItemId) {
                                             return window.MHRReportService.insertItemPhoto(window.supabaseClient, { report_inspection_item_id: signatureItemId, bucket: 'report-evidencias', storage_path: sigPath, original_filename: 'firma_' + sigKey + '.' + sigExt, mime_type: sigMime, size_bytes: sigBlob.size });
                                         }
                                     });
@@ -571,6 +564,12 @@ window.MHRRevisionPage = (function () {
                 html += '</div>';
             }
 
+            // Auto-capturar firmas del canvas aunque el usuario no haya presionado "Guardar firma"
+            if (window.firmaPads && typeof window.guardarFirma === 'function') {
+                ['area', 'aifa', 'afac'].forEach(function (k) {
+                    if (window.firmaPads[k]) window.guardarFirma(k);
+                });
+            }
             var firmas = (window.obtenerFirmas && window.obtenerFirmas()) || {};
             html += '<table style="width:100%;border-collapse:collapse;margin-top:22px;">';
             html += '<tbody><tr>';

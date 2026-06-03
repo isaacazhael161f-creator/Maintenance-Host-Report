@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔧 Crear Buckets de Fauna PDFs</title>
+    <title>🔧 Crear Buckets de Storage</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -159,19 +159,21 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔧 Crear Buckets de Fauna</h1>
-        <p class="subtitle">Sistema automático para crear storage de PDFs</p>
+        <h1>🔧 Crear Buckets de Storage</h1>
+        <p class="subtitle">Sistema automático para crear storage en Supabase</p>
         
         <div class="warning">
-            ⚠️ <strong>Importante:</strong> Necesitas tener acceso al proyecto de Supabase en esta sesión. Si no, primero inicia sesión en Supabase.
+            ⚠️ <strong>Importante:</strong> Esta página se conecta directamente a Supabase. Para crear buckets necesitas que tu usuario tenga permisos de <strong>service_role</strong> o ser dueño del proyecto. La clave anon solo puede listar/verificar buckets existentes.
         </div>
         
         <div class="step">
             <div class="step-title">📋 Qué va a pasar:</div>
             <div class="step-text">
-                ✅ Se crearán 2 buckets:<br>
-                • fauna_impact_pdfs (para PDFs de impactos)<br>
-                • fauna_rescue_pdfs (para PDFs de rescates)<br>
+                ✅ Se crearán 4 buckets:<br>
+                • <strong>reports</strong> (PDFs de reportes de inspección — público)<br>
+                • <strong>report-evidencias</strong> (fotos y firmas de inspección — privado)<br>
+                • fauna_impact_pdfs (para PDFs de impactos — privado)<br>
+                • fauna_rescue_pdfs (para PDFs de rescates — privado)<br>
                 <br>
                 ✅ Se verificará que existen en Supabase<br>
                 ✅ Se mostrará el resultado en la consola
@@ -182,7 +184,7 @@
         
         <div class="button-group">
             <button class="btn-primary" onclick="crearBucketsAutomatico()">
-                ▶️ CREAR BUCKETS
+                ▶️ CREAR TODOS LOS BUCKETS
             </button>
             <button class="btn-secondary" onclick="verificarBucketsExistentes()">
                 🔍 Verificar
@@ -197,16 +199,26 @@
             <div class="step-title">📝 Próximo paso:</div>
             <div class="step-text">
                 Después de crear los buckets, ve a:<br>
-                <strong>Supabase Dashboard → Storage → fauna_impact_pdfs → RLS Policies</strong><br>
+                <strong>Supabase Dashboard → Storage → [bucket] → Policies</strong><br>
                 <br>
-                Agrega 3 políticas (SELECT, INSERT, DELETE)<br>
-                Repite para fauna_rescue_pdfs<br>
+                Para <strong>report-evidencias</strong>: agrega políticas INSERT y SELECT para usuarios autenticados.<br>
+                Para <strong>reports</strong>: bucket público, sin cambios necesarios.<br>
+                Para fauna_impact_pdfs y fauna_rescue_pdfs: agrega políticas SELECT, INSERT, DELETE.<br>
                 <br>
                 <em>Ver instrucciones en CREATE_BUCKETS.sql</em>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Inicializar cliente Supabase directamente — el <script src> anterior carga síncronamente
+        const SUPABASE_URL = 'https://fgstncvuuhpgyzmjceyr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnc3RuY3Z1dWhwZ3l6bWpjZXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzQ0NDQsImV4cCI6MjA4MTQ1MDQ0NH0.YEDIKuWt5iKUEI0BAvidINUz0aZBvQM0h6XRJ-uslB8';
+        if (window.supabase && !window.supabaseClient) {
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+    </script>
     <script>
         const outputDiv = document.getElementById('output');
         const statusDiv = document.getElementById('status');
@@ -245,50 +257,35 @@
                 
                 const supabaseClient = window.supabaseClient;
                 addLog('✅ Cliente de Supabase conectado');
-                
-                // CREAR BUCKET 1: fauna_impact_pdfs
-                addLog('\n🟡 Creando bucket 1: fauna_impact_pdfs...');
-                const { data: bucket1, error: error1 } = await supabaseClient
-                    .storage
-                    .createBucket('fauna_impact_pdfs', {
-                        public: false,
+
+                // Lista de todos los buckets que necesita la aplicación
+                const allBuckets = [
+                    { id: 'reports', public: true, desc: 'PDFs de reportes de inspección' },
+                    { id: 'report-evidencias', public: false, desc: 'Fotos y firmas de inspección' },
+                    { id: 'fauna_impact_pdfs', public: false, desc: 'PDFs de impactos de fauna' },
+                    { id: 'fauna_rescue_pdfs', public: false, desc: 'PDFs de rescates de fauna' },
+                ];
+
+                for (const bucket of allBuckets) {
+                    addLog(`\n🟡 Creando bucket: ${bucket.id} (${bucket.desc})...`);
+                    const { data, error } = await supabaseClient.storage.createBucket(bucket.id, {
+                        public: bucket.public,
                         fileSizeLimit: 52428800
                     });
-                
-                if (error1) {
-                    if (error1.message.includes('already')) {
-                        addLog('⚠️  fauna_impact_pdfs ya existe', 'warning-text');
+                    if (error) {
+                        if (error.message && error.message.toLowerCase().includes('already')) {
+                            addLog(`⚠️  ${bucket.id} ya existe`, 'warning-text');
+                        } else {
+                            addLog(`❌ Error en ${bucket.id}: ${error.message}`, 'error');
+                        }
                     } else {
-                        addLog(`❌ Error en fauna_impact_pdfs: ${error1.message}`, 'error');
+                        addLog(`✅ ${bucket.id} creado exitosamente`, 'success');
                     }
-                } else {
-                    addLog('✅ fauna_impact_pdfs creado exitosamente', 'success');
-                }
-                
-                // CREAR BUCKET 2: fauna_rescue_pdfs
-                addLog('\n🟡 Creando bucket 2: fauna_rescue_pdfs...');
-                const { data: bucket2, error: error2 } = await supabaseClient
-                    .storage
-                    .createBucket('fauna_rescue_pdfs', {
-                        public: false,
-                        fileSizeLimit: 52428800
-                    });
-                
-                if (error2) {
-                    if (error2.message.includes('already')) {
-                        addLog('⚠️  fauna_rescue_pdfs ya existe', 'warning-text');
-                    } else {
-                        addLog(`❌ Error en fauna_rescue_pdfs: ${error2.message}`, 'error');
-                    }
-                } else {
-                    addLog('✅ fauna_rescue_pdfs creado exitosamente', 'success');
                 }
                 
                 // VERIFICAR
                 addLog('\n🟡 Verificando buckets...');
-                const { data: buckets, error: errorList } = await supabaseClient
-                    .storage
-                    .listBuckets();
+                const { data: buckets, error: errorList } = await supabaseClient.storage.listBuckets();
                 
                 if (errorList) {
                     addLog(`❌ Error listando buckets: ${errorList.message}`, 'error');
@@ -299,15 +296,15 @@
                 const bucketNames = buckets.map(b => b.name);
                 addLog(`📋 Buckets encontrados: ${bucketNames.join(', ')}`);
                 
-                const tieneImpact = buckets.some(b => b.name === 'fauna_impact_pdfs');
-                const tieneRescue = buckets.some(b => b.name === 'fauna_rescue_pdfs');
+                const allPresent = allBuckets.every(b => buckets.some(e => e.id === b.id || e.name === b.id));
                 
-                if (tieneImpact && tieneRescue) {
-                    addLog('\n✅ ¡ÉXITO! Ambos buckets están listos', 'success');
-                    addLog('📝 Próximo paso: Agrega políticas en Supabase Storage', 'success');
-                    setStatus('✅ Buckets creados correctamente', 'success');
+                if (allPresent) {
+                    addLog('\n✅ ¡ÉXITO! Todos los buckets están listos', 'success');
+                    addLog('📝 Próximo paso: Verifica las políticas RLS en Supabase Storage', 'success');
+                    setStatus('✅ Todos los buckets disponibles', 'success');
                 } else {
-                    addLog('\n⚠️  Faltan buckets por verificar', 'warning-text');
+                    const missingIds = allBuckets.filter(b => !buckets.some(e => e.id === b.id || e.name === b.id)).map(b => b.id);
+                    addLog(`\n⚠️  Faltan buckets: ${missingIds.join(', ')}`, 'warning-text');
                     setStatus('⚠️ Verificación incompleta', 'pending');
                 }
                 
@@ -339,18 +336,21 @@
                 
                 addLog(`📋 Total de buckets: ${buckets.length}`);
                 
+                const allRequired = ['reports', 'report-evidencias', 'fauna_impact_pdfs', 'fauna_rescue_pdfs'];
                 buckets.forEach(bucket => {
-                    const isTarget = ['fauna_impact_pdfs', 'fauna_rescue_pdfs'].includes(bucket.name);
-                    const icon = isTarget ? '✅' : 'ℹ️';
-                    const type = isTarget ? 'success' : 'info';
-                    addLog(`${icon} ${bucket.name} (${bucket.public ? 'PUBLIC' : 'PRIVATE'})`, type);
+                    const isRequired = allRequired.includes(bucket.name || bucket.id);
+                    const icon = isRequired ? '✅' : 'ℹ️';
+                    const type = isRequired ? 'success' : 'info';
+                    addLog(`${icon} ${bucket.name || bucket.id} (${bucket.public ? 'PUBLIC' : 'PRIVATE'})`, type);
                 });
-                
-                const hasTarget = buckets.some(b => ['fauna_impact_pdfs', 'fauna_rescue_pdfs'].includes(b.name));
-                if (hasTarget) {
-                    setStatus('✅ Buckets encontrados');
+
+                const missing = allRequired.filter(name => !buckets.some(b => (b.name || b.id) === name));
+                if (missing.length === 0) {
+                    addLog('\n✅ Todos los buckets requeridos están presentes', 'success');
+                    setStatus('✅ Todos los buckets encontrados', 'success');
                 } else {
-                    setStatus('⚠️ Buckets no encontrados', 'pending');
+                    addLog(`\n⚠️  Buckets faltantes: ${missing.join(', ')}`, 'warning-text');
+                    setStatus('⚠️ Faltan buckets — usar CREAR', 'pending');
                 }
                 
             } catch (error) {
@@ -358,19 +358,12 @@
             }
         }
         
-        // Log inicial
-        window.addEventListener('load', () => {
-            if (window.supabaseClient) {
-                setStatus('✅ Supabase conectado - Listo');
-            } else {
-                setStatus('⚠️ Cargando Supabase...', 'pending');
-                setTimeout(() => {
-                    if (!window.supabaseClient) {
-                        setStatus('❌ Supabase no encontrado', 'error');
-                    }
-                }, 2000);
-            }
-        });
+        // Log inicial — el cliente ya debe estar listo (init inmediato arriba)
+        if (window.supabaseClient) {
+            setStatus('✅ Supabase listo — puedes crear los buckets', 'success');
+        } else {
+            setStatus('❌ No se pudo inicializar Supabase', 'error');
+        }
     </script>
 </body>
 </html>
