@@ -208,7 +208,19 @@ window.MHRRevisionPage = (function () {
                 if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
                 if (followupStatus && followupStatus.value.trim()) fields.push({ key: 'followup_status', value: followupStatus.value.trim() });
                 if (followupObs && followupObs.value.trim()) fields.push({ key: 'followup_observaciones', value: followupObs.value.trim() });
-                filled.push({ id: itemId, name: name, fields: fields, followupStatus: followupStatus ? followupStatus.value : '', followupObs: followupObs ? followupObs.value : '' });
+                // Fotos acumuladas de reportes anteriores (ítems de seguimiento)
+                var prevPhotosForPdf = [];
+                if (card.dataset.prefilled === '1') {
+                    var prevThumbs = card.querySelectorAll('.prev-photo-thumb');
+                    Array.prototype.forEach.call(prevThumbs, function (img) {
+                        prevPhotosForPdf.push({
+                            url: img.getAttribute('data-prev-url') || '',
+                            name: img.getAttribute('data-prev-name') || 'Foto',
+                            reportFolio: img.getAttribute('data-report-folio') || 'Reporte anterior'
+                        });
+                    });
+                }
+                filled.push({ id: itemId, name: name, fields: fields, followupStatus: followupStatus ? followupStatus.value : '', followupObs: followupObs ? followupObs.value : '', previousPhotos: prevPhotosForPdf });
             });
 
             if (filled.length === 0) {
@@ -474,7 +486,6 @@ window.MHRRevisionPage = (function () {
                     if (mapImage) {
                         h += '<div style="position:relative;width:100%;"><img src="' + mapImage + '" style="width:100%;max-height:88px;border-radius:4px;display:block;object-fit:cover;border:1px solid #e6eef9;"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7));">\uD83D\uDCCD</div></div>';
                     }
-                    if (mapsUrl) h += '<div style="font-size:9px;color:#0055a5;margin-top:3px;word-break:break-all;">' + escapeHtml(mapsUrl) + '</div>';
                 } catch (ex) { }
                 return h;
             }
@@ -639,28 +650,35 @@ window.MHRRevisionPage = (function () {
             }());
             // --- Construcción de páginas de evidencias fotográficas (landscape) ---
             var photoPageHtmls = (function () {
-                var sections = [];
+                var allCells = [];
                 for (var _i = 0; _i < filled.length; _i++) {
                     var _f = filled[_i];
-                    var _photos = (window.mhr && window.mhr.getItemPhotos)
-                        ? window.mhr.getItemPhotos(_f.id)
-                        : ((window.itemPhotos && window.itemPhotos[_f.id]) || []);
-                    if (_photos && _photos.length > 0)
-                        sections.push({ itemName: _f.name, photos: _photos });
-                }
-                if (!sections.length) return null;
-
-                // Aplanar a celdas individuales (ordenadas por item)
-                var allCells = [];
-                sections.forEach(function (sec) {
-                    sec.photos.forEach(function (ph, idx) {
+                    // Fotos de reportes anteriores (etiquetadas por folio)
+                    var _prevPhotos = _f.previousPhotos || [];
+                    _prevPhotos.forEach(function (p) {
                         allCells.push({
-                            itemName: sec.itemName,
-                            dataURL: ph.dataURL,
-                            caption: ph.name || ('Foto ' + (idx + 1))
+                            itemName: _f.name,
+                            imgSrc: p.url,
+                            caption: p.name || 'Foto',
+                            reportLabel: p.reportFolio || 'Reporte anterior',
+                            isNew: false
                         });
                     });
-                });
+                    // Fotos nuevas del reporte actual
+                    var _newPhotos = (window.mhr && window.mhr.getItemPhotos)
+                        ? window.mhr.getItemPhotos(_f.id)
+                        : ((window.itemPhotos && window.itemPhotos[_f.id]) || []);
+                    (_newPhotos || []).forEach(function (ph, idx) {
+                        allCells.push({
+                            itemName: _f.name,
+                            imgSrc: ph.dataURL,
+                            caption: ph.name || ('Foto ' + (idx + 1)),
+                            reportLabel: 'Actual: ' + folio,
+                            isNew: true
+                        });
+                    });
+                }
+                if (!allCells.length) return null;
 
                 var PER_PAGE = 8; // 4 col × 2 rows = 1/8 de página por foto
                 var totalPages = Math.ceil(allCells.length / PER_PAGE);
@@ -692,8 +710,12 @@ window.MHRRevisionPage = (function () {
                             var _cell = cells[_row * 4 + _col];
                             ph += '<td style="width:25%;vertical-align:top;border:1px solid #d1dce8;border-radius:3px;padding:5px;background:#fafcff;">';
                             if (_cell) {
+                                // Etiqueta de reporte (color diferente para fotos nuevas vs anteriores)
+                                var labelColor = _cell.isNew ? '#059669' : '#0b66c3';
+                                var labelBg = _cell.isNew ? '#d1fae5' : '#dbeafe';
+                                ph += '<div style="font-size:8px;font-weight:700;color:' + labelColor + ';background:' + labelBg + ';border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(_cell.reportLabel) + '">' + escapeHtml(_cell.reportLabel) + '</div>';
                                 ph += '<div style="font-size:9px;font-weight:700;color:#0b66c3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;" title="' + escapeHtml(_cell.itemName) + '">' + escapeHtml(_cell.itemName) + '</div>';
-                                ph += '<img src="' + _cell.dataURL + '" style="width:100%;height:283px;object-fit:cover;display:block;border-radius:2px;">';
+                                ph += '<img src="' + _cell.imgSrc + '" style="width:100%;height:262px;object-fit:cover;display:block;border-radius:2px;">';
                                 ph += '<div style="font-size:8px;color:#6b7280;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(_cell.caption) + '</div>';
                             }
                             ph += '</td>';

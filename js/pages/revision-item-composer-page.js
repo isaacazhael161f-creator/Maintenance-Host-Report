@@ -129,16 +129,34 @@
         // HTML de miniaturas de fotos anteriores (o mensaje de fallback)
         var prevPhotosHtml;
         if (previousPhotos.length > 0) {
-            prevPhotosHtml = '<div class="prev-photos-block" style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;">' +
-                '<span style="font-size:12px;color:#6b7280;display:block;margin-bottom:6px;">📷 Fotos del reporte anterior (' + previousPhotos.length + '):</span>' +
-                '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-            previousPhotos.forEach(function (p) {
-                prevPhotosHtml += '<img src="' + esc(p.url) + '" data-prev-url="' + esc(p.url) + '" data-prev-name="' + esc(p.name) + '" ' +
-                    'class="prev-photo-thumb" ' +
-                    'style="width:300px;height:300px;object-fit:cover;border-radius:6px;border:2px solid #d1d5db;cursor:pointer;transition:border-color 0.15s,transform 0.15s;" ' +
-                    'title="' + esc(p.name) + ' — clic para ampliar">';
+            // Agrupar por reporte para mostrar sección por sección
+            var photoGroupsForUI = prefill.previousPhotoGroups || [];
+            // Si no hay grupos pre-calculados, agrupar desde previousPhotos plano
+            if (!photoGroupsForUI.length) {
+                var groupMap = {};
+                var groupOrder = [];
+                previousPhotos.forEach(function(p) {
+                    var key = p.reportFolio || 'Reporte anterior';
+                    if (!groupMap[key]) { groupMap[key] = { reportFolio: key, reportDate: p.reportDate || '', photos: [] }; groupOrder.push(key); }
+                    groupMap[key].photos.push(p);
+                });
+                groupOrder.forEach(function(k) { photoGroupsForUI.push(groupMap[k]); });
+            }
+            prevPhotosHtml = '<div class="prev-photos-block" style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;">';
+            prevPhotosHtml += '<span style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">📷 Fotos acumuladas de reportes anteriores (' + previousPhotos.length + ' total):</span>';
+            photoGroupsForUI.forEach(function(group) {
+                prevPhotosHtml += '<div style="margin-bottom:10px;">';
+                prevPhotosHtml += '<span style="font-size:11px;font-weight:700;color:#0b66c3;display:block;margin-bottom:4px;">📋 Reporte: ' + esc(group.reportFolio) + (group.reportDate ? ' (' + esc(group.reportDate) + ')' : '') + ' — ' + group.photos.length + ' foto(s)</span>';
+                prevPhotosHtml += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+                group.photos.forEach(function(p) {
+                    prevPhotosHtml += '<img src="' + esc(p.url) + '" data-prev-url="' + esc(p.url) + '" data-prev-name="' + esc(p.name) + '" data-report-folio="' + esc(group.reportFolio) + '" ' +
+                        'class="prev-photo-thumb" ' +
+                        'style="width:300px;height:300px;object-fit:cover;border-radius:6px;border:2px solid #d1d5db;cursor:pointer;transition:border-color 0.15s,transform 0.15s;" ' +
+                        'title="' + esc(p.name) + ' [' + esc(group.reportFolio) + '] — clic para ampliar">';
+                });
+                prevPhotosHtml += '</div></div>';
             });
-            prevPhotosHtml += '</div></div>';
+            prevPhotosHtml += '</div>';
         } else {
             prevPhotosHtml = '<div style="margin:8px 0;padding:8px 10px;background:#f3f4f6;border-radius:8px;border:1px dashed #d1d5db;"><span style="font-size:13px;color:#6b7280;">📷 Las fotos se registraron en el reporte anterior.</span></div>';
         }
@@ -398,7 +416,13 @@
         var client = await waitForSupabaseClient(7000);
         if (!client || !window.MHRReportService || !pista) return;
         selectedContainer.innerHTML = '';
-        var resp = await window.MHRReportService.getLatestReportByPista(client, pista);
+
+        // Cargar en paralelo: último reporte (para saber qué ítems están activos)
+        // y el historial completo de fotos por ítem para esta pista
+        var [resp, photoMap] = await Promise.all([
+            window.MHRReportService.getLatestReportByPista(client, pista),
+            window.MHRReportService.getAllReportsByPistaWithPhotos(client, pista)
+        ]);
         
         if (resp.error || !resp.data) {
             ensureSingleComboRow();
@@ -431,12 +455,18 @@
             };
             prefill.is_prefilled_from_previous = true;
             prefill.historial_json = it.observaciones ? JSON.stringify([{ tipo: 'observacion_previa', texto: it.observaciones }]) : '[]';
-            // Fotos: usar URLs firmadas desde report_inspection_item_photos
-            var itPhotos = Array.isArray(it.report_inspection_item_photos) ? it.report_inspection_item_photos : [];
-            var fromStorage = itPhotos
-                .filter(function (p) { return !!p.public_url; })
-                .map(function (p) { return { url: p.public_url, name: p.original_filename || 'Foto' }; });
-            prefill.previousPhotos = fromStorage;
+            // Fotos acumuladas: todas las fotos de todos los reportes anteriores para este ítem,
+            // agrupadas por reporte (reportFolio, reportDate), en orden cronológico
+            var photoGroups = photoMap[catalogId] || [];
+            // Aplanar a lista con campo reportFolio para identificación en PDF
+            var previousPhotos = [];
+            photoGroups.forEach(function(group) {
+                group.photos.forEach(function(p) {
+                    previousPhotos.push({ url: p.url, name: p.name, reportFolio: group.reportFolio, reportDate: group.reportDate });
+                });
+            });
+            prefill.previousPhotos = previousPhotos;
+            prefill.previousPhotoGroups = photoGroups; // para agrupar en la UI
             var card = buildItemCard(itemMap[catalogId], prefill);
             selectedContainer.appendChild(card);
             
