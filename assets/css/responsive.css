@@ -1,0 +1,429 @@
+/* ================================================================
+   RESPONSIVE — Tablet & Mobile
+   Sólo media queries; no altera la vista de escritorio.
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   Tablet: 769 – 1024 px
+   ---------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    body {
+        padding: 16px;
+    }
+
+    .report-header {
+        padding: 14px 20px;
+        gap: 14px;
+    }
+
+    .report-header img {
+        height: 100px;
+    }
+
+    #main-title {
+        font-size: 17px;
+    }
+
+    #report-form,
+    #fauna-form {
+        padding: 24px 24px;
+    }
+
+    /* Fauna tabs: ajustar márgenes negativos al nuevo padding del form */
+    .fauna-tabs {
+        margin-left: -24px;
+        margin-right: -24px;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .sidebar {
+        width: 220px;
+    }
+
+    .main-content {
+        margin-left: 220px;
+        padding: 20px;
+    }
+}
+
+/* ----------------------------------------------------------------
+   Mobile: ≤ 768 px
+   ---------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* --- Estructura base --- */
+    body {
+        padding: 0;
+    }
+
+    /* Fuerza box-sizing para evitar overflow horizontal */
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    /* --- Header: apilar verticalmente --- */
+    .report-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 16px;
+        gap: 10px;
+        border-radius: 0 0 14px 14px;
+    }
+
+    .report-header .left {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .report-header img {
+        height: 68px;
+    }
+
+    .report-header .header-center {
+        padding: 0;
+        width: 100%;
+    }
+
+    #main-title {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    .report-header .meta {
+        text-align: center;
+        width: 100%;
+    }
+
+    .report-header .meta .meta-times {
+        justify-items: center;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .report-header .meta .meta-time-block {
+        align-items: center;
+    }
+
+    /* --- Formulario --- */
+    #report-form,
+    #fauna-form {
+        padding: 18px 16px;
+        border-radius: 12px;
+        margin: 0;
+    }
+
+    /* Fauna tabs: ajustar márgenes al padding del form */
+    .fauna-tabs {
+        margin-left: -16px;
+        margin-right: -16px;
+        padding-left: 8px;
+        padding-right: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        border-radius: 0;
+    }
+
+    .fauna-tab {
+        padding: 12px 14px;
+        font-size: 13px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    /* --- Inputs: font-size 16px evita zoom automático en iOS --- */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea,
+    select {
+        font-size: 16px;
+        padding: 12px 14px;
+    }
+
+    /* --- Checkboxes y radios: mayor área táctil --- */
+    input[type="checkbox"],
+    input[type="radio"] {
+        width: 22px;
+        height: 22px;
+    }
+
+    input[type="checkbox"]:checked::after {
+        left: 5px;
+        top: 2px;
+        width: 7px;
+        height: 11px;
+    }
+
+    /* --- Botones: área táctil mínima de 44 px --- */
+    .btn {
+        padding: 11px 18px;
+        min-height: 44px;
+    }
+
+    input[type="submit"] {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 14px;
+        width: 100%;
+    }
+
+    .item-done,
+    .item-update {
+        padding: 8px 14px;
+        font-size: 13px;
+        min-height: 38px;
+    }
+
+    .firma-toggle-btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    /* --- Opciones de pista --- */
+    .pista-options {
+        gap: 8px;
+    }
+
+    .pista-option {
+        padding: 10px 10px;
+        font-size: 13px;
+    }
+
+    /* --- Tarjetas dinámicas de items --- */
+    .dynamic-item-card {
+        padding: 14px 12px;
+    }
+
+    /* --- Foto upload: cada botón ocupa todo el ancho --- */
+    .photo-upload-btns {
+        flex-direction: column;
+    }
+
+    .photo-upload-label {
+        min-width: unset;
+        width: 100%;
+    }
+
+    /* --- Modal mapa: casi pantalla completa --- */
+    #map-modal-content {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+
+    #map-modal-header {
+        padding: 14px 16px;
+    }
+
+    #map-modal-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 14px;
+    }
+
+    #map-gps-btn,
+    #map-modal-confirm {
+        flex: 1;
+        justify-content: center;
+        min-height: 44px;
+    }
+
+    #map-info {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+
+    /* --- PDF preview: hoja inferior (bottom sheet) --- */
+    #pdf-preview-container {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        height: 65% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border-radius: 16px 16px 0 0 !important;
+        transform: none !important;
+    }
+
+    /* --- Barra de usuario: compactar en móvil --- */
+    #user-info {
+        top: auto;
+        bottom: 10px;
+        right: 10px;
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    #user-info #user-email {
+        display: none;
+    }
+
+    /* --- Login modal: ajuste extra --- */
+    #login-box {
+        padding: 28px 20px;
+    }
+
+    /* --- Sidebar: horizontal + scrollable en móvil (ya definida, reforzamos) --- */
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        box-shadow: none;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .sidebar-tabs {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px 0;
+        scrollbar-width: none;
+    }
+
+    .sidebar-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sidebar-tab {
+        padding: 10px 14px;
+        font-size: 13px;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+
+    .sidebar-tab.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--blue-mid);
+    }
+
+    .sidebar-brand {
+        display: none; /* ocultar logo-brand en móvil para ahorrar espacio */
+    }
+
+    .sidebar-footer {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 16px;
+    }
+
+    /* Ocultar el botón de menú flotante ya que la sidebar es estática en móvil */
+    body.sidebar-hidden #menu-toggle-btn {
+        display: none;
+    }
+
+    /* Asegurar que sidebar hidden no se aplique en móvil */
+    body.sidebar-hidden .sidebar {
+        display: flex;
+    }
+
+    body.sidebar-hidden .main-content {
+        margin-left: 0;
+    }
+
+    /* --- Tablas del historial: scroll horizontal --- */
+    .table-scroll-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #admin-reports-table,
+    .hallazgos-table {
+        font-size: 12px;
+    }
+
+    #admin-reports-table th,
+    #admin-reports-table td {
+        padding: 8px 10px;
+    }
+}
+
+/* ----------------------------------------------------------------
+   Small mobile: ≤ 480 px
+   ---------------------------------------------------------------- */
+@media (max-width: 480px) {
+    .report-header img {
+        height: 52px;
+    }
+
+    #main-title {
+        font-size: 13px;
+    }
+
+    .report-header .meta .meta-time-block strong {
+        font-size: 15px;
+    }
+
+    /* Ocultar tiempos secundarios si hay dos y la pantalla es muy pequeña */
+    .report-header .meta .meta-times {
+        grid-template-columns: 1fr;
+    }
+
+    #report-form,
+    #fauna-form {
+        padding: 14px 12px;
+    }
+
+    .fauna-tabs {
+        margin-left: -12px;
+        margin-right: -12px;
+    }
+
+    .fauna-tab {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    /* Firma pads apilados en pantallas pequeñas */
+    .firma-container {
+        flex-direction: column;
+    }
+
+    .firma-pad {
+        min-width: unset;
+        width: 100%;
+    }
+
+    /* Map modal completamente a pantalla completa */
+    #map-modal-content {
+        border-radius: 0;
+    }
+
+    /* Botón limpiar todo */
+    .clear-all-btn {
+        font-size: 12px;
+        padding: 9px 14px;
+    }
+
+    /* Botones de acción del PDF */
+    #pdf-preview-actions {
+        gap: 6px;
+    }
+
+    #pdf-preview-close,
+    #pdf-download-btn {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+
+    /* h3 headers más compactos */
+    h3 {
+        font-size: 10px;
+        gap: 7px;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+}

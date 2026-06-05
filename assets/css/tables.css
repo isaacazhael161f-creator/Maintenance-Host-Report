@@ -1,0 +1,399 @@
+/* ===== ADMIN PANEL ===== */
+        #admin-panel {
+            background: var(--card);
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            border-top: 4px solid var(--blue);
+            margin: 20px auto;
+            max-width: 900px;
+        }
+
+        #admin-panel h2 {
+            margin-top: 0;
+            color: var(--navy);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        #admin-reports-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        #admin-reports-table th,
+        #admin-reports-table td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        #admin-reports-table th {
+            background: #f1f5fb;
+            font-weight: 700;
+            color: var(--navy);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        #admin-reports-table tr:hover {
+            background: #f5f9ff;
+        }
+
+        .admin-btn-view {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .admin-btn-view:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width:1000px) {
+            #pdf-preview-container {
+                position: fixed;
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
+                top: auto;
+                width: auto;
+                height: 40%;
+            }
+
+            #report-header,
+            #main-title {
+                padding-right: 12px;
+            }
+
+            #report-form,
+            #fauna-form {
+                max-width: 100%;
+                padding-bottom: 120px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            #pdf-preview-container {
+                left: 10px;
+                right: 10px;
+            }
+        }
+
+        @media print {
+            body { padding: 10mm; }
+            .report-header { page-break-after: avoid; }
+            #pdf-preview-container { display: none; }
+        }
+
+        /* ===== CLEAR ALL BUTTON ===== */
+        .clear-all-btn {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 10050;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(220, 38, 38, 0.35);
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .clear-all-btn:hover {
+            box-shadow: 0 10px 28px rgba(220, 38, 38, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .clear-all-btn:active {
+            transform: translateY(1px);
+        }
+
+        @media (max-width:640px) {
+            .clear-all-btn {
+                left: 12px;
+                right: 12px;
+                bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
+                width: auto;
+                display: block;
+                margin: 0 auto;
+                border-radius: 12px;
+                text-align: center;
+            }
+        }
+
+        /* ===== MAP MODAL ===== */
+        #map-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+
+        #map-modal.open {
+            display: flex;
+        }
+
+        #map-modal-content {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 900px;
+            height: 90%;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
+            z-index: 10001;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #map-modal-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            background: var(--navy);
+        }
+
+        #map-modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+
+        #map-modal-close {
+            background: rgba(255,255,255,0.12);
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #fff;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+
+        #map-modal-close:hover {
+            background: rgba(255,255,255,0.22);
+        }
+
+        #map-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        #map-info {
+            padding: 12px 18px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            font-size: 13px;
+            color: #374151;
+            flex-shrink: 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+        }
+
+        #map-modal-actions {
+            padding: 14px 20px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+            background: #f9fafb;
+            border-radius: 0 0 16px 16px;
+        }
+
+        #map-modal-confirm {
+            background: linear-gradient(135deg, #1e3a8a, var(--blue));
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(29, 78, 216, 0.3);
+            z-index: 10002;
+            position: relative;
+        }
+
+        #map-modal-confirm:hover {
+            box-shadow: 0 6px 20px rgba(29, 78, 216, 0.45);
+            transform: translateY(-1px);
+        }
+
+        #map-modal-confirm:active {
+            transform: translateY(1px);
+        }
+
+        #map-gps-btn {
+            background: #fff;
+            color: #0f766e;
+            border: 2px solid #0f766e;
+            padding: 11px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: all 0.2s ease;
+            z-index: 10002;
+            position: relative;
+        }
+
+        #map-gps-btn:hover {
+            background: #0f766e;
+            color: #fff;
+        }
+
+        #map-gps-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* Estilo para etiquetas del mapa en PDF */
+        .map-label-icon {
+            background: #d9534f;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 12px;
+        }
+
+        /* Evidencias fotográficas */
+        .photo-upload-area {
+            margin: 8px 0;
+        }
+        .photo-upload-btns {
+            display: flex;
+            gap: 8px;
+            max-width: 420px;
+            flex-wrap: wrap;
+        }
+        .photo-upload-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            background: #f0f6ff;
+            border: 2px dashed #93c5fd;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 13px;
+            color: #1e40af;
+            transition: background 0.2s, border-color 0.2s;
+            flex: 1;
+            min-width: 140px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .photo-upload-label:hover {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .photo-camera-label {
+            background: #f0fdf4;
+            border-color: #6ee7b7;
+            color: #065f46;
+        }
+        .photo-camera-label:hover {
+            background: #dcfce7;
+            border-color: #34d399;
+        }
+        .photo-upload-input {
+            display: none;
+        }
+        .photo-previews {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            max-width: 420px;
+        }
+        .photo-thumb-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .photo-thumb {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+            display: block;
+        }
+        .photo-thumb-remove {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }

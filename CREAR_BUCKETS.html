@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Crear Buckets de Storage</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: #92400e;
+        }
+        .step {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .step-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .step-text {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .output {
+            margin-top: 30px;
+            padding: 16px;
+            background: #1f2937;
+            color: #10b981;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        .output.show {
+            display: block;
+        }
+        .output-line {
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .warning-text {
+            color: #f59e0b;
+        }
+        .info {
+            color: #3b82f6;
+        }
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+            margin-left: 8px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Crear Buckets de Storage</h1>
+        <p class="subtitle">Sistema automático para crear storage en Supabase</p>
+        
+        <div class="warning">
+            ⚠️ <strong>Importante:</strong> Esta página se conecta directamente a Supabase. Para crear buckets necesitas que tu usuario tenga permisos de <strong>service_role</strong> o ser dueño del proyecto. La clave anon solo puede listar/verificar buckets existentes.
+        </div>
+        
+        <div class="step">
+            <div class="step-title">📋 Qué va a pasar:</div>
+            <div class="step-text">
+                ✅ Se crearán 4 buckets:<br>
+                • <strong>reports</strong> (PDFs de reportes de inspección — público)<br>
+                • <strong>report-evidencias</strong> (fotos y firmas de inspección — privado)<br>
+                • fauna_impact_pdfs (para PDFs de impactos — privado)<br>
+                • fauna_rescue_pdfs (para PDFs de rescates — privado)<br>
+                <br>
+                ✅ Se verificará que existen en Supabase<br>
+                ✅ Se mostrará el resultado en la consola
+            </div>
+        </div>
+        
+        <div id="status" class="status-badge status-pending">⏳ Listo para ejecutar</div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="crearBucketsAutomatico()">
+                ▶️ CREAR TODOS LOS BUCKETS
+            </button>
+            <button class="btn-secondary" onclick="verificarBucketsExistentes()">
+                🔍 Verificar
+            </button>
+        </div>
+        
+        <div id="output" class="output">
+            <div class="output-line info">🔵 Iniciando...</div>
+        </div>
+        
+        <div class="step" style="margin-top: 30px;">
+            <div class="step-title">📝 Próximo paso:</div>
+            <div class="step-text">
+                Después de crear los buckets, ve a:<br>
+                <strong>Supabase Dashboard → Storage → [bucket] → Policies</strong><br>
+                <br>
+                Para <strong>report-evidencias</strong>: agrega políticas INSERT y SELECT para usuarios autenticados.<br>
+                Para <strong>reports</strong>: bucket público, sin cambios necesarios.<br>
+                Para fauna_impact_pdfs y fauna_rescue_pdfs: agrega políticas SELECT, INSERT, DELETE.<br>
+                <br>
+                <em>Ver instrucciones en CREATE_BUCKETS.sql</em>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Inicializar cliente Supabase directamente — el <script src> anterior carga síncronamente
+        const SUPABASE_URL = 'https://fgstncvuuhpgyzmjceyr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnc3RuY3Z1dWhwZ3l6bWpjZXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzQ0NDQsImV4cCI6MjA4MTQ1MDQ0NH0.YEDIKuWt5iKUEI0BAvidINUz0aZBvQM0h6XRJ-uslB8';
+        if (window.supabase && !window.supabaseClient) {
+            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+    </script>
+    <script>
+        const outputDiv = document.getElementById('output');
+        const statusDiv = document.getElementById('status');
+        
+        function addLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `output-line ${type}`;
+            line.textContent = message;
+            outputDiv.appendChild(line);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+        
+        function setStatus(message, type = 'pending') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status-badge status-${type}`;
+        }
+        
+        function showOutput() {
+            outputDiv.classList.add('show');
+        }
+        
+        async function crearBucketsAutomatico() {
+            outputDiv.innerHTML = '';
+            showOutput();
+            setStatus('⏳ Creando buckets...', 'pending');
+            addLog('🔵 Iniciando creación de buckets...');
+            
+            try {
+                // Obtener el cliente de Supabase desde window
+                if (!window.supabaseClient) {
+                    addLog('❌ Error: Cliente de Supabase no encontrado', 'error');
+                    addLog('ℹ️  Asegúrate de que la página del formulario está cargada', 'warning-text');
+                    setStatus('❌ Error: Cliente no disponible', 'error');
+                    return;
+                }
+                
+                const supabaseClient = window.supabaseClient;
+                addLog('✅ Cliente de Supabase conectado');
+
+                // Lista de todos los buckets que necesita la aplicación
+                const allBuckets = [
+                    { id: 'reports', public: true, desc: 'PDFs de reportes de inspección' },
+                    { id: 'report-evidencias', public: false, desc: 'Fotos y firmas de inspección' },
+                    { id: 'fauna_impact_pdfs', public: false, desc: 'PDFs de impactos de fauna' },
+                    { id: 'fauna_rescue_pdfs', public: false, desc: 'PDFs de rescates de fauna' },
+                ];
+
+                for (const bucket of allBuckets) {
+                    addLog(`\n🟡 Creando bucket: ${bucket.id} (${bucket.desc})...`);
+                    const { data, error } = await supabaseClient.storage.createBucket(bucket.id, {
+                        public: bucket.public,
+                        fileSizeLimit: 52428800
+                    });
+                    if (error) {
+                        if (error.message && error.message.toLowerCase().includes('already')) {
+                            addLog(`⚠️  ${bucket.id} ya existe`, 'warning-text');
+                        } else {
+                            addLog(`❌ Error en ${bucket.id}: ${error.message}`, 'error');
+                        }
+                    } else {
+                        addLog(`✅ ${bucket.id} creado exitosamente`, 'success');
+                    }
+                }
+                
+                // VERIFICAR
+                addLog('\n🟡 Verificando buckets...');
+                const { data: buckets, error: errorList } = await supabaseClient.storage.listBuckets();
+                
+                if (errorList) {
+                    addLog(`❌ Error listando buckets: ${errorList.message}`, 'error');
+                    setStatus('❌ Error durante verificación', 'error');
+                    return;
+                }
+                
+                const bucketNames = buckets.map(b => b.name);
+                addLog(`📋 Buckets encontrados: ${bucketNames.join(', ')}`);
+                
+                const allPresent = allBuckets.every(b => buckets.some(e => e.id === b.id || e.name === b.id));
+                
+                if (allPresent) {
+                    addLog('\n✅ ¡ÉXITO! Todos los buckets están listos', 'success');
+                    addLog('📝 Próximo paso: Verifica las políticas RLS en Supabase Storage', 'success');
+                    setStatus('✅ Todos los buckets disponibles', 'success');
+                } else {
+                    const missingIds = allBuckets.filter(b => !buckets.some(e => e.id === b.id || e.name === b.id)).map(b => b.id);
+                    addLog(`\n⚠️  Faltan buckets: ${missingIds.join(', ')}`, 'warning-text');
+                    setStatus('⚠️ Verificación incompleta', 'pending');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Error inesperado: ${error.message}`, 'error');
+                setStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function verificarBucketsExistentes() {
+            outputDiv.innerHTML = '';
+            showOutput();
+            setStatus('🔍 Verificando...');
+            addLog('🔵 Verificando buckets existentes...');
+            
+            try {
+                if (!window.supabaseClient) {
+                    addLog('❌ Cliente de Supabase no disponible', 'error');
+                    return;
+                }
+                
+                const { data: buckets, error } = await window.supabaseClient.storage.listBuckets();
+                
+                if (error) {
+                    addLog(`❌ Error: ${error.message}`, 'error');
+                    setStatus('❌ Error', 'error');
+                    return;
+                }
+                
+                addLog(`📋 Total de buckets: ${buckets.length}`);
+                
+                const allRequired = ['reports', 'report-evidencias', 'fauna_impact_pdfs', 'fauna_rescue_pdfs'];
+                buckets.forEach(bucket => {
+                    const isRequired = allRequired.includes(bucket.name || bucket.id);
+                    const icon = isRequired ? '✅' : 'ℹ️';
+                    const type = isRequired ? 'success' : 'info';
+                    addLog(`${icon} ${bucket.name || bucket.id} (${bucket.public ? 'PUBLIC' : 'PRIVATE'})`, type);
+                });
+
+                const missing = allRequired.filter(name => !buckets.some(b => (b.name || b.id) === name));
+                if (missing.length === 0) {
+                    addLog('\n✅ Todos los buckets requeridos están presentes', 'success');
+                    setStatus('✅ Todos los buckets encontrados', 'success');
+                } else {
+                    addLog(`\n⚠️  Buckets faltantes: ${missing.join(', ')}`, 'warning-text');
+                    setStatus('⚠️ Faltan buckets — usar CREAR', 'pending');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Log inicial — el cliente ya debe estar listo (init inmediato arriba)
+        if (window.supabaseClient) {
+            setStatus('✅ Supabase listo — puedes crear los buckets', 'success');
+        } else {
+            setStatus('❌ No se pudo inicializar Supabase', 'error');
+        }
+    </script>
+</body>
+</html>

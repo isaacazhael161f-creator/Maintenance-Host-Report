@@ -1,0 +1,1462 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Host Report</title>
+    <!-- Registro del Service Worker (soporte offline) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function (reg) { console.log('[SW] Registrado:', reg.scope); })
+                    .catch(function (err) { console.warn('[SW] Error al registrar:', err); });
+            });
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet.js para mapa interactivo -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <!-- togeojson para convertir KML a GeoJSON -->
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@0.16.2/togeojson.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body>
+    <!-- Backdrop para el modal PDF -->
+    <div id="pdf-modal-backdrop" style="display:none;"></div>
+    <!-- Panel de vista previa del PDF (modal centrado) -->
+    <div id="pdf-preview-container" aria-hidden="true">
+        <div id="pdf-spinner">
+            <div class="spinner" aria-hidden="true"></div>
+        </div>
+        <div id="pdf-preview-actions">
+            <button id="pdf-download-btn" title="Descargar PDF">Descargar</button>
+            <button id="pdf-preview-close" title="Cerrar vista">Cerrar</button>
+        </div>
+        <iframe id="pdf-preview-frame" title="Vista previa del PDF"></iframe>
+    </div>
+    <!-- Banner de estado de conexión -->
+    <div id="offline-banner"></div>
+    <!-- Badge de reportes pendientes de sincronizar -->
+    <div id="pending-badge"></div>
+    <!-- Login Modal -->
+    <div id="login-modal">
+        <!-- Left: Background image + branding -->
+        <div id="login-panel-left">
+            <div id="login-brand">
+                <div class="brand-badge">✈ AIFA · Seguridad Operacional</div>
+                <h1>Formato de Revisión del Área de Movimiento</h1>
+                <p>Sistema Institucional de Reportes de Mantenimiento y Seguridad Operacional. Acceso exclusivo para personal autorizado.</p>
+                <div class="brand-footer">AIFA-DO-SSO-GSO-MHR-F1 &nbsp;·&nbsp; Aeropuerto Internacional Felipe Ángeles</div>
+            </div>
+        </div>
+        <!-- Right: Login form -->
+        <div id="login-box">
+            <div id="login-icon">✈️</div>
+            <div class="login-eyebrow">Portal de Acceso</div>
+            <h2>Bienvenido Abordo</h2>
+            <p>Ingrese sus credenciales institucionales para continuar.</p>
+            <div class="input-group">
+                <label>Usuario</label>
+                <input type="text" id="login-email" placeholder="Usuario o correo" autocomplete="username" />
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <div class="password-field">
+                    <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+                    <button type="button" id="toggle-password-visibility" class="password-toggle" aria-label="Mostrar contraseña" aria-pressed="false" title="Mostrar contraseña">👁️</button>
+                </div>
+            </div>
+            <button id="login-btn">Iniciar Sesión</button>
+            <div id="login-error"></div>
+            <div class="login-footer-note">
+                🔒 Acceso restringido a personal autorizado<br>
+                SSO Runway Report System
+            </div>
+        </div>
+    </div>
+    <!-- Menu toggle button (visible when sidebar is hidden) -->
+    <button id="menu-toggle-btn" title="Mostrar menú">☰</button>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">✈</div>
+            <div class="sidebar-brand-text">
+                <div class="sidebar-brand-title">AIFA · MHR</div>
+                <div class="sidebar-brand-sub">Seguridad Operacional</div>
+            </div>
+        </div>
+        <div class="sidebar-tabs">
+            <!-- Área de Seguridad Operacional -->
+            <div style="padding: 12px 0 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; margin-left: 16px;">🛡️ Seguridad Operacional</div>
+            <button class="sidebar-tab active" data-tab="revision">📋 Formato de Revisión del Área de Movimiento</button>
+            <button class="sidebar-tab" data-tab="historial">📚 Historial Seguridad Operacional</button>
+            <button class="sidebar-tab" data-tab="estadistica">📊 Estadística Seguridad Operacional</button>
+            <!-- Divisor -->
+            <div style="height: 1px; background: #e5e7eb; margin: 12px 12px; opacity: 0.5;"></div>
+            <!-- Área de Control de Fauna -->
+            <div style="padding: 12px 0 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; margin-left: 16px;">🦅 Control de Fauna</div>
+            <button class="sidebar-tab" data-tab="fauna">🦁 Formato Informes Control de Fauna</button>
+            <button class="sidebar-tab" data-tab="historial-fauna">📖 Historial Control de Fauna</button>
+            <button class="sidebar-tab" data-tab="estadistica-fauna">🦅 Estadística Control de Fauna</button>
+        </div>
+        <div class="sidebar-footer">
+            <div>AIFA-DO-SSO-GSO-MHR-F1</div>
+        </div>
+    </div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- User Info (Top Right) -->
+        <div id="user-info">
+            <span id="user-email"></span>
+            <span id="user-role"></span>
+            <button id="logout-btn">Salir</button>
+        </div>
+        <header class="report-header">
+            <div class="left">
+                <img src="logo.png" alt="Logo">
+            </div>
+            <div class="header-center">
+                <h1 id="main-title">Formato de Revisión del Área de Movimiento</h1>
+            </div>
+            <div class="meta">
+                <div class="title">Dirección de Operación</div>
+                <div>Subdirección de Seguridad Operacional</div>
+                <div>Gerencia de Seguridad Operacional</div>
+                <div class="meta-times">
+                    <div class="meta-time-block">
+                        <strong id="report-date">--/--/---- --:--:--</strong>
+                        <span>Hora local</span>
+                    </div>
+                    <div class="meta-time-block">
+                        <strong id="report-utc">--/--/---- --:--:-- UTC</strong>
+                        <span>Hora UTC</span>
+                    </div>
+                </div>
+                <div class="meta-form-code">AIFA-DO-SSO-GSO-MHR-F1</div>
+                <div class="meta-actions">
+                    <button id="clear-saved-btn" class="btn-ghost" style="padding:6px 10px; border-radius:6px; border-color:rgba(255,255,255,0.25); color:rgba(255,255,255,0.75);">Limpiar guardado</button>
+                </div>
+            </div>
+        </header>
+        <!-- Formato de Revisión Section -->
+        <div id="revision-section" class="content-section active">
+            <form id="report-form" action="#" method="get">
+                <h3>⚠️ Tipo de Inspección</h3>
+                <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <label class="pista-option" style="flex:1;">
+                        <input type="radio" id="ins_primaria" name="tipo_inspeccion" value="Primaria"> Primaria
+                    </label>
+                    <label class="pista-option" style="flex:1;">
+                        <input type="radio" id="ins_secundaria" name="tipo_inspeccion" value="Secundaria"> Secundaria
+                    </label>
+                </div>
+                <div id="turno-section" style="display:none; margin-top:8px;">
+                    <h3>Turno</h3>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" id="turno_diurno" name="turno" value="Diurna"> Diurno
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" id="turno_nocturno" name="turno" value="Nocturna"> Nocturno
+                        </label>
+                    </div>
+                </div>
+                <div id="pista-section" style="margin-top:8px;">
+                    <h3>Pista</h3>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="pista" value="04C - 22C"> 04C - 22C
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="pista" value="04L - 22R"> 04L - 22R
+                        </label>
+                    </div>
+                    <button type="button" id="pista-change-btn" style="display:none; margin-top:6px;">Cambiar pista</button>
+                </div>
+                <h3>🧑‍✈️ Responsable(s) que elaboran el reporte</h3>
+                <!-- Select para Responsable: reemplaza la lista de botones -->
+                <select id="report-authors-select" name="report_authors" title="Seleccionar Responsable">
+                    <option value="" disabled selected>-- Seleccionar Responsable --</option>
+                </select>
+                <button type="button" id="report-authors-reset" style="display:none; margin-top:6px;">Cambiar
+                    responsable</button>
+                <h3>🪪 Cargo</h3>
+                <select id="report-role" name="report_role" title="Seleccionar Cargo">
+                    <option value="Inspector">Oficial de Operaciones Aeroportuarias</option>
+                    <option value="Jefe de Área">Gerente de MDS</option>
+                    <option value="Supervisor">Supervisor de MDS</option>
+                    <option value="Coordinador">Coordinador de MDS</option>
+                    <option value="Coordinador">Coordinador de Fauna</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                <button type="button" id="report-role-reset" style="display:none; margin-top:6px;">Cambiar
+                    cargo</button>
+                <input type="text" id="report-role-other" name="report_role_other" placeholder="Especifique otro cargo"
+                    style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+
+                <h3>👤 Representante AFAC (Supervisor)</h3>
+                <input type="text" id="report-afac-name" name="report_afac_name" placeholder="Nombre del representante AFAC" style="margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
+                <h3>� Representante de Área</h3>
+                <select id="report-area-rep" name="report_area_rep" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                    <option value="" disabled selected>-- Seleccionar representante de área --</option>
+                    <option value="N/A">N/A</option>
+                    <option value="Ingeniería Civil">Ingeniería Civil</option>
+                    <option value="Ingeniería Electromecánica">Ingeniería Electromecánica</option>
+                    <option value="Protección Civil">Protección Civil</option>
+                    <option value="Fauna">Fauna</option>
+                </select>
+                <input type="text" id="report-area-rep-name" name="report_area_rep_name" placeholder="Nombre del representante de área" style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                <h3>�🔧📚📋 Item:</h3>
+                <!-- Per-item Done/Update buttons will appear next to each item -->
+                <div id="item-combo-manager" style="margin-bottom:14px;">
+                    <div id="item-combo-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+                    <button type="button" id="add-item-combo-btn" class="btn btn-ghost" style="margin-top:8px;">➕ Agregar Item</button>
+                </div>
+                <div id="item-selected-container" style="display:flex; flex-direction:column; gap:10px;"></div>
+                <div id="item-staging-container" style="display:none;"></div>
+
+                <input type="checkbox" id="tipo_area_movimiento" name="tipo_reporte" value="Área de Movimiento">
+                <label for="tipo_area_movimiento">Área de Movimiento</label>
+                <button type="button" id="done_tipo_area_movimiento" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_area_movimiento" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_area_movimiento"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_area_movimiento][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_area_movimiento" name="details[tipo_area_movimiento][hallazgo]">
+                            <option value="">--</option>
+                            <option>Grietas/Fisuras</option>
+                            <option>Oquedades</option>
+                            <option>F.O.D</option>
+                            <option>Baches</option>
+                            <option>Ondulaciones</option>
+                            <option>Caucho</option>
+                            <option>Cuerpos de Agua</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_area_movimiento"
+                            name="details[tipo_area_movimiento][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición:
+                        <select class="condicion-select" name="details[tipo_area_movimiento][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select>
+                    </label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_area_movimiento][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_area_movimiento][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text"
+                            name="details[tipo_area_movimiento][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_franjas" name="tipo_reporte"
+                    value="Franjas de seguridad (Pistas y Rodados)">
+                <label for="tipo_franjas">Franjas de seguridad</label>
+                <button type="button" id="done_tipo_franjas" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_franjas" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_franjas"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_franjas][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_franjas" name="details[tipo_franjas][hallazgo]">
+                            <option value="">--</option>
+                            <option>Drenaje/Construcción</option>
+                            <option>Registros</option>
+                            <option>Vialidades</option>
+                            <option>Objetos</option>
+                            <option>Bases Frágiles</option>
+                            <option>Surcos</option>
+                            <option>Montículos/Erosiones</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_franjas" name="details[tipo_franjas][hallazgo_other]"
+                            placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_franjas][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_franjas][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_franjas][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_franjas][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_iluminacion" name="tipo_reporte" value="Iluminación">
+                <label for="tipo_iluminacion">Iluminación</label>
+                <button type="button" id="done_tipo_iluminacion" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_iluminacion" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_iluminacion"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_iluminacion][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_iluminacion" name="details[tipo_iluminacion][hallazgo]">
+                            <option value="">--</option>
+                            <option>Faltante/Donado</option>
+                            <option>Inoperativo</option>
+                            <option>Obscuro/Sucio</option>
+                            <option>Mal Direccionado</option>
+                            <option>Ajuste</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_iluminacion"
+                            name="details[tipo_iluminacion][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_iluminacion][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_iluminacion][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_iluminacion][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_iluminacion][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_marcas" name="tipo_reporte" value="Marcas y Señalística">
+                <label for="tipo_marcas">Marcas y Señales</label>
+                <button type="button" id="done_tipo_marcas" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_marcas" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_marcas"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_marcas][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_marcas" name="details[tipo_marcas][hallazgo]">
+                            <option value="">--</option>
+                            <option>Visibles</option>
+                            <option>Desgastadas</option>
+                            <option>En Norma</option>
+                            <option>Letrero Dañado</option>
+                            <option>Marcas de Parada</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_marcas" name="details[tipo_marcas][hallazgo_other]"
+                            placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_marcas][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_marcas][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_marcas][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_marcas][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_ayudas" name="tipo_reporte" value="Ayudas a la Navegación">
+                <label for="tipo_ayudas">Ayudas a la Navegación</label>
+                <button type="button" id="done_tipo_ayudas" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_ayudas" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_ayudas"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_ayudas][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_ayudas" name="details[tipo_ayudas][hallazgo]">
+                            <option value="">--</option>
+                            <option>Luces PAPI</option>
+                            <option>Conos de Viento</option>
+                            <option>VOR</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_ayudas" name="details[tipo_ayudas][hallazgo_other]"
+                            placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_ayudas][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_ayudas][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_ayudas][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_ayudas][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_obstaculos" name="tipo_reporte" value="Obstáculos">
+                <label for="tipo_obstaculos">Obstáculos</label>
+                <button type="button" id="done_tipo_obstaculos" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_obstaculos" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_obstaculos"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_obstaculos][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_obstaculos" name="details[tipo_obstaculos][hallazgo]">
+                            <option value="">--</option>
+                            <option>Luces de Obstrucción</option>
+                            <option>Árboles</option>
+                            <option>Grúas</option>
+                            <option>Torres</option>
+                            <option>Espectaculares</option>
+                            <option>Edificios</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_obstaculos"
+                            name="details[tipo_obstaculos][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_obstaculos][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_obstaculos][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_obstaculos][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_obstaculos][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_combustibles" name="tipo_reporte" value="Operaciones de Combustibles">
+                <label for="tipo_combustibles">Operaciones de Combustibles</label>
+                <button type="button" id="done_tipo_combustibles" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_combustibles" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_combustibles"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_combustibles][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_combustibles" name="details[tipo_combustibles][hallazgo]">
+                            <option value="">--</option>
+                            <option>Fuga/Derrame</option>
+                            <option>Balizamiento(Toma de Combustible en Plataforma)</option>
+                            <option>Extintores</option>
+                            <option>Tierras Físicas</option>
+                            <option>Vehículos/Posición</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_combustibles"
+                            name="details[tipo_combustibles][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_combustibles][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_combustibles][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_combustibles][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_combustibles][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_construccion" name="tipo_reporte" value="Construcción">
+                <label for="tipo_construccion">Construcción</label>
+                <button type="button" id="done_tipo_construccion" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_construccion" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_construccion"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_construccion][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_construccion" name="details[tipo_construccion][hallazgo]">
+                            <option value="">--</option>
+                            <option>Balizamiento</option>
+                            <option>Luces</option>
+                            <option>Equipo</option>
+                            <option>Personal</option>
+                            <option>Plan de Seguridad</option>
+                            <option>Uso de Pistas/Rodajes</option>
+                            <option>Limpieza</option>
+                            <option>FOD</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_construccion"
+                            name="details[tipo_construccion][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_construccion][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_construccion][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_construccion][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_construccion][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_ssei" name="tipo_reporte" value="SSEI">
+                <label for="tipo_ssei">SSEI</label>
+                <button type="button" id="done_tipo_ssei" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_ssei" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_ssei"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_ssei][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_ssei" name="details[tipo_ssei][hallazgo]">
+                            <option value="">--</option>
+                            <option>Equipo Disponible</option>
+                            <option>Comunicaciones</option>
+                            <option>Personal Disponible</option>
+                            <option>Alarma</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_ssei" name="details[tipo_ssei][hallazgo_other]"
+                            placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_ssei][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_ssei][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_ssei][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_ssei][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_vehiculos" name="tipo_reporte" value="Vehículos Terrestres">
+                <label for="tipo_vehiculos">Vehículos Terrestres</label>
+                <button type="button" id="done_tipo_vehiculos" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_vehiculos" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_vehiculos"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_vehiculos][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_vehiculos" name="details[tipo_vehiculos][hallazgo]">
+                            <option value="">--</option>
+                            <option>Exceso de Velocidad</option>
+                            <option>Comunicaciones</option>
+                            <option>Procedimientos</option>
+                            <option>Reglas</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_vehiculos"
+                            name="details[tipo_vehiculos][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_vehiculos][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_vehiculos][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_vehiculos][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_vehiculos][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_fauna" name="tipo_reporte" value="Fauna">
+                <label for="tipo_fauna">Control de Fauna</label>
+                <button type="button" id="done_tipo_fauna" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_fauna" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_fauna"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_fauna][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_fauna" name="details[tipo_fauna][hallazgo]">
+                            <option value="">--</option>
+                            <option>Aves</option>
+                            <option>Caninos</option>
+                            <option>Reptiles</option>
+                            <option>Fauna Terrestre</option>
+                            <option>Plagas/Insectos</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_fauna" name="details[tipo_fauna][hallazgo_other]"
+                            placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_fauna][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_fauna][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_fauna][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_fauna][codigo]"></label>
+                </div>
+                <input type="checkbox" id="tipo_proteccion" name="tipo_reporte" value="Protección Pública">
+                <label for="tipo_proteccion">Protección Pública</label>
+                <button type="button" id="done_tipo_proteccion" class="item-done"
+                    style="display:none; margin-left:6px;">Done</button>
+                <button type="button" id="update_tipo_proteccion" class="item-update"
+                    style="display:none; margin-left:6px;">Update</button>
+                <br>
+                <div class="item-details" id="details_tipo_proteccion"
+                    style="display:none; margin-left:18px; margin-bottom:10px;">
+                    <label>Lugar: <input type="text" name="details[tipo_proteccion][lugar]"></label><br>
+                    <label>Hallazgo:
+                        <select id="hallazgo_tipo_proteccion" name="details[tipo_proteccion][hallazgo]">
+                            <option value="">--</option>
+                            <option>Personas NO Autorizadas</option>
+                            <option>Vehículos NO Autorizados</option>
+                            <option>Abordadores Mecánicos</option>
+                            <option>Otro</option>
+                        </select>
+                        <input type="text" id="hallazgo_other_tipo_proteccion"
+                            name="details[tipo_proteccion][hallazgo_other]" placeholder="Especifique otro hallazgo"
+                            style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    </label><br>
+                    <label>Condición: <select class="condicion-select" name="details[tipo_proteccion][condicion]">
+                            <option value="">--</option>
+                            <option value="Satisfactorio">Satisfactorio</option>
+                            <option value="No Satisfactorio">No Satisfactorio</option>
+                            <option value="N/A">N/A</option>
+                        </select></label><br>
+                    <label>Observaciones:<br><textarea name="details[tipo_proteccion][observaciones]" rows="3"
+                            style="width:100%; max-width:420px;"></textarea></label><br>
+                    <label>Prioridad:
+                        <select class="priority-select" name="details[tipo_proteccion][prioridad]">
+                            <option value="">N/A</option>
+                            <option value="1">Baja / No Urgente</option>
+                            <option value="2">Media / Urgencia Moderada</option>
+                            <option value="3">Alta / Muy Urgente</option>
+                        </select>
+                    </label><br>
+                    <label>Código de Seguimiento: <input type="text" name="details[tipo_proteccion][codigo]"></label>
+                </div>
+                <h3>📝 Notas Generales</h3>
+                <textarea id="report-notas-generales" name="notas_generales" rows="5"
+                    placeholder="Observaciones generales del reporte, condiciones del área, comentarios adicionales..."
+                    style="width:100%; max-width:700px; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; font-size:14px; resize:vertical; line-height:1.5;"></textarea>
+                <h3>✍️ Firmas</h3>
+                <button type="button" id="firma-toggle-btn" class="firma-toggle-btn">📝 Mostrar Firmas</button>
+                <div class="firma-section">
+                    <label class="firma-label">Firma - Representante de Área</label>
+                    <canvas id="firma-area" class="firma-pad" width="300" height="120"></canvas>
+                    <div class="firma-buttons">
+                        <button type="button" class="firma-btn" onclick="guardarFirma('area')">✓ Guardar firma</button>
+                        <button type="button" class="firma-btn firma-btn-clear" onclick="limpiarFirma('area')">Limpiar firma</button>
+                        <span id="status-area" style="font-size:12px;color:#22c55e;margin-left:8px;display:none;">✓ Guardada</span>
+                    </div>
+                    
+                    <label class="firma-label" style="margin-top: 14px;">Firma - AIFA (Responsable)</label>
+                    <canvas id="firma-aifa" class="firma-pad" width="300" height="120"></canvas>
+                    <div class="firma-buttons">
+                        <button type="button" class="firma-btn" onclick="guardarFirma('aifa')">✓ Guardar firma</button>
+                        <button type="button" class="firma-btn firma-btn-clear" onclick="limpiarFirma('aifa')">Limpiar firma</button>
+                        <span id="status-aifa" style="font-size:12px;color:#22c55e;margin-left:8px;display:none;">✓ Guardada</span>
+                    </div>
+                    <label class="firma-label" style="margin-top: 14px;">Firma - AFAC (Supervisor)</label>
+                    <canvas id="firma-afac" class="firma-pad" width="300" height="120"></canvas>
+                    <div class="firma-buttons">
+                        <button type="button" class="firma-btn" onclick="guardarFirma('afac')">✓ Guardar firma</button>
+                        <button type="button" class="firma-btn firma-btn-clear" onclick="limpiarFirma('afac')">Limpiar firma</button>
+                        <span id="status-afac" style="font-size:12px;color:#22c55e;margin-left:8px;display:none;">✓ Guardada</span>
+                    </div>
+                </div>
+                <input type="submit" value="Generar reporte">
+            </form>
+        </div> <!-- End revision-section -->
+
+        <!-- Fauna Section -->
+        <div id="fauna-section" class="content-section">
+            <form id="fauna-form" action="#" method="get">
+                <div class="fauna-tabs">
+                    <button type="button" class="fauna-tab active" data-fauna-tab="impacto" data-fauna-title="📊 Registro de Impacto o Posible Impacto">📊 Registro de Impacto o Posible Impacto</button>
+                    <button type="button" class="fauna-tab" data-fauna-tab="rescate" data-fauna-title="🛟 Registro de Fauna Rescatada y Reubicada">🛟 Registro de Fauna Rescatada y Reubicada</button>
+                </div>
+                <div id="fauna_turno-section" style="display:none; margin-top:8px;">
+                    <h3>Turno</h3>
+                    <input type="radio" id="fauna_turno_diurno" name="fauna_turno" value="Diurna">
+                    <label for="fauna_turno_diurno">Diurno</label><br>
+                    <input type="radio" id="fauna_turno_nocturno" name="fauna_turno" value="Nocturna">
+                    <label for="fauna_turno_nocturno">Nocturno</label><br>
+                </div>
+                <!-- TAB 1: Registro de Impacto o Posible Impacto -->
+                <div class="fauna-tab-content active" data-fauna-tab-content="impacto">
+                    <h3>⚡ Evento</h3>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="fauna_report_evento" value="Impacto"> Impacto
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="fauna_report_evento" value="Posible Impacto"> Posible Impacto
+                        </label>
+                    </div>
+                    <h3>✈️ Fase de Vuelo</h3>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="fauna_report_fase_vuelo" value="Aterrizaje"> Aterrizaje
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="fauna_report_fase_vuelo" value="Despegue"> Despegue
+                        </label>
+                    </div>
+                    <h3>Pista</h3>
+                    <div class="pista-options" style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="fauna_pista" value="04C - 22C"> 04C - 22C
+                        </label>
+                        <label class="pista-option" style="flex:1;">
+                            <input type="radio" name="fauna_pista" value="04L - 22R"> 04L - 22R
+                        </label>
+                    </div>
+                    <button type="button" id="fauna_pista-change-btn" style="display:none; margin-top:6px;">Cambiar pista</button>
+                    <h3>🧑‍✈️ Responsable(s) que elaboran el reporte</h3>
+                    <select id="fauna_report-authors-select" name="fauna_report_authors" title="Seleccionar Responsable">
+                        <option value="" disabled selected>-- Seleccionar Responsable --</option>
+                        <option value="Daniel Mejia">Daniel Mejia</option>
+                        <option value="Cesar Cisneros">Cesar Cisneros</option>
+                        <option value="Alejandro Jimenez">Alejandro Jimenez</option>
+                        <option value="Daniela Hernandez">Daniela Hernandez</option>
+                    </select>
+                    <button type="button" id="fauna_report-authors-reset" style="display:none; margin-top:6px;">Cambiar responsable</button>
+                    <h3>🪪 Cargo</h3>
+                    <select id="fauna_report-role" name="fauna_report_role" title="Seleccionar Cargo">
+                        <option value="Coordinador de Fauna">Coordinador de Fauna</option>
+                        <option value="Supervisor de Fauna">Supervisor de Fauna</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <button type="button" id="fauna_report-role-reset" style="display:none; margin-top:6px;">Cambiar cargo</button>
+                    <input type="text" id="fauna_report-role-other" name="fauna_report_role_other" placeholder="Especifique otro cargo"
+                        style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    <h3>👤 Representante AFAC (Supervisor)</h3>
+                    <input type="text" id="fauna_report-afac-name" name="fauna_report_afac_name" placeholder="Nombre del representante AFAC" style="margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
+                    <h3>✈️ Aerolinea</h3>
+                    <input type="text" id="fauna_report-aerolinea" name="fauna_report_aerolinea" list="fauna_report-aerolinea-options" title="Seleccionar Aerolinea" placeholder="Escribe código IATA o nombre de aerolínea" style="max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc; margin-top:6px;" autocomplete="off" />
+                    <datalist id="fauna_report-aerolinea-options"></datalist>
+                    <small id="fauna_report-aerolinea-top" style="display:block; margin-top:6px; color:#64748b;"></small>
+                    <div id="fauna_impacto_parte_avion_wrap">
+                        <h3>🛩️ Parte del avión impactada</h3>
+                        <select id="fauna_report-parte-avion" name="fauna_report_parte_avion" title="Seleccionar Parte del Avión" disabled style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                            <option value="" disabled selected>-- Seleccionar Parte del Avión --</option>
+                        </select>
+                        <small id="fauna_report-parte-avion-hint" style="display:block; margin-top:6px; color:#64748b;">
+                            Selecciona primero el evento "Impacto" para habilitar este campo.
+                        </small>
+                    </div>
+                    <h3>📍 Zona</h3>
+                    <select id="fauna_report-ubicacion" name="fauna_report_ubicacion" title="Seleccionar Ubicación" style="max-width:420px; width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                        <option value="" disabled selected>-- Seleccionar Zona --</option>
+                        <optgroup label="Sector A">
+                            <option value="A3 - A5">A3 - A5</option>
+                            <option value="A5 - A6">A5 - A6</option>
+                            <option value="A6 - A10">A6 - A10</option>
+                            <option value="A10 - A11">A10 - A11</option>
+                        </optgroup>
+                        <optgroup label="Sector K">
+                            <option value="K3 - K6">K3 - K6</option>
+                            <option value="K6 - K7">K6 - K7</option>
+                            <option value="K7 - K11">K7 - K11</option>
+                            <option value="K11 - K14">K11 - K14</option>
+                        </optgroup>
+                    </select>
+                    <h3>🦁 Informe de Impacto</h3>
+                    <input type="checkbox" id="fauna_avistamiento" name="fauna_tipo_reporte" value="Otro evento" checked style="display:none;">
+                    <label for="fauna_avistamiento" style="display:none;">Otro evento</label>
+                    <div class="item-details" id="fauna_details_avistamiento" style="display:block; margin-left:0; margin-bottom:10px; padding:12px; background:#f9fafb; border-left:3px solid #3b82f6; border-radius:6px;">
+                        <label>Ubicación: <input type="text" name="fauna_details[avistamiento][lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
+                        <label>Especie:
+                            <select name="fauna_details[avistamiento][especie]" class="fauna-especie-select">
+                                <option value="" disabled selected>-- Seleccionar Especie --</option>
+                                <option value="Alondra cornuda (Eremophila alpestris)">Alondra cornuda (Eremophila alpestris)</option>
+                                <option value="Bisbita norteamericana (Anthus rubescens)">Bisbita norteamericana (Anthus rubescens)</option>
+                                <option value="Tecolote llanero (Athene cunicularia)">Tecolote llanero (Athene cunicularia)</option>
+                                <option value="Playero blanco (Calidris alba)">Playero blanco (Calidris alba)</option>
+                                <option value="Playero de Baird (Calidris bairdii)">Playero de Baird (Calidris bairdii)</option>
+                                <option value="Chorlo tildío (Charadrius vociferus)">Chorlo tildío (Charadrius vociferus)</option>
+                                <option value="Cernicalo americano (Falco sparverius)">Cernicalo americano (Falco sparverius)</option>
+                                <option value="Pinzón mexicano (Haemorhous mexicanus)">Pinzón mexicano (Haemorhous mexicanus)</option>
+                                <option value="Golondrina tijereta (Hirundo rustica)">Golondrina tijereta (Hirundo rustica)</option>
+                                <option value="Liebre cola negra (Lepus californicus)">Liebre cola negra (Lepus californicus)</option>
+                                <option value="Gorrión común (Passer domesticus)">Gorrión común (Passer domesticus)</option>
+                                <option value="Gorrión sabanero (Passerculus sandwichensis)">Gorrión sabanero (Passerculus sandwichensis)</option>
+                                <option value="Zacatonero de Boterii (Peucaea botterii)">Zacatonero de Boterii (Peucaea botterii)</option>
+                                <option value="Zanate mexicano (Quiscalus mexicanus)">Zanate mexicano (Quiscalus mexicanus)</option>
+                                <option value="Pradero tortillaconchile (Sturnella magna)">Pradero tortillaconchile (Sturnella magna)</option>
+                                <option value="Lechuza de campanario (Tyto furcata)">Lechuza de campanario (Tyto furcata)</option>
+                                <option value="Tordo cabeza amarilla (Xanthocephalus xanthochephalus)">Tordo cabeza amarilla (Xanthocephalus xanthochephalus)</option>
+                                <option value="Huilota común (Zenaida macroura)">Huilota común (Zenaida macroura)</option>
+                                <option value="Otra">Otra (especificar)</option>
+                            </select>
+                        </label><br>
+                        <input type="text" name="fauna_details[avistamiento][especie_otra]" placeholder="Especifique la especie" style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px; border-radius:4px; border:1px solid #c8d8ee;">
+                        <br>
+                        <label>Cantidad: <input type="number" name="fauna_details[avistamiento][cantidad]"></label><br>
+                        <label>Condición del Daño:
+                            <select class="condicion-select" name="fauna_details[avistamiento][condicion]">
+                                <option value="">--</option>
+                                <option value="Daño Menor">Daño Menor</option>
+                                <option value="Daño Mayor">Daño Mayor</option>
+                                <option value="Daño Severo">Daño Severo</option>
+                                <option value="Daño Catastrofico">Daño Catastrofico</option>
+                            </select>
+                        </label><br>
+                        <label>Observaciones:<br><textarea name="fauna_details[avistamiento][observaciones]" rows="3" style="width:100%; max-width:420px;"></textarea></label><br>
+                        <label>Prioridad:
+                            <select class="priority-select" name="fauna_details[avistamiento][prioridad]">
+                                <option value="">N/A</option>
+                                <option value="1">Baja</option>
+                                <option value="2">Media</option>
+                                <option value="3">Alta</option>
+                            </select>
+                        </label><br>
+                        <p style="font-size:13px; font-weight:600; margin-top:12px; margin-bottom:8px;">📸 Evidencia Fotográfica <span style="font-size:11px; color:#6b7280; font-weight:400;">(opcional)</span></p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                            <button type="button" class="fauna-fotos-galeria-btn" data-fauna="avistamiento" style="flex:1; min-width:150px; padding:10px; background:#f0f9ff; border:2px dashed #3b82f6; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:#1e40af;">📁 Archivo</button>
+                            <button type="button" class="fauna-fotos-camara-btn" data-fauna="avistamiento" style="flex:1; min-width:150px; padding:10px; background:#f0fdf4; border:2px dashed #10b981; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; color:#065f46;">📷 Foto</button>
+                            <input type="file" class="fauna-fotos-input" data-fauna="avistamiento" multiple accept="image/*" style="display:none;">
+                        </div>
+                        <div class="fauna-fotos-preview" data-fauna="avistamiento" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                        <div style="margin-top:14px; padding-top:12px; border-top:1px solid #d1d5db; display:flex; gap:8px; justify-content:flex-end;">
+                            <button type="button" id="done_fauna_avistamiento" class="item-done" style="display:none;">✓ Done</button>
+                            <button type="button" id="update_fauna_avistamiento" class="item-update" style="display:none;">↻ Update</button>
+                            <button type="button" id="dup_fauna_avistamiento" class="item-duplicate" style="display:none; width:44px; height:44px;">➕</button>
+                            <button type="button" id="clear_fauna_avistamiento" class="item-done item-clear" style="display:none; background:#ef4444;">🗑️ Clear</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- TAB 2: Registro de Fauna Rescatada y Reubicada -->
+                <div class="fauna-tab-content" data-fauna-tab-content="rescate">
+                    <h3>🧑‍✈️ Responsable(s) que elaboran el reporte</h3>
+                    <select id="fauna_report-authors-select-rescate" name="fauna_report_authors_rescate" title="Seleccionar Responsable">
+                        <option value="" disabled selected>-- Seleccionar Responsable --</option>
+                        <option value="Daniel Mejia">Daniel Mejia</option>
+                        <option value="Cesar Cisneros">Cesar Cisneros</option>
+                        <option value="Alejandro Jimenez">Alejandro Jimenez</option>
+                        <option value="Daniela Hernandez">Daniela Hernandez</option>
+                    </select>
+                    <button type="button" id="fauna_report-authors-reset-rescate" style="display:none; margin-top:6px;">Cambiar responsable</button>
+                    <h3>🪪 Cargo</h3>
+                    <select id="fauna_report-role-rescate" name="fauna_report_role_rescate" title="Seleccionar Cargo">
+                        <option value="Coordinador de Fauna">Coordinador de Fauna</option>
+                        <option value="Supervisor de Fauna">Supervisor de Fauna</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <button type="button" id="fauna_report-role-reset-rescate" style="display:none; margin-top:6px;">Cambiar cargo</button>
+                    <input type="text" id="fauna_report-role-other-rescate" name="fauna_report_role_other_rescate" placeholder="Especifique otro cargo"
+                        style="display:none; margin-top:6px; max-width:420px; width:100%; padding:6px;" />
+                    <h3>✈️ Autoridad o Institución Responsable</h3>
+                    <input type="text" id="fauna_report-institucion-rescate" name="fauna_report_institucion_rescate" placeholder="Ej: PROFEPA, Zoo, Centro de Rescate, etc." style="margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" />
+                    <h3>🛟 Registrar Fauna Rescatada y Reubicada</h3>
+                    <label>🏘️ Sitio de Rescate: <input type="text" name="fauna_rescate[lugar]" placeholder="Click para seleccionar en mapa" readonly style="cursor: pointer; padding:6px; border-radius:4px; border:1px solid #c8d8ee; background:#f5f8fc;"></label><br>
+                    <label>🦁 Clase: 
+                        <select id="fauna_rescate_clase" name="fauna_rescate[clase]" style="display:block; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                            <option value="" disabled selected>-- Seleccionar Clase --</option>
+                        </select>
+                    </label>
+                    <input type="text" id="fauna_rescate_clase_otro" name="fauna_rescate_clase_otro" placeholder="Especifique otra clase" style="display:none; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;" /><br>
+                    <label>🔬 Especie: 
+                        <select id="fauna_rescate_especie" name="fauna_rescate[especie]" style="display:block; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                            <option value="" disabled selected>-- Seleccionar Especie --</option>
+                        </select>
+                    </label><br>
+
+                    <label>📍 Sitio de Reubicación: 
+                        <select id="fauna_rescate_sitio_reubicacion" name="fauna_rescate[sitio_reubicacion]" style="display:block; margin-top:6px; max-width:420px; width:100%; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;">
+                            <option value="" disabled selected>-- Seleccionar Sitio de Reubicación --</option>
+                        </select>
+                    </label><br>
+                    <p style="font-size:14px; font-weight:600; margin-bottom:12px;">📸 Evidencia Fotográfica <span style="font-size:12px; color:#6b7280; font-weight:400;">(opcional)</span></p>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+                        <button type="button" id="fauna_rescate_galeria_btn" style="flex:1; min-width:200px; padding:14px; background:#f0f9ff; border:2px dashed #3b82f6; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; color:#1e40af; transition:all 0.3s ease;">
+                            📁 Adjuntar archivo
+                        </button>
+                        <button type="button" id="fauna_rescate_camara_btn" style="flex:1; min-width:200px; padding:14px; background:#f0fdf4; border:2px dashed #10b981; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; color:#065f46; transition:all 0.3s ease;">
+                            📷 Tomar foto
+                        </button>
+                        <input type="file" id="fauna_rescate_fotos_galeria" name="fauna_rescate[fotos_galeria]" multiple accept="image/*" style="display:none;">
+                        <input type="file" id="fauna_rescate_fotos_camara" name="fauna_rescate[fotos_camara]" accept="image/*" capture="environment" style="display:none;">
+                    </div>
+                    <div id="fauna_rescate_fotos_preview" class="photo-previews" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;"></div>
+                    <label>📝 Observaciones:<br>
+                        <textarea name="fauna_rescate[observaciones]" rows="4" placeholder="Detalles adicionales sobre el rescate y reubicación" style="width:100%; max-width:420px; padding:10px; border-radius:8px; border:1.5px solid #c8d8ee; background:#f5f8fc;"></textarea>
+                    </label><br>
+                </div>
+                <h3>✍️ Firmas</h3>
+                <button type="button" id="fauna_firma-toggle-btn" class="firma-toggle-btn">📝 Mostrar Firmas</button>
+                <div class="firma-section">
+                    <label class="firma-label">Firma - AIFA (Responsable)</label>
+                    <canvas id="fauna_firma-aifa" class="firma-pad" width="300" height="120"></canvas>
+                    <div class="firma-buttons">
+                        <button type="button" class="firma-btn" onclick="guardarFirma('fauna_aifa')">✓ Guardar firma</button>
+                        <button type="button" class="firma-btn firma-btn-clear" onclick="limpiarFirma('fauna_aifa')">Limpiar firma</button>
+                        <span id="fauna_status-aifa" style="font-size:12px;color:#22c55e;margin-left:8px;display:none;">✓ Guardada</span>
+                    </div>
+                    <label class="firma-label" style="margin-top: 14px;">Firma - AFAC (Supervisor)</label>
+                    <canvas id="fauna_firma-afac" class="firma-pad" width="300" height="120"></canvas>
+                    <div class="firma-buttons">
+                        <button type="button" class="firma-btn" onclick="guardarFirma('fauna_afac')">✓ Guardar firma</button>
+                        <button type="button" class="firma-btn firma-btn-clear" onclick="limpiarFirma('fauna_afac')">Limpiar firma</button>
+                        <span id="fauna_status-afac" style="font-size:12px;color:#22c55e;margin-left:8px;display:none;">✓ Guardada</span>
+                    </div>
+                </div>
+                <input type="submit" value="Generar reporte">
+            </form>
+        </div> <!-- End fauna-section -->
+        <!-- Historial de Reportes Section -->
+        <div id="historial-section" class="content-section">
+            <h1>Historial de Reportes</h1>
+            <!-- Admin Panel -->
+            <div id="admin-panel" style="display:none;">
+                <div id="reports-filter-bar" style="margin-bottom:14px;">
+                    <!-- Fila 1: inputs de texto -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">Folio</label>
+                            <input id="filter-folio" type="text" placeholder="Buscar folio..." style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">Fecha desde</label>
+                            <input id="filter-fecha-desde" type="date" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">Fecha hasta</label>
+                            <input id="filter-fecha-hasta" type="date" style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);">
+                        </div>
+                        <div class="filter-multi">
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:4px;">Responsable</label>
+                            <div class="filter-multi-toggle" tabindex="0" data-target="filter-responsable">Seleccionar responsable</div>
+                            <select id="filter-responsable" multiple size="4" class="filter-multi-select" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(100,116,139,0.35);background:#fff;"></select>
+                        </div>
+                    </div>
+                    <!-- Fila 2: chips + botones -->
+                    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
+                        <div>
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:6px;">Tipo inspección</label>
+                            <div class="filter-chip-group" id="filter-tipo-group">
+                                <button type="button" class="filter-chip" data-value="Primaria">Primaria</button>
+                                <button type="button" class="filter-chip" data-value="Secundaria">Secundaria</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:6px;">Turno</label>
+                            <div class="filter-chip-group" id="filter-turno-group">
+                                <button type="button" class="filter-chip filter-chip--day" data-value="Diurno">☀️ Diurno</button>
+                                <button type="button" class="filter-chip filter-chip--night" data-value="Nocturno">🌙 Nocturno</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#334155;display:block;margin-bottom:6px;">RWY</label>
+                            <div class="filter-chip-group" id="filter-pista-group">
+                                <button type="button" class="filter-chip filter-chip--rwy" data-value="04C - 22C">04C – 22C</button>
+                                <button type="button" class="filter-chip filter-chip--rwy" data-value="04L - 22R">04L – 22R</button>
+                            </div>
+                        </div>
+                        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+                            <button id="filter-apply-btn" class="btn btn-primary" style="padding:8px 16px;">Filtrar</button>
+                            <button id="filter-clear-btn" class="btn btn-ghost" style="padding:8px 16px;">Limpiar</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="refresh-admin-btn" class="btn btn-ghost" style="margin-bottom:10px;">🔄 Actualizar Lista</button>
+                <table id="admin-reports-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Folio</th>
+                            <th>Responsable</th>
+                            <th>Representante de Área</th>
+                            <th>Tipo Inspección</th>
+                            <th>Turno</th>
+                            <th>RWY</th>
+                            <th>PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-reports-list">
+                        <!-- Rows will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div> <!-- End historial-section -->
+        <!-- Estadísticas Section -->
+        <div id="estadistica-section" class="content-section">
+            <h1>Estadísticas de Reportes</h1>
+            <!-- Estadísticas Panel -->
+            <div id="estadisticas-panel"
+                style="background:var(--card); padding:20px; border-radius:12px; box-shadow:var(--shadow); margin:20px auto; max-width:1200px;">
+                <h2>📊 Panel de Estadísticas</h2>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <!-- Estadísticas principales -->
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="total-reports">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Total de Reportes</p>
+                    </div>
+
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="reports-this-month">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Reportes este Mes</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="report-diurnos">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Reportes Diurnos</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="report-nocturnos">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Reportes Nocturnos</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #facc15 0%, #eab308 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="report-primarios">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Reportes Primarios</p>
+                    </div>
+
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="report-secundarios">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Reportes Secundarios</p>
+                    </div>
+
+                    <div id="reportes-por-pista" class="stat-card"
+                        style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 10px;">Reportes por Pista</div>
+                        <div id="report-pista-cards" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:130px;overflow:auto;padding-top:6px"></div>
+                    </div>
+                </div>
+                <!-- Gráficos y detalles -->
+                <div style="margin-top: 30px;">
+                    <h3>Distribución por Tipo de Inspección</h3>
+                    <div id="inspection-types-chart"
+                        style="height: 300px; background: #f9fafb; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 20px 0;">
+                        <p style="color: #6b7280;">Cargando datos...</p>
+                    </div>
+
+                    <h3 style="margin-top: 30px;">Reportes por Mes</h3>
+                    <div id="monthly-reports-chart"
+                        style="height: 300px; background: #f9fafb; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin: 20px 0;">
+                        <p style="color: #6b7280;">Cargando datos...</p>
+                    </div>
+                    <h3 style="margin-top: 30px;">Reportes por Responsable</h3>
+                    <div id="responsable-table" style="background:#f9fafb;border-radius:8px;padding:14px;">
+                        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;padding:10px;border-bottom:1px solid #e5e7eb;">Responsable</th>
+                                    <th style="text-align:right;padding:10px;border-bottom:1px solid #e5e7eb;"># Reportes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="responsable-table-body">
+                                <tr><td colspan="2" style="padding:12px;color:#6b7280;text-align:center;">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button id="refresh-estadisticas-btn" class="btn btn-ghost" style="padding: 10px 20px;">🔄
+                        Actualizar Estadísticas</button>
+                </div>
+            </div>
+        </div> <!-- End estadistica-section -->
+        <!-- Estadística Fauna Section -->
+        <div id="estadistica-fauna-section" class="content-section">
+            <h1>Estadística Fauna</h1>
+            <!-- Fauna Estadísticas Panel -->
+            <div id="estadisticas-fauna-panel"
+                style="background:var(--card); padding:20px; border-radius:12px; box-shadow:var(--shadow); margin:20px auto; max-width:1200px;">
+                <h2>🦅 Panel de Estadísticas de Fauna</h2>
+                <!-- Tarjetas principales -->
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="total-impactos-fauna">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Total de Impactos</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 2.5em; font-weight: bold;" id="total-rescates-fauna">0</h3>
+                        <p style="margin: 0; font-size: 1.1em;">Total de Rescates</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 1.5em; font-weight: bold;" id="especie-más-rescatada">-</h3>
+                        <p style="margin: 0; font-size: 0.95em;">Especie Más Rescatada</p>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 20px; border-radius: 12px; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 1.5em; font-weight: bold;" id="clase-más-rescatada">-</h3>
+                        <p style="margin: 0; font-size: 0.95em;">Clase Más Rescatada</p>
+                    </div>
+                </div>
+                <div style="margin-top:18px; text-align:right;">
+                    <button type="button" id="open-fauna-hallazgos-map-btn" class="btn btn-primary" style="padding:10px 16px;">🗺️ Mapa de hallazgos</button>
+                </div>
+                <!-- Desglose de Impactos por Tipo -->
+                <div style="margin-top: 30px;">
+                    <h3>Impactos Registrados por Tipo</h3>
+                    <div style="background:#f9fafb;border-radius:8px;padding:14px;">
+                        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th style="text-align:left;padding:10px;border-bottom:2px solid #e5e7eb;">Tipo de Impacto</th>
+                                    <th style="text-align:right;padding:10px;border-bottom:2px solid #e5e7eb;">Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="impactos-tipo-table-body">
+                                <tr><td colspan="2" style="padding:12px;color:#6b7280;text-align:center;">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Desglose de Species Rescatadas -->
+                <div style="margin-top: 30px;">
+                    <h3>Especies Rescatadas</h3>
+                    <div style="background:#f9fafb;border-radius:8px;padding:14px;">
+                        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th style="text-align:left;padding:10px;border-bottom:2px solid #e5e7eb;">Clase</th>
+                                    <th style="text-align:left;padding:10px;border-bottom:2px solid #e5e7eb;">Especie</th>
+                                    <th style="text-align:right;padding:10px;border-bottom:2px solid #e5e7eb;">Total Rescatado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="especies-rescatadas-table-body">
+                                <tr><td colspan="3" style="padding:12px;color:#6b7280;text-align:center;">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Estadísticas Diarias -->
+                <div style="margin-top: 30px;">
+                    <h3>Estadísticas Diarias</h3>
+                    <div style="background:#f9fafb;border-radius:8px;padding:14px;">
+                        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th style="text-align:left;padding:10px;border-bottom:2px solid #e5e7eb;">Fecha</th>
+                                    <th style="text-align:right;padding:10px;border-bottom:2px solid #e5e7eb;">Reportes Pendientes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="estadisticas-diarias-table-body">
+                                <tr><td colspan="2" style="padding:12px;color:#6b7280;text-align:center;">Cargando datos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button id="refresh-estadisticas-fauna-btn" class="btn btn-ghost" style="padding: 10px 20px;">🔄
+                        Actualizar Estadísticas Fauna</button>
+                </div>
+            </div>
+            <!-- Modal: Mapa de hallazgos fauna -->
+            <div id="fauna-hallazgos-map-modal" style="display:none; position:fixed; inset:0; z-index:12000; background:rgba(2,6,23,0.65);">
+                <div style="width:min(1100px,96vw); margin:2vh auto; background:#fff; border-radius:14px; max-height:96vh; overflow:auto; box-shadow:0 20px 60px rgba(2,6,23,.35);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid #e2e8f0;">
+                        <h3 style="margin:0;">🗺️ Mapa de hallazgos - Estadísticas Control de Fauna</h3>
+                        <button type="button" id="close-fauna-hallazgos-map-btn" class="btn btn-ghost">Cerrar</button>
+                    </div>
+                    <div id="fauna-map-export-area" style="padding:16px;">
+                        <div style="margin-bottom:12px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px;">
+                            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label for="fauna-hallazgos-year" style="display:block; margin-bottom:4px; font-size:12px; color:#475569;">Año</label>
+                                    <select id="fauna-hallazgos-year" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;"></select>
+                                </div>
+                                <div>
+                                    <label for="fauna-hallazgos-month" style="display:block; margin-bottom:4px; font-size:12px; color:#475569;">Mes</label>
+                                    <select id="fauna-hallazgos-month" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;"></select>
+                                </div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:10px;">
+                                <div>
+                                    <label for="fauna-hallazgos-clase" style="display:block; margin-bottom:4px; font-size:12px; color:#475569;">Clase</label>
+                                    <select id="fauna-hallazgos-clase" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;">
+                                        <option value="">Todas las clases</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="fauna-hallazgos-especie" style="display:block; margin-bottom:4px; font-size:12px; color:#475569;">Especie</label>
+                                    <select id="fauna-hallazgos-especie" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; background:#fff;">
+                                        <option value="">Todas las especies</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="fauna-hallazgos-historico-resumen" style="display:none;"></div>
+                        </div>
+                        <div id="fauna-hallazgos-map" style="height:620px; border:1px solid #cbd5e1; border-radius:10px;"></div>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px; padding:14px 16px; border-top:1px solid #e2e8f0;">
+                        <button type="button" id="export-fauna-hallazgos-pdf-btn" class="btn btn-primary">📄 Exportar a PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End estadistica-fauna-section -->
+        <!-- Historial Fauna Section -->
+        <div id="historial-fauna-section" class="content-section">
+            <h1>Historial de Reportes de Fauna</h1>
+            <!-- Fauna Reports Panel -->
+            <div id="fauna-reports-panel"
+                style="background:var(--card); padding:20px; border-radius:12px; box-shadow:var(--shadow); margin:20px auto; max-width:1400px;">
+                <!-- Filtros -->
+                <div style="background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:20px;">
+                    <h3 style="margin:0 0 16px 0;font-size:1.1em;">Filtros</h3>
+                    
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-bottom:16px;">
+                        <!-- Filtro por fecha desde -->
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#1f2937;">Fecha Desde:</label>
+                            <input type="date" id="filter-fauna-fecha-desde" 
+                                style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                        </div>
+                        <!-- Filtro por fecha hasta -->
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#1f2937;">Fecha Hasta:</label>
+                            <input type="date" id="filter-fauna-fecha-hasta" 
+                                style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                        </div>
+                        <!-- Filtro por clase -->
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#1f2937;">Clase:</label>
+                            <select id="filter-fauna-clase"
+                                style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                                <option value="">Todas las clases</option>
+                            </select>
+                        </div>
+                        <!-- Filtro por especie -->
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#1f2937;">Especie:</label>
+                            <select id="filter-fauna-especie"
+                                style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                                <option value="">Todas las especies</option>
+                            </select>
+                        </div>
+                        <!-- Filtro por tipo (Impacto o Rescate) -->
+                        <div>
+                            <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#1f2937;">Tipo de Reporte:</label>
+                            <select id="filter-fauna-tipo"
+                                style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+                                <option value="">Todos</option>
+                                <option value="impacto">Impactos</option>
+                                <option value="rescate">Rescates</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-start;">
+                        <button id="fauna-filter-apply-btn" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">
+                            🔍 Aplicar Filtros
+                        </button>
+                        <button id="fauna-filter-clear-btn" class="btn btn-ghost" style="padding:8px 16px;font-size:13px;">
+                            ✕ Limpiar Filtros
+                        </button>
+                        <button id="fauna-refresh-btn" class="btn btn-ghost" style="padding:8px 16px;font-size:13px;margin-left:auto;">
+                            🔄 Actualizar
+                        </button>
+                    </div>
+                </div>
+                <!-- Tabla de Reportes de Fauna -->
+                <div style="overflow-x:auto;">
+                    <table id="fauna-reports-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead style="background:#f3f4f6;border-bottom:2px solid #e5e7eb;">
+                            <tr>
+                                <th style="text-align:left;padding:12px;font-weight:600;color:#1f2937;">Fecha</th>
+                                <th style="text-align:left;padding:12px;font-weight:600;color:#1f2937;">Tipo</th>
+                                <th style="text-align:left;padding:12px;font-weight:600;color:#1f2937;">Especie</th>
+                                <th style="text-align:left;padding:12px;font-weight:600;color:#1f2937;">Ubicación</th>
+                                <th style="text-align:left;padding:12px;font-weight:600;color:#1f2937;">Responsable</th>
+                                <th style="text-align:left;padding:12px;font-weight:600;color:#1f2937;">Estado</th>
+                                <th style="text-align:center;padding:12px;font-weight:600;color:#1f2937;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fauna-reports-list">
+                            <tr><td colspan="7" style="padding:20px;text-align:center;color:#6b7280;">Cargando reportes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="text-align:center;margin-top:20px;">
+                    <p id="fauna-reports-count" style="color:#6b7280;font-size:13px;">Cargando...</p>
+                </div>
+            </div>
+        </div> <!-- End historial-fauna-section -->
+    </div> <!-- End main-content -->
+    <script src="./js/mhr-utils.js"></script>
+    <!-- Scripts: fecha/hora, bloqueo Cargo y comportamiento Turno -->
+    <script src="./js/ui/dashboard-ui.js"></script>
+    <script src="./js/pages/revision-basic-ui-page.js"></script>
+    <script src="./js/pages/revision-duplicate-page.js"></script>
+    <script src="./js/pages/revision-item-composer-page.js"></script>
+    <script src="./js/pages/fauna-impact-item-controls-page.js"></script>
+    <script src="./js/pages/revision-item-photos-page.js"></script>
+
+    <!-- Script: Captura de Firmas en Canvas -->
+    <script src="./js/ui/signature-manager.js"></script>
+    <script src="./js/pages/fauna-form-page.js"></script>
+    <script src="./js/pages/fauna-interactions-page.js"></script>
+    <script src="./js/pages/offline-sync-page.js"></script>
+    <script src="./js/services/fauna-report-service.js"></script>
+    <script src="./js/services/fauna-catalog-service.js"></script>
+    <script src="./js/services/catalog-service.js"></script>
+    <script src="./js/services/user-service.js"></script>
+    <script src="./js/services/report-service.js"></script>
+    <!-- contenedor oculto para generar el PDF -->
+    <div id="report-summary"
+        style="display:none; padding:18px; background:#fff; max-width:900px; margin:0 auto; border-radius:6px;"></div>
+    <!-- Botón fijo: Limpiar todo (limpia todos los items seleccionados) -->
+    <button id="clear-all-btn" class="clear-all-btn" title="Limpiar todo" aria-label="Limpiar todo">Limpiar
+        todo</button>
+    <script src="./js/pages/clear-all-page.js"></script>
+    <!-- html2pdf CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <!-- html2canvas CDN (para captura de mapas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="./js/ui/pdf-renderer.js"></script>
+    <script src="./js/pages/revision-page.js"></script>
+    <script src="./js/pages/app-bootstrap-page.js"></script>
+    <script src="./js/pages/form-state-page.js"></script>
+    <script src="./js/pages/clear-saved-page.js"></script>
+    <script src="./js/pages/role-selector-page.js"></script>
+    <script src="./js/pages/revision-item-lock-page.js"></script>
+    <script src="./js/pages/revision-hallazgo-page.js"></script>
+    <script src="./js/ui/map-picker-modal.js"></script>
+    <script src="./js/ui/select-colorizer.js"></script>
+    <!-- Modal del mapa interactivo para seleccionar Lugar -->
+    <div id="map-modal">
+        <div id="map-modal-content">
+            <div id="map-modal-header">
+                <h2 id="map-modal-title">Seleccionar Lugar en el Mapa</h2>
+                <button id="map-modal-close" type="button">✕</button>
+            </div>
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
+            <div id="map-info">
+                <strong>Haz clic en el mapa</strong> para seleccionar la ubicación, o usa el botón <em>Mi ubicación actual</em> para marcar donde estás.
+            </div>
+            <div id="map-modal-actions">
+                <button id="map-gps-btn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" opacity=".3"/></svg>
+                    Mi ubicación actual
+                </button>
+                <button id="map-modal-confirm" type="button">Confirmar Ubicación</button>
+            </div>
+        </div>
+    </div>
+    <script src="./js/pages/historial-so-page.js"></script>
+    <script src="./js/pages/auth-session-page.js"></script>
+    <script src="./js/pages/main-tabs-page.js"></script>
+    <script src="./js/pages/offline-report-sync-page.js"></script>
+    <script src="./js/pages/fauna-submit-page.js"></script>
+    <script src="./js/pages/fauna-dashboard-page.js"></script>
+    <script src="./js/pages/estadistica-so-page.js"></script>
+    <script src="./js/pages/supabase-orchestrator-page.js"></script>
+    <script src="./js/supabase-client.js"></script>
+    <script>
+        (function () {
+            if (window.MHRSupabaseOrchestratorPage && typeof window.MHRSupabaseOrchestratorPage.init === 'function') {
+                window.MHRSupabaseOrchestratorPage.init();
+            }
+        })();
+    </script>
+</body>
+</html>
