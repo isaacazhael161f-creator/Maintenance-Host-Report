@@ -23,7 +23,7 @@
           if (chk.checked) det.style.display = 'block'; else {
             det.style.display = 'none';
             Array.prototype.slice.call(det.querySelectorAll('input, textarea, select')).forEach(function (el) {
-              try { if (el.type === 'checkbox' || el.type === 'radio') el.checked = false; else { el.value = ''; if (el.classList && el.classList.contains('priority-select')) el.style.backgroundColor = ''; if (el.classList && el.classList.contains('condicion-select')) el.style.backgroundColor = ''; } } catch (e) {}
+              try { if (el.type === 'checkbox' || el.type === 'radio') el.checked = false; else { el.value = ''; if (el.classList && el.classList.contains('priority-select')) { el.style.backgroundColor = ''; el.classList.remove('prio-1','prio-2','prio-3'); } if (el.classList && el.classList.contains('condicion-select')) { el.style.backgroundColor = ''; el.classList.remove('cond-ok','cond-bad','cond-na','cond-leve','cond-medio','cond-alto','cond-critico'); } } } catch (e) {}
             });
           }
         });
@@ -32,10 +32,9 @@
 
     (function () {
       try {
-        var prioSelects = faunaForm.querySelectorAll('select.priority-select');
-        var condSelects = faunaForm.querySelectorAll('select.condicion-select');
-        Array.prototype.forEach.call(prioSelects, function (sel) { sel.addEventListener('change', function () { var colorMap = { '1': '#28a745', '2': '#ffc107', '3': '#ff8c00' }; sel.style.backgroundColor = colorMap[sel.value] || ''; }); });
-        Array.prototype.forEach.call(condSelects, function (sel) { sel.addEventListener('change', function () { var condMap = { 'Daño Menor': '#28a745', 'Daño Mayor': '#ffc107', 'Daño Severo': '#ff8c00', 'Daño Catastrofico': '#dc3545', 'Satisfactorio': '#28a745', 'No Satisfactorio': '#dc3545', 'N/A': '#6c757d' }; sel.style.backgroundColor = condMap[sel.value] || ''; }); });
+        if (window.MHRSelectColorizer && typeof window.MHRSelectColorizer.refresh === 'function') {
+          window.MHRSelectColorizer.refresh(faunaForm);
+        }
       } catch (e) {}
     })();
 

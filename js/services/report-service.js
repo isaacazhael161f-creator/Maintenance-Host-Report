@@ -5,6 +5,15 @@
       if (resp.error) throw resp.error;
       return resp.data || [];
     },
+    async getReportsWithItemsOrdered(client){
+      // Reportes con sus items (sin fotos) para análisis estadístico
+      var resp = await client
+        .from('reports')
+        .select('id, folio, fecha_local, created_at, tipo_inspeccion, turno, pista, responsable, pdf_url, estatus, observacion, report_inspection_items(id, item_nombre, hallazgo, condicion, prioridad, lugar, codigo_seguimiento, datos_extra)')
+        .order('created_at', { ascending: false });
+      if (resp.error) throw resp.error;
+      return resp.data || [];
+    },
     async insertReport(client, payload){
       return await client.from('reports').insert([payload]).select();
     },
@@ -48,59 +57,6 @@
     },
     getPublicUrl(client, bucket, filePath){
       return client.storage.from(bucket).getPublicUrl(filePath);
-    },
-    async getAllReportsByPistaWithPhotos(client, pista){
-      // Obtiene todos los reportes de una pista (orden cronológico) con sus fotos
-      // Devuelve mapa: catalogItemId → [{reportFolio, reportDate, photos:[{url,name}]}]
-      try {
-        var resp = await client
-          .from('reports')
-          .select('id, folio, fecha_local, created_at, report_inspection_items(item_catalogo_id, report_inspection_item_photos(*))')
-          .eq('pista', pista)
-          .order('created_at', { ascending: true });
-
-        if (resp.error || !resp.data) return {};
-
-        // Firmar URLs en paralelo
-        var signTasks = [];
-        resp.data.forEach(function(report) {
-          (report.report_inspection_items || []).forEach(function(item) {
-            (item.report_inspection_item_photos || []).forEach(function(photo) {
-              if (!photo.storage_path) { photo.public_url = null; return; }
-              var bucket = photo.bucket || 'report-evidencias';
-              signTasks.push(
-                client.storage.from(bucket).createSignedUrl(photo.storage_path, 3600)
-                  .then(function(res) { photo.public_url = res.data ? res.data.signedUrl : null; })
-                  .catch(function() { photo.public_url = null; })
-              );
-            });
-          });
-        });
-        if (signTasks.length > 0) await Promise.all(signTasks);
-
-        // Construir mapa por catalog item
-        var photoMap = {};
-        resp.data.forEach(function(report) {
-          (report.report_inspection_items || []).forEach(function(item) {
-            var cid = item.item_catalogo_id;
-            if (!cid) return;
-            var photos = (item.report_inspection_item_photos || [])
-              .filter(function(p) { return !!p.public_url; })
-              .map(function(p) { return { url: p.public_url, name: p.original_filename || 'Foto' }; });
-            if (!photos.length) return;
-            if (!photoMap[cid]) photoMap[cid] = [];
-            photoMap[cid].push({
-              reportFolio: report.folio || 'Sin folio',
-              reportDate: report.fecha_local || report.created_at,
-              photos: photos
-            });
-          });
-        });
-
-        return photoMap;
-      } catch (e) {
-        return {};
-      }
     },
     async getLatestReportByPista(client, pista){
       // Obtener el último reporte para una pista específica con ítems y fotos

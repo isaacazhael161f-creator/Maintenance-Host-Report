@@ -123,26 +123,41 @@
                 }
             };
 
-            // Función global para guardar firma explícitamente
+            // Detecta si el canvas tiene trazos (no está completamente en blanco)
+            function canvasTieneTrazo(canvas) {
+                try {
+                    var ctx = canvas.getContext('2d');
+                    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                    for (var i = 0; i < data.length; i += 4) {
+                        if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) return true;
+                    }
+                    return false;
+                } catch (e) { return false; }
+            }
+
+            // Captura automática de la firma desde el canvas si fue dibujada
+            function autoCapturarFirma(padId) {
+                var canvas = window.firmaPads[padId];
+                if (!canvas) return;
+                if (canvasTieneTrazo(canvas)) {
+                    window.firmaData[padId] = canvas.toDataURL('image/png');
+                    window.firmaGuardada[padId] = true;
+                }
+            }
+
+            // Función global para guardar firma explícitamente (compatibilidad)
             window.guardarFirma = function(padId) {
                 var canvas = window.firmaPads[padId];
                 if (!canvas) return;
-                
-                // Capturar el contenido del canvas
                 window.firmaData[padId] = canvas.toDataURL('image/png');
                 window.firmaGuardada[padId] = true;
-                
-                // Mostrar indicador de guardado
                 var statusEl = document.getElementById('status-' + padId);
-                if (statusEl) {
-                    statusEl.style.display = 'inline-block';
-                }
-                
-                console.log('Firma ' + padId + ' guardada');
+                if (statusEl) statusEl.style.display = 'inline-block';
             };
 
-            // Obtener firmas para incluir en PDF
+            // Obtener firmas para incluir en PDF (auto-captura previa)
             window.obtenerFirmas = function() {
+                ['area', 'aifa', 'afac'].forEach(autoCapturarFirma);
                 return {
                     area: window.firmaData.area,
                     aifa: window.firmaData.aifa,
@@ -150,8 +165,9 @@
                 };
             };
 
-            // Obtener firmas de fauna para incluir en PDF
+            // Obtener firmas de fauna para incluir en PDF (auto-captura previa)
             window.obtenerFirmasFauna = function() {
+                ['fauna_aifa', 'fauna_afac'].forEach(autoCapturarFirma);
                 return {
                     aifa: window.firmaData.fauna_aifa,
                     afac: window.firmaData.fauna_afac

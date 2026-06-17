@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Supabase CLI cache & local state (contiene tokens y metadata sensible)
+supabase/.temp/
+supabase/.branches/
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build output
+dist/
+build/

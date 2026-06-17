@@ -264,134 +264,965 @@ window.MHRFaunaDashboardPage = (function () {
                 }
             }
 
-            // Función para cargar estadísticas de fauna desde Supabase
-            async function loadFaunaStatistics() {
-                const client = window.supabaseClient;
-                if (!client) {
-                    console.error('Supabase client not ready');
+            // ── helpers para estadísticas fauna ──────────────────────────────
+            function fesCountBy(arr, field) {
+                var idx = {};
+                arr.forEach(function(r){
+                    var v = r[field];
+                    if (!v || String(v).trim() === '') return;
+                    idx[v] = (idx[v] || 0) + 1;
+                });
+                return Object.entries(idx).sort(function(a,b){ return b[1]-a[1]; });
+            }
+            function fesTopKey(pairs) { return pairs.length ? pairs[0][0] : '–'; }
+
+            function fesFillTable(tbodyId, rows, emptyMsg) {
+                var tb = document.getElementById(tbodyId);
+                if (!tb) return;
+                if (!rows || rows.length === 0) {
+                    tb.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#94a3b8;text-align:center;">' + (emptyMsg || 'Sin datos') + '</td></tr>';
+                    return;
+                }
+                var total = rows.reduce(function(s,r){ return s + r[1]; }, 0);
+                tb.innerHTML = rows.map(function(r){
+                    var pct = total ? Math.round(r[1] / total * 100) : 0;
+                    return '<tr>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;">' + r[0] + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;min-width:36px;">' + r[1] + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;min-width:120px;">' +
+                            '<div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden;">' +
+                                '<div style="background:#2563eb;width:' + pct + '%;height:100%;border-radius:99px;"></div>' +
+                            '</div>' +
+                        '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+
+            function fesFill3ColTable(tbodyId, rows, emptyMsg) {
+                var tb = document.getElementById(tbodyId);
+                if (!tb) return;
+                if (!rows || rows.length === 0) {
+                    tb.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#94a3b8;text-align:center;">' + (emptyMsg || 'Sin datos') + '</td></tr>';
+                    return;
+                }
+                tb.innerHTML = rows.map(function(r){
+                    return '<tr>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;">' + r[0] + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;">' + r[1] + '</td>' +
+                        '<td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:700;">' + r[2] + '</td>' +
+                    '</tr>';
+                }).join('');
+            }
+
+            // ── Chart: barras verticales ─────────────────────────────────────
+            function fesBarChart(containerId, labelsId, values, labels, color) {
+                var el = document.getElementById(containerId);
+                var lblEl = document.getElementById(labelsId);
+                if (!el) return;
+                var max = Math.max.apply(null, values.concat([1]));
+                el.innerHTML = values.map(function(v, i){
+                    var h = Math.round(v / max * 100);
+                    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;">' +
+                        '<span style="font-size:10px;font-weight:700;color:#475569;margin-bottom:2px;">' + (v || '') + '</span>' +
+                        '<div style="width:80%;border-radius:4px 4px 0 0;background:' + color + ';height:' + h + '%;min-height:' + (v ? 4 : 0) + 'px;"></div>' +
+                    '</div>';
+                }).join('');
+                if (lblEl) {
+                    lblEl.innerHTML = labels.map(function(l){
+                        return '<span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + l + '</span>';
+                    }).join('');
+                }
+            }
+
+            // ── Chart: barras horizontales (especie) ─────────────────────────
+            function fesHBarChart(containerId, pairs, color) {
+                var el = document.getElementById(containerId);
+                if (!el) return;
+                if (!pairs || !pairs.length) { el.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:12px;font-size:13px;">Sin datos</div>'; return; }
+                var max = pairs[0][1] || 1;
+                el.innerHTML = pairs.slice(0, 15).map(function(p){
+                    var pct = Math.round(p[1] / max * 100);
+                    // Shorten label to common name (first part before parenthesis)
+                    var label = String(p[0]).replace(/\s*\(.*\)$/, '');
+                    return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;">' +
+                        '<div style="width:140px;min-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#374151;text-align:right;" title="' + p[0] + '">' + label + '</div>' +
+                        '<div style="flex:1;background:#e2e8f0;border-radius:4px;height:18px;overflow:hidden;position:relative;">' +
+                            '<div style="background:' + color + ';width:' + pct + '%;height:100%;border-radius:4px;"></div>' +
+                            '<span style="position:absolute;right:6px;top:0;line-height:18px;font-size:11px;font-weight:700;color:#374151;">' + p[1] + '</span>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+
+            // ── Chart: heatmap Mes × Condición ───────────────────────────────
+            function fesHeatmap(containerId, data) {
+                var el = document.getElementById(containerId);
+                if (!el) return;
+                var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                var CONDICIONES = ['Despejado','Nublado','Nublado-Neblina','Lluvia','Tormenta','Niebla'];
+
+                // Build matrix
+                var matrix = {};
+                var globalMax = 1;
+                CONDICIONES.forEach(function(c){ matrix[c] = new Array(12).fill(0); });
+
+                data.forEach(function(r){
+                    var cond = r.condicion_meteo || '';
+                    if (!cond) return;
+                    var d = r.created_at ? new Date(r.created_at) : null;
+                    if (!d) return;
+                    var month = d.getMonth(); // 0-11
+                    if (!matrix[cond]) matrix[cond] = new Array(12).fill(0);
+                    matrix[cond][month]++;
+                    if (matrix[cond][month] > globalMax) globalMax = matrix[cond][month];
+                });
+
+                // Only show conditions that have data
+                var activeConds = CONDICIONES.filter(function(c){ return matrix[c] && matrix[c].some(function(v){ return v > 0; }); });
+                if (!activeConds.length) {
+                    el.innerHTML = '<div style="color:#94a3b8;padding:16px;font-size:13px;">Sin datos de condición meteorológica. Rellena el campo en nuevos reportes.</div>';
+                    var maxEl = document.getElementById('fes-imp-heatmap-max');
+                    if (maxEl) maxEl.textContent = '0';
                     return;
                 }
 
-                // Mostrar estado de carga
-                ['impactos-tipo-table-body', 'especies-rescatadas-table-body', 'estadisticas-diarias-table-body'].forEach(function(id){
-                    var el = document.getElementById(id);
-                    if (el) el.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#6b7280;text-align:center;">Cargando datos...</td></tr>';
+                var maxEl = document.getElementById('fes-imp-heatmap-max');
+                if (maxEl) maxEl.textContent = globalMax;
+
+                function heatColor(v, max) {
+                    if (!v) return '#fef9c3';
+                    var t = v / max;
+                    // interpolate yellow→orange→red
+                    if (t < 0.33) {
+                        var r = Math.round(254 + (251-254)*t/0.33);
+                        var g = Math.round(249 + (191-249)*t/0.33);
+                        var b = Math.round(195 + (36-195)*t/0.33);
+                        return 'rgb('+r+','+g+','+b+')';
+                    } else if (t < 0.66) {
+                        var tt = (t-0.33)/0.33;
+                        var r = Math.round(251 + (245-251)*tt);
+                        var g = Math.round(191 + (158-191)*tt);
+                        var b = Math.round(36 + (11-36)*tt);
+                        return 'rgb('+r+','+g+','+b+')';
+                    } else {
+                        var tt2 = (t-0.66)/0.34;
+                        var r2 = Math.round(245 + (220-245)*tt2);
+                        var g2 = Math.round(158 + (38-158)*tt2);
+                        var b2 = Math.round(11 + (38-11)*tt2);
+                        return 'rgb('+r2+','+g2+','+b2+')';
+                    }
+                }
+
+                var cellW = 'minmax(36px,1fr)';
+                var html = '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+                // Header row
+                html += '<tr><th style="padding:4px 8px;text-align:right;color:#64748b;font-weight:400;width:130px;"></th>';
+                MESES.forEach(function(m){ html += '<th style="padding:4px 2px;text-align:center;color:#64748b;font-weight:600;">' + m + '</th>'; });
+                html += '</tr>';
+                // Data rows
+                activeConds.forEach(function(cond){
+                    html += '<tr>';
+                    html += '<td style="padding:6px 8px;text-align:right;color:#374151;white-space:nowrap;font-weight:600;">' + cond + '</td>';
+                    matrix[cond].forEach(function(v){
+                        var bg = heatColor(v, globalMax);
+                        html += '<td style="padding:4px 2px;text-align:center;background:' + bg + ';font-weight:' + (v?'700':'400') + ';color:#374151;">' + (v || '0') + '</td>';
+                    });
+                    html += '</tr>';
+                });
+                html += '</table>';
+                el.innerHTML = html;
+            }
+
+            // ── mini mapas en pestaña estadísticas ───────────────────────────
+            var _fesImpMap = null, _fesResMap = null;
+            function fesInitMiniMap(containerId, data, color) {
+                var el = document.getElementById(containerId);
+                if (!el || typeof L === 'undefined') return null;
+                var m = L.map(el, { zoomControl:true, attributionControl:false });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+                var bounds = [];
+                data.forEach(function(r){
+                    var lat = parseFloat(r.ubicacion_lat), lng = parseFloat(r.ubicacion_lng);
+                    if (!isFinite(lat) || !isFinite(lng)) return;
+                    bounds.push([lat, lng]);
+                    var icon = L.divIcon({
+                        html: '<div style="width:12px;height:12px;border-radius:50%;background:' + color + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);"></div>',
+                        className:'', iconSize:[12,12], iconAnchor:[6,6]
+                    });
+                    L.marker([lat, lng], { icon: icon })
+                        .bindPopup('<b>' + (r.especie || r.clase || r.tipo_reporte || '') + '</b><br>' + (r.fecha_reporte || ''))
+                        .addTo(m);
+                });
+                if (bounds.length) {
+                    m.fitBounds(bounds, { padding:[20,20], maxZoom:15 });
+                } else {
+                    m.setView([19.43, -99.07], 10);
+                }
+                return m;
+            }
+
+            // ── sub-tab switching (Gráficas / Aerolíneas) ────────────────────
+            window.fesSwitchSubTab = function(sub) {
+                // Impactos sub-tabs
+                var panGraf    = document.getElementById('fes-sub-graficas');
+                var panAero    = document.getElementById('fes-sub-aerolineas');
+                var panMapaImp = document.getElementById('fes-sub-mapa-imp');
+                var tGraf    = document.getElementById('fes-subtab-graficas');
+                var tAero    = document.getElementById('fes-subtab-aerolineas');
+                var tMapaImp = document.getElementById('fes-subtab-mapa-imp');
+                // Rescates sub-tabs
+                var panResRes  = document.getElementById('fes-sub-res-resumen');
+                var panMapaRes = document.getElementById('fes-sub-mapa-res');
+                var tResRes  = document.getElementById('fes-subtab-res-resumen');
+                var tMapaRes = document.getElementById('fes-subtab-mapa-res');
+
+                function setActive(btn, color) {
+                    if (!btn) return;
+                    btn.style.borderBottomColor = color;
+                    btn.style.color = color;
+                }
+                function setInactive(btn) {
+                    if (!btn) return;
+                    btn.style.borderBottomColor = 'transparent';
+                    btn.style.color = '#64748b';
+                }
+
+                // ── Impactos sub-tabs ────────────────────────────────────────
+                if (sub === 'graficas' || sub === 'aerolineas' || sub === 'mapa-imp') {
+                    if (panGraf)    panGraf.style.display    = sub === 'graficas'   ? '' : 'none';
+                    if (panAero)    panAero.style.display    = sub === 'aerolineas' ? '' : 'none';
+                    if (panMapaImp) panMapaImp.style.display = sub === 'mapa-imp'   ? '' : 'none';
+                    setInactive(tGraf); setInactive(tAero); setInactive(tMapaImp);
+                    if (sub === 'graficas')        setActive(tGraf,    '#dc2626');
+                    else if (sub === 'aerolineas') setActive(tAero,    '#1d4ed8');
+                    else                            setActive(tMapaImp, '#0d9488');
+                    if (sub === 'aerolineas' && window._fesLastImpData) fesRenderAerolineas(window._fesLastImpData);
+                    if (sub === 'mapa-imp') {
+                        _populateFaunaMapFilters('fes-imp-map').then(function () {
+                            _wireFesImpMapFilters();
+                            _refreshFesImpMap();
+                        });
+                    }
+                }
+                // ── Rescates sub-tabs ────────────────────────────────────────
+                else if (sub === 'res-resumen' || sub === 'mapa-res') {
+                    if (panResRes)  panResRes.style.display  = sub === 'res-resumen' ? '' : 'none';
+                    if (panMapaRes) panMapaRes.style.display = sub === 'mapa-res'   ? '' : 'none';
+                    setInactive(tResRes); setInactive(tMapaRes);
+                    if (sub === 'res-resumen') setActive(tResRes,  '#16a34a');
+                    else                       setActive(tMapaRes, '#0d9488');
+                    if (sub === 'mapa-res') {
+                        _populateFaunaMapFilters('fes-res-map').then(function () {
+                            _wireFesResMapFilters();
+                            _refreshFesResMap();
+                        });
+                    }
+                }
+            };
+
+            // ── Mapas embebidos de Estadística Fauna (Impactos / Rescates) ──
+            var _fesImpBigMap = null, _fesImpBigLayer = null, _fesImpFiltersWired = false;
+            var _fesResBigMap = null, _fesResBigLayer = null, _fesResFiltersWired = false;
+
+            function _faunaClaseColor(c) {
+                var v = String(c || '').trim().toLowerCase();
+                if (v.indexOf('ave') === 0)  return '#2563eb';
+                if (v.indexOf('mam') === 0)  return '#8b5a2b';
+                if (v.indexOf('rep') === 0)  return '#16a34a';
+                if (v.indexOf('anf') === 0)  return '#0891b2';
+                return '#64748b';
+            }
+
+            function _renderFaunaLegend(elId) {
+                var el = document.getElementById(elId);
+                if (!el) return;
+                var items = [
+                    { c: '#2563eb', t: 'Ave' },
+                    { c: '#8b5a2b', t: 'Mamífero' },
+                    { c: '#16a34a', t: 'Reptil' },
+                    { c: '#0891b2', t: 'Anfibio' },
+                    { c: '#64748b', t: 'Otra/Sin clase' }
+                ];
+                el.innerHTML = items.map(function (i) {
+                    return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#475569;">' +
+                        '<span style="width:10px;height:10px;border-radius:50%;background:' + i.c + ';display:inline-block;border:1.5px solid #fff;box-shadow:0 0 0 1px ' + i.c + ';"></span>' +
+                        i.t +
+                    '</span>';
+                }).join('');
+            }
+
+            function _faunaEsc(s) {
+                return String(s == null ? '' : s).replace(/[<>&"']/g, function (c) {
+                    return c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c === '"' ? '&quot;' : '&#39;';
+                });
+            }
+
+            // Lookup especie → clase a partir de los catálogos de fauna.
+            // Se carga una sola vez. Devuelve un Map(normalizado(especie) → nombre_clase).
+            var _especieClaseMap = null;
+            async function _ensureEspecieClaseMap() {
+                if (_especieClaseMap) return _especieClaseMap;
+                _especieClaseMap = new Map();
+                var client = window.supabaseClient;
+                if (!client) return _especieClaseMap;
+                try {
+                    var [especiesRes, clasesRes] = await Promise.all([
+                        client.from('catalogo_especie').select('nombre, clase_id'),
+                        client.from('catalogo_clase').select('id, nombre')
+                    ]);
+                    var clasesById = {};
+                    (clasesRes.data || []).forEach(function (c) { clasesById[c.id] = c.nombre; });
+                    (especiesRes.data || []).forEach(function (e) {
+                        if (!e.nombre) return;
+                        var norm = String(e.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+                        _especieClaseMap.set(norm, clasesById[e.clase_id] || '');
+                    });
+                } catch (err) {
+                    console.warn('No se pudo cargar mapa especie→clase', err);
+                }
+                return _especieClaseMap;
+            }
+
+            function _lookupClaseForEspecie(especie) {
+                if (!especie || !_especieClaseMap) return '';
+                var norm = String(especie).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+                return _especieClaseMap.get(norm) || '';
+            }
+
+            // Infiere la clase a partir del tipo de item del impacto
+            function _inferClaseFromItemType(itemType) {
+                var t = String(itemType || '').toLowerCase();
+                if (t.indexOf('ave') !== -1) return 'Ave';
+                if (t.indexOf('mam') !== -1) return 'Mamífero';
+                if (t.indexOf('reptil') !== -1) return 'Reptil';
+                if (t.indexOf('anf') !== -1) return 'Anfibio';
+                if (t.indexOf('animal') !== -1) return 'Mamífero';
+                return '';
+            }
+
+            // Extrae un campo de los detalle_items por nombre (varios alias)
+            function _itemField(fields, names) {
+                if (!Array.isArray(fields)) return '';
+                for (var i = 0; i < fields.length; i++) {
+                    var key = String(fields[i].key || '').toLowerCase();
+                    for (var j = 0; j < names.length; j++) {
+                        if (key === names[j].toLowerCase()) return fields[i].value || '';
+                    }
+                }
+                return '';
+            }
+
+            // Convierte reportes de impacto en marcadores. Estrategia:
+            // 1) Si hay items con coordenadas propias en su campo "Ubicación", uno por item.
+            // 2) Si no, un marcador por reporte usando ubicacion_lat/lng (campos planos),
+            //    enriquecido con la especie/clase del primer item si existe.
+            function _flattenImpactoMarkers(reports) {
+                var out = [];
+                (reports || []).forEach(function (r) {
+                    var items = Array.isArray(r.detalle_items) ? r.detalle_items : [];
+
+                    // Datos de respaldo a partir del primer item
+                    var fallbackEsp = '';
+                    var fallbackTipo = '';
+                    if (items.length > 0) {
+                        fallbackEsp  = _itemField(items[0].fields, ['Especie', 'especie']) ||
+                                       _itemField(items[0].fields, ['Otra Especie', 'especie_otra']) ||
+                                       _itemField(items[0].fields, ['Tipo de Animal', 'tipo_animal']);
+                        fallbackTipo = items[0].type || '';
+                    }
+
+                    // Intentar coords por item
+                    var perItemCount = 0;
+                    items.forEach(function (it) {
+                        var lugar = _itemField(it.fields, ['Ubicación', 'Ubicacion', 'lugar']);
+                        if (!lugar) return;
+                        var m = String(lugar).match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+                        if (!m) return;
+                        var lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+                        if (!isFinite(lat) || !isFinite(lng)) return;
+                        var esp = _itemField(it.fields, ['Especie', 'especie']) ||
+                                  _itemField(it.fields, ['Otra Especie', 'especie_otra']) ||
+                                  _itemField(it.fields, ['Tipo de Animal', 'tipo_animal']);
+                        var clase = _inferClaseFromItemType(it.type) || _lookupClaseForEspecie(esp);
+                        out.push({
+                            id: r.id, folio: r.folio, fecha_reporte: r.fecha_reporte,
+                            tipo_reporte: r.tipo_reporte || r.evento || 'Impacto',
+                            clase: clase, especie: esp || '',
+                            ubicacion_lat: lat, ubicacion_lng: lng,
+                            ubicacion_texto: lugar, item_type: it.type || ''
+                        });
+                        perItemCount++;
+                    });
+
+                    // Fallback: un solo marcador desde campos planos del reporte
+                    if (perItemCount === 0) {
+                        var lat0 = r.ubicacion_lat != null ? parseFloat(r.ubicacion_lat) : null;
+                        var lng0 = r.ubicacion_lng != null ? parseFloat(r.ubicacion_lng) : null;
+                        if (isFinite(lat0) && isFinite(lng0)) {
+                            var esp0 = r.especie || fallbackEsp || '';
+                            var clase0 = r.clase ||
+                                         _inferClaseFromItemType(fallbackTipo) ||
+                                         _lookupClaseForEspecie(esp0);
+                            out.push({
+                                id: r.id, folio: r.folio, fecha_reporte: r.fecha_reporte,
+                                tipo_reporte: r.tipo_reporte || r.evento || 'Impacto',
+                                clase: clase0, especie: esp0,
+                                ubicacion_lat: lat0, ubicacion_lng: lng0,
+                                ubicacion_texto: r.ubicacion_texto || '',
+                                item_type: fallbackTipo
+                            });
+                        }
+                    }
+                });
+                return out;
+            }
+
+            async function _populateFaunaMapFilters(prefix) {
+                var client = window.supabaseClient;
+                if (!client) return;
+                var yearSel    = document.getElementById(prefix + '-year');
+                var monthSel   = document.getElementById(prefix + '-month');
+                var claseSel   = document.getElementById(prefix + '-clase');
+                var especieSel = document.getElementById(prefix + '-especie');
+
+                if (yearSel && !yearSel.options.length) {
+                    try {
+                        var years = await window.MHRFaunaReportService.getHallazgosYears(client);
+                        yearSel.innerHTML = '<option value="" selected>Todos los años</option>' +
+                            (years || []).map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+                    } catch (e) {
+                        yearSel.innerHTML = '<option value="" selected>Todos los años</option>';
+                    }
+                }
+                if (monthSel && !monthSel.options.length) {
+                    var meses = ['Todos los meses', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                    monthSel.innerHTML = meses.map(function (m, i) {
+                        var v = i === 0 ? '' : String(i).padStart(2, '0');
+                        return '<option value="' + v + '"' + (i === 0 ? ' selected' : '') + '>' + m + '</option>';
+                    }).join('');
+                }
+
+                // Cargar clase y especie como opciones planas (NO usar cargarCatalogoSelect
+                // porque hace el placeholder disabled y el navegador termina seleccionando
+                // el primer item real como valor por defecto).
+                if (claseSel && claseSel.dataset.faunaMapWired !== '1') {
+                    claseSel.dataset.faunaMapWired = '1';
+                    var clasesRes = await client.from('catalogo_clase').select('nombre').eq('activo', true).order('orden', { ascending: true });
+                    var clases = clasesRes && clasesRes.data ? clasesRes.data : [];
+                    claseSel.innerHTML = '<option value="" selected>Todas las clases</option>' +
+                        clases.map(function (c) { return '<option value="' + _faunaEsc(c.nombre) + '">' + _faunaEsc(c.nombre) + '</option>'; }).join('');
+
+                    async function _reloadEspecies() {
+                        if (!especieSel) return;
+                        var claseNombre = claseSel.value || '';
+                        var query = client.from('catalogo_especie').select('nombre, clase_id').eq('activo', true).order('orden', { ascending: true });
+                        if (claseNombre) {
+                            // Necesitamos el id de la clase
+                            var claseId = null;
+                            try {
+                                var cRes = await client.from('catalogo_clase').select('id').eq('nombre', claseNombre).maybeSingle();
+                                claseId = cRes && cRes.data ? cRes.data.id : null;
+                            } catch (err) { }
+                            if (claseId) query = query.eq('clase_id', claseId);
+                        }
+                        var espRes = await query;
+                        var especies = espRes && espRes.data ? espRes.data : [];
+                        especieSel.innerHTML = '<option value="" selected>Todas las especies</option>' +
+                            especies.map(function (e) { return '<option value="' + _faunaEsc(e.nombre) + '">' + _faunaEsc(e.nombre) + '</option>'; }).join('');
+                    }
+                    await _reloadEspecies();
+                    claseSel.addEventListener('change', function () {
+                        _reloadEspecies().then(function () {
+                            if (prefix === 'fes-imp-map') _refreshFesImpMap();
+                            else _refreshFesResMap();
+                        });
+                    });
+                }
+            }
+
+            function _initFaunaSatelliteMap(elId) {
+                if (typeof L === 'undefined') return null;
+                var el = document.getElementById(elId);
+                if (!el) return null;
+                var m = L.map(elId, { center: [19.7470, -99.0125], zoom: 14, scrollWheelZoom: true });
+                // Vista satelital Google únicamente, sin etiquetas
+                L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                    attribution: '&copy; Google Maps',
+                    subdomains: ['0', '1', '2', '3'],
+                    maxZoom: 21
+                }).addTo(m);
+                return m;
+            }
+
+            function _renderFaunaMapMarkers(map, layer, data, countElId, label) {
+                layer.clearLayers();
+                var bounds = [], added = 0;
+                (data || []).forEach(function (r) {
+                    var lat = parseFloat(r.ubicacion_lat), lng = parseFloat(r.ubicacion_lng);
+                    if (!isFinite(lat) || !isFinite(lng)) return;
+                    var color = _faunaClaseColor(r.clase);
+                    var fechaStr = r.fecha_reporte || '–';
+                    var titulo = r.especie || r.clase || label;
+                    var popup = '<div style="font-family:Inter,Arial,sans-serif;font-size:12px;min-width:220px;">' +
+                        '<div style="font-weight:700;color:#0f172a;margin-bottom:4px;">' + _faunaEsc(titulo) + '</div>' +
+                        '<div><strong>Folio:</strong> ' + _faunaEsc(r.folio || '-') + '</div>' +
+                        '<div><strong>Fecha:</strong> ' + _faunaEsc(fechaStr) + '</div>' +
+                        (r.clase ? '<div><strong>Clase:</strong> ' + _faunaEsc(r.clase) + '</div>' : '') +
+                        (r.tipo_reporte ? '<div><strong>Tipo:</strong> ' + _faunaEsc(r.tipo_reporte) + '</div>' : '') +
+                        (r.ubicacion_texto ? '<div><strong>Lugar:</strong> ' + _faunaEsc(r.ubicacion_texto) + '</div>' : '') +
+                        '<div style="margin-top:6px;">' +
+                            '<a href="https://www.google.com/maps?q=' + lat + ',' + lng + '" target="_blank" rel="noopener" style="color:#1d4ed8;text-decoration:underline;">📍 Abrir en Google Maps</a>' +
+                        '</div>' +
+                    '</div>';
+                    L.circleMarker([lat, lng], {
+                        radius: 8, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.95
+                    }).bindPopup(popup)
+                      .bindTooltip(titulo, { direction: 'top', offset: [0, -8], opacity: 0.95 })
+                      .addTo(layer);
+                    bounds.push([lat, lng]);
+                    added++;
+                });
+                var countEl = document.getElementById(countElId);
+                if (countEl) countEl.textContent = added + ' ' + (added === 1 ? label.toLowerCase() : label.toLowerCase() + 's') + ' en mapa';
+                if (bounds.length > 0) {
+                    try { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 18 }); } catch (e) { }
+                } else {
+                    map.setView([19.7470, -99.0125], 14);
+                }
+            }
+
+            async function _refreshFesImpMap() {
+                if (!window.supabaseClient || typeof L === 'undefined') return;
+                if (!_fesImpBigMap) {
+                    _fesImpBigMap = _initFaunaSatelliteMap('fes-imp-map');
+                    if (!_fesImpBigMap) return;
+                    _fesImpBigLayer = L.layerGroup().addTo(_fesImpBigMap);
+                }
+                setTimeout(function () { try { _fesImpBigMap.invalidateSize(); } catch (e) { } }, 50);
+
+                // Asegurar mapa especie→clase
+                await _ensureEspecieClaseMap();
+
+                // Si todavía no se han cargado las estadísticas (entrada directa a la pestaña),
+                // disparamos la carga para hidratar window._fesLastImpData.
+                if (!window._fesLastImpData) {
+                    try { await loadFaunaStatistics(); } catch (e) { console.error(e); }
+                }
+                var raw = window._fesLastImpData || [];
+
+                var yearV    = document.getElementById('fes-imp-map-year')?.value || '';
+                var monthV   = document.getElementById('fes-imp-map-month')?.value || '';
+                var claseV   = (document.getElementById('fes-imp-map-clase')?.value || '').toLowerCase();
+                var especieV = (document.getElementById('fes-imp-map-especie')?.value || '').toLowerCase();
+
+                // Marcadores derivados de los detalle_items (lat/lng por item, fallback al reporte)
+                var allMarkers = _flattenImpactoMarkers(raw);
+
+                // Diagnóstico: ¿cuántos reportes hay y cuántos tienen coords?
+                var totalReports = raw.length;
+                var reportsWithCoords = raw.filter(function (r) {
+                    if (r.ubicacion_lat != null && r.ubicacion_lng != null) return true;
+                    var items = Array.isArray(r.detalle_items) ? r.detalle_items : [];
+                    return items.some(function (it) {
+                        var lugar = _itemField(it.fields, ['Ubicación', 'Ubicacion', 'lugar']);
+                        return lugar && /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/.test(lugar);
+                    });
+                }).length;
+                console.log('[Mapa Impactos] Reportes:', totalReports, '| con coords:', reportsWithCoords, '| marcadores aplanados:', allMarkers.length);
+                if (allMarkers.length > 0) {
+                    console.log('[Mapa Impactos] Primer marcador:', allMarkers[0]);
+                }
+
+                var markers = allMarkers.filter(function (m) {
+                    if (yearV) {
+                        var y = (m.fecha_reporte || '').toString().slice(0, 4);
+                        if (y !== String(yearV)) return false;
+                    }
+                    if (monthV) {
+                        var mo = (m.fecha_reporte || '').toString().slice(5, 7);
+                        if (mo !== String(monthV)) return false;
+                    }
+                    if (claseV) {
+                        var mc = String(m.clase || '').toLowerCase();
+                        if (!mc) return false;
+                        var root = claseV.replace(/s$/, '');
+                        if (mc.indexOf(root) === -1) return false;
+                    }
+                    if (especieV) {
+                        var ms = String(m.especie || '').toLowerCase();
+                        if (!ms) return false;
+                        var msRoot = ms.split('(')[0].trim();
+                        var espRoot = especieV.split('(')[0].trim();
+                        if (msRoot.indexOf(espRoot) === -1 && espRoot.indexOf(msRoot) === -1) return false;
+                    }
+                    return true;
                 });
 
-                try {
-                    const faunaData = await window.MHRFaunaReportService.getAllFaunaReports(client);
+                _renderFaunaLegend('fes-imp-map-legend');
+                _renderFaunaMapMarkers(_fesImpBigMap, _fesImpBigLayer, markers, 'fes-imp-map-count', 'Impacto');
 
-                    var impactData = (faunaData || []).filter(function(r){ return r.tipo_reporte !== 'Rescate'; });
-                    var rescateData = (faunaData || []).filter(function(r){ return r.tipo_reporte === 'Rescate'; });
-                    var impactosTipoCount = {};
-                    impactData.forEach(function(r){
-                        var key = (r.evento || r.tipo_reporte || 'Impacto');
-                        impactosTipoCount[key] = (impactosTipoCount[key] || 0) + 1;
-                    });
-                    var impactosTipo = Object.keys(impactosTipoCount).map(function(k){
-                        return { tipo_item: k, total: impactosTipoCount[k] };
-                    }).sort(function(a, b){ return b.total - a.total; });
-
-                    var especiesIndex = {};
-                    rescateData.forEach(function(r){
-                        var key = (r.clase || 'N/A') + '||' + (r.especie || 'N/A');
-                        especiesIndex[key] = especiesIndex[key] || { clase: r.clase || 'N/A', especie: r.especie || 'N/A', total_rescates: 0 };
-                        especiesIndex[key].total_rescates += 1;
-                    });
-                    var especiesRescatadas = Object.values(especiesIndex).sort(function(a, b){ return b.total_rescates - a.total_rescates; });
-
-                    var dailyIndex = {};
-                    (faunaData || []).forEach(function(r){
-                        var key = r.fecha_reporte || null;
-                        if (!key) return;
-                        dailyIndex[key] = (dailyIndex[key] || 0) + (r.estado === 'pendiente' ? 1 : 0);
-                    });
-                    var estadisticasDiarias = Object.keys(dailyIndex).sort().map(function(fecha){
-                        return { fecha_reporte: fecha, reportes_pendientes: dailyIndex[fecha] };
-                    });
-
-                    // Actualizar tarjetas de resumen
-                    var totalImpactos = impactData ? impactData.length : 0;
-                    var totalRescates = rescateData ? rescateData.length : 0;
-
-                    var elTotalImpactos = document.getElementById('total-impactos-fauna');
-                    var elTotalRescates = document.getElementById('total-rescates-fauna');
-                    if (elTotalImpactos) elTotalImpactos.textContent = totalImpactos;
-                    if (elTotalRescates) elTotalRescates.textContent = totalRescates;
-
-                    // Encontrar especie más rescatada
-                    var especieMasRescatada = '-';
-                    if (especiesRescatadas && especiesRescatadas.length > 0) {
-                        especieMasRescatada = especiesRescatadas[0].especie || '-';
+                // Mensaje diagnóstico si no hay marcadores
+                var countEl = document.getElementById('fes-imp-map-count');
+                if (countEl && markers.length === 0) {
+                    if (totalReports === 0) {
+                        countEl.innerHTML = '<span style="color:#94a3b8;">No hay reportes de impacto en la base de datos.</span>';
+                    } else if (reportsWithCoords === 0) {
+                        countEl.innerHTML = '<span style="color:#dc2626;">⚠ Hay ' + totalReports + ' reportes pero ninguno tiene ubicación registrada. Selecciona el punto en el mapa al crear el reporte.</span>';
+                    } else if (allMarkers.length === 0) {
+                        countEl.innerHTML = '<span style="color:#dc2626;">⚠ No se pudieron extraer coordenadas de los ' + reportsWithCoords + ' reportes con ubicación. Revisa la consola.</span>';
+                    } else {
+                        countEl.innerHTML = '<span style="color:#94a3b8;">0 impactos coinciden con los filtros (' + allMarkers.length + ' disponibles sin filtrar).</span>';
                     }
-                    var elEspecieMas = document.getElementById('especie-más-rescatada');
-                    if (elEspecieMas) elEspecieMas.textContent = especieMasRescatada;
+                }
+            }
 
-                    // Encontrar clase más rescatada
-                    var claseMasRescatada = '-';
-                    if (rescateData && rescateData.length > 0) {
-                        var claseCounts = {};
-                        rescateData.forEach(function(r){
-                            if (r.clase) {
-                                claseCounts[r.clase] = (claseCounts[r.clase] || 0) + 1;
+            async function _refreshFesResMap() {
+                if (!window.supabaseClient || typeof L === 'undefined') return;
+                if (!_fesResBigMap) {
+                    _fesResBigMap = _initFaunaSatelliteMap('fes-res-map-big');
+                    if (!_fesResBigMap) return;
+                    _fesResBigLayer = L.layerGroup().addTo(_fesResBigMap);
+                }
+                setTimeout(function () { try { _fesResBigMap.invalidateSize(); } catch (e) { } }, 50);
+                var year    = document.getElementById('fes-res-map-year')?.value || '';
+                var month   = document.getElementById('fes-res-map-month')?.value || '';
+                var clase   = document.getElementById('fes-res-map-clase')?.value || '';
+                var especie = document.getElementById('fes-res-map-especie')?.value || '';
+                var data = [];
+                try {
+                    data = await window.MHRFaunaReportService.getHallazgosMapData(window.supabaseClient, {
+                        tipo: 'Rescate', year: year, month: month, clase: clase, especie: especie
+                    });
+                } catch (e) { console.error('Error loading rescate map data', e); }
+                _renderFaunaLegend('fes-res-map-legend');
+                _renderFaunaMapMarkers(_fesResBigMap, _fesResBigLayer, data, 'fes-res-map-count', 'Rescate');
+            }
+
+            function _wireFesImpMapFilters() {
+                if (_fesImpFiltersWired) return;
+                ['fes-imp-map-year', 'fes-imp-map-month', 'fes-imp-map-clase', 'fes-imp-map-especie'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('change', _refreshFesImpMap);
+                });
+                _fesImpFiltersWired = true;
+            }
+            function _wireFesResMapFilters() {
+                if (_fesResFiltersWired) return;
+                ['fes-res-map-year', 'fes-res-map-month', 'fes-res-map-clase', 'fes-res-map-especie'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener('change', _refreshFesResMap);
+                });
+                _fesResFiltersWired = true;
+            }
+
+            // ── tab switching (Impactos / Rescates) ──────────────────────────
+            window.fesSwitchTab = function(tab) {
+                var isImp = tab === 'impactos';
+                document.getElementById('fes-panel-impactos').style.display = isImp ? '' : 'none';
+                document.getElementById('fes-panel-rescates').style.display  = isImp ? 'none' : '';
+                var tImp = document.getElementById('fes-tab-impactos');
+                var tRes = document.getElementById('fes-tab-rescates');
+                if (tImp) {
+                    tImp.style.borderBottomColor = isImp ? '#2563eb' : 'transparent';
+                    tImp.style.color = isImp ? '#2563eb' : '#64748b';
+                }
+                if (tRes) {
+                    tRes.style.borderBottomColor = isImp ? 'transparent' : '#16a34a';
+                    tRes.style.color = isImp ? '#64748b' : '#16a34a';
+                }
+                if (!isImp && !_fesResMap && window._fesLastResData) {
+                    setTimeout(function(){ _fesResMap = fesInitMiniMap('fes-res-map', window._fesLastResData, '#16a34a'); }, 100);
+                }
+            };
+
+            // ── Render aerolíneas cards ───────────────────────────────────────
+            var _fesAerolineasCatalog = null; // cache
+
+            async function fesRenderAerolineas(impData) {
+                var container = document.getElementById('fes-aero-cards');
+                if (!container) return;
+
+                // Load catalog once
+                if (!_fesAerolineasCatalog && window.MHRCatalogService && window.supabaseClient) {
+                    try { _fesAerolineasCatalog = await window.MHRCatalogService.getCatalogoAerolineas(window.supabaseClient); }
+                    catch(e) { _fesAerolineasCatalog = []; }
+                }
+                var catalog = _fesAerolineasCatalog || [];
+                var byIata = {};
+                var byOaci = {};
+                var byNombre = {};
+                catalog.forEach(function(a){
+                    byIata[a.codigo_iata] = a;
+                    if (a.codigo_oaci) byOaci[a.codigo_oaci] = a;
+                    byNombre[String(a.nombre_aerolinea).toLowerCase().trim()] = a;
+                });
+
+                // Helper: resolve catalog entry for a stored aerolinea string
+                function _resolveInfo(stored) {
+                    if (!stored) return null;
+                    // Try exact IATA match
+                    if (byIata[stored]) return byIata[stored];
+                    // Try exact OACI match
+                    if (byOaci[stored]) return byOaci[stored];
+                    // Try by name (case-insensitive)
+                    var lower = stored.toLowerCase().trim();
+                    if (byNombre[lower]) return byNombre[lower];
+                    // Try partial: stored starts with IATA code "XX - Name" or OACI code "XXX - Name"
+                    var iataPrefix = stored.match(/^([A-Z0-9]{1,4})\s*-/);
+                    if (iataPrefix) {
+                        if (byIata[iataPrefix[1]]) return byIata[iataPrefix[1]];
+                        if (byOaci[iataPrefix[1]]) return byOaci[iataPrefix[1]];
+                    }
+                    return null;
+                }
+
+                // Build a clean iata→logo placeholder SVG
+                function _fallbackSvg(label) {
+                    var text = String(label).substring(0, 2).toUpperCase();
+                    return 'data:image/svg+xml,' + encodeURIComponent(
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60">'
+                        + '<rect width="60" height="60" rx="8" fill="#1d4ed8"/>'
+                        + '<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="16" font-family="sans-serif">' + text + '</text>'
+                        + '</svg>'
+                    );
+                }
+
+                // Count impacts per airline
+                var counts = {};
+                impData.forEach(function(r){
+                    var a = r.aerolinea || '';
+                    if (!a.trim()) return;
+                    counts[a] = (counts[a] || 0) + 1;
+                });
+
+                var sorted = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
+
+                // KPI
+                var totalEl = document.getElementById('fes-aero-total-imp');
+                var lineasEl = document.getElementById('fes-aero-total-lineas');
+                var topEl = document.getElementById('fes-aero-top-linea');
+                if (totalEl) totalEl.textContent = impData.length;
+                if (lineasEl) lineasEl.textContent = sorted.length;
+                if (topEl) topEl.textContent = sorted.length ? sorted[0][0] : '–';
+
+                if (!sorted.length) {
+                    container.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px;grid-column:1/-1;">Sin registros de aerolínea en los impactos.</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                sorted.forEach(function(entry) {
+                    var stored = entry[0];   // the value stored in fauna_reports.aerolinea
+                    var count = entry[1];
+                    var info = _resolveInfo(stored);
+                    var displayName = (info && info.nombre_aerolinea) || stored;
+                    var iataLabel   = (info && info.codigo_iata) || stored.substring(0, 3).toUpperCase();
+                    var logoUrl = (info && info.logo_url)
+                        || (info ? 'https://www.gstatic.com/flights/airline_logos/70px/' + encodeURIComponent(info.codigo_iata) + '.png' : '');
+                    var fallback = _fallbackSvg(iataLabel);
+                    var card = document.createElement('div');
+                    card.style.cssText = 'background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:box-shadow .15s,transform .15s;box-shadow:0 1px 4px rgba(0,0,0,.06);';
+                    card.addEventListener('mouseenter', function(){ this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'; this.style.transform='translateY(-2px)'; });
+                    card.addEventListener('mouseleave', function(){ this.style.boxShadow='0 1px 4px rgba(0,0,0,.06)'; this.style.transform=''; });
+                    card.innerHTML =
+                        '<img src="' + (logoUrl || fallback) + '" alt="' + iataLabel + '" ' +
+                            'style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;padding:4px;margin:0 auto 10px;display:block;" ' +
+                            'onerror="this.src=\'' + fallback + '\'" />' +
+                        '<div style="font-size:13px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + displayName + '">' + displayName + '</div>' +
+                        '<div style="font-size:11px;color:#64748b;margin:2px 0;">' + iataLabel + '</div>' +
+                        '<div style="margin-top:8px;display:inline-block;background:#fee2e2;color:#991b1b;border-radius:20px;padding:4px 14px;font-size:14px;font-weight:800;">' + count + '</div>' +
+                        '<div style="font-size:10px;color:#94a3b8;margin-top:3px;">impacto' + (count !== 1 ? 's' : '') + '</div>';
+                    card.addEventListener('click', function(){
+                        fesShowAerolineaDetalle(stored, info || { nombre_aerolinea: displayName, codigo_iata: iataLabel, logo_url: logoUrl || null }, impData.filter(function(r){ return r.aerolinea === stored; }));
+                    });
+                    container.appendChild(card);
+                });
+            }
+
+            function fesShowAerolineaDetalle(stored, info, records) {
+                var panel = document.getElementById('fes-aero-detalle');
+                if (!panel) return;
+                var iataLabel = (info && info.codigo_iata) || stored;
+                var displayName = (info && info.nombre_aerolinea) || stored;
+                var logoUrl = (info && info.logo_url)
+                    || (info && info.codigo_iata ? 'https://www.gstatic.com/flights/airline_logos/70px/' + encodeURIComponent(info.codigo_iata) + '.png' : '');
+                var fallback = 'data:image/svg+xml,' + encodeURIComponent(
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="10" fill="#1d4ed8"/>'
+                    + '<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif">' + String(iataLabel).substring(0,2).toUpperCase() + '</text></svg>'
+                );
+                var imgEl = document.getElementById('fes-aero-det-logo');
+                if (imgEl) { imgEl.src = logoUrl || fallback; imgEl.onerror = function(){ this.src = fallback; }; imgEl.style.display = ''; }
+                var nameEl = document.getElementById('fes-aero-det-nombre');
+                if (nameEl) nameEl.textContent = displayName;
+                var iataEl = document.getElementById('fes-aero-det-iata');
+                if (iataEl) iataEl.textContent = iataLabel;
+                var totalEl = document.getElementById('fes-aero-det-total');
+                if (totalEl) totalEl.textContent = records.length;
+
+                var tbody = document.getElementById('fes-aero-det-tbody');
+                if (tbody) {
+                    if (!records.length) {
+                        tbody.innerHTML = '<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8;">Sin registros</td></tr>';
+                    } else {
+                        tbody.innerHTML = records.map(function(r){
+                            var fecha = r.created_at ? new Date(r.created_at).toLocaleDateString('es-ES') : (r.fecha_reporte || '–');
+                            var pdfCell = r.pdf_url ?
+                                '<button class="fh-pdf-btn" data-pdf-url="' + String(r.pdf_url).replace(/"/g,'&quot;') + '" style="background:none;border:none;cursor:pointer;color:#2563eb;font-weight:600;padding:0;font-size:12px;">📄</button>' :
+                                '<span style="color:#d1d5db;">–</span>';
+                            return '<tr style="border-bottom:1px solid #f1f5f9;">' +
+                                '<td style="padding:8px;">' + fecha + '</td>' +
+                                '<td style="padding:8px;font-size:11px;color:#64748b;">' + (r.folio || '–') + '</td>' +
+                                '<td style="padding:8px;">' + (r.especie || '–') + '</td>' +
+                                '<td style="padding:8px;">' + (r.fase_vuelo || '–') + '</td>' +
+                                '<td style="padding:8px;">' + (r.parte_avion || '–') + '</td>' +
+                                '<td style="padding:8px;">' + (r.pista || '–') + '</td>' +
+                                '<td style="padding:8px;">' + (r.condicion_meteo || '–') + '</td>' +
+                                '<td style="padding:8px;text-align:center;">' + pdfCell + '</td>' +
+                            '</tr>';
+                        }).join('');
+                        // PDF delegation
+                        if (!tbody._pdfDelegated) {
+                            tbody._pdfDelegated = true;
+                            tbody.addEventListener('click', function(e){
+                                var btn = e.target.closest('.fh-pdf-btn');
+                                if (btn && btn.dataset.pdfUrl && typeof window.mhrOpenPdfPreview === 'function') {
+                                    window.mhrOpenPdfPreview(btn.dataset.pdfUrl);
+                                }
+                            });
+                        }
+                    }
+                }
+                panel.style.display = '';
+                panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+            }
+
+            // ── main stats loader ─────────────────────────────────────────────
+            async function loadFaunaStatistics() {
+                const client = window.supabaseClient;
+                if (!client) { console.error('Supabase client not ready'); return; }
+
+                try {
+                    const all = (await window.MHRFaunaReportService.getAllFaunaReports(client)) || [];
+
+                    var impData = all.filter(function(r){ return r.tipo_reporte !== 'Rescate'; });
+                    var resData = all.filter(function(r){ return r.tipo_reporte === 'Rescate'; });
+
+                    window._fesLastImpData = impData;
+                    window._fesLastResData = resData;
+
+                    // ── IMPACTOS charts ────────────────────────────────────────
+                    var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+                    // Eventos por mes
+                    var countsByMonth = new Array(12).fill(0);
+                    impData.forEach(function(r){
+                        var d = r.created_at ? new Date(r.created_at) : null;
+                        if (d) countsByMonth[d.getMonth()]++;
+                    });
+                    fesBarChart('fes-imp-chart-mes', 'fes-imp-chart-mes-labels', countsByMonth, MESES, '#2563eb');
+
+                    // Eventos por especie (horizontal) — extraído de detalle_items
+                    var especieCounts = {};
+                    impData.forEach(function (r) {
+                        var items = Array.isArray(r.detalle_items) ? r.detalle_items : [];
+                        items.forEach(function (it) {
+                            var esp = _itemField(it.fields, ['Especie', 'especie']) ||
+                                      _itemField(it.fields, ['Otra Especie', 'especie_otra']) ||
+                                      _itemField(it.fields, ['Tipo de Animal', 'tipo_animal']);
+                            if (esp && String(esp).trim()) {
+                                especieCounts[esp] = (especieCounts[esp] || 0) + 1;
                             }
                         });
-                        if (Object.keys(claseCounts).length > 0) {
-                            claseMasRescatada = Object.entries(claseCounts).sort(function(a,b){ return b[1]-a[1]; })[0][0];
+                        // Fallback al campo top-level por compatibilidad con registros antiguos
+                        if (items.length === 0 && r.especie) {
+                            especieCounts[r.especie] = (especieCounts[r.especie] || 0) + 1;
                         }
-                    }
-                    var elClaseMas = document.getElementById('clase-más-rescatada');
-                    if (elClaseMas) elClaseMas.textContent = claseMasRescatada;
+                    });
+                    var impEspecies = Object.entries(especieCounts).sort(function (a, b) { return b[1] - a[1]; });
+                    fesHBarChart('fes-imp-chart-especie', impEspecies, '#16a34a');
 
-                    // Tabla de impactos por tipo
-                    var impactosTable = document.getElementById('impactos-tipo-table-body');
-                    if (impactosTable) {
-                        if (!impactosTipo || impactosTipo.length === 0) {
-                            impactosTable.innerHTML = '<tr><td colspan="2" style="padding:12px;color:#6b7280;text-align:center;">Sin datos</td></tr>';
-                        } else {
-                            impactosTable.innerHTML = '';
-                            impactosTipo.forEach(function(item) {
-                                var tr = document.createElement('tr');
-                                tr.innerHTML = '<td style="padding:10px;border-bottom:1px solid #e5e7eb;">' + (item.tipo_item || 'N/A') + '</td>' +
-                                               '<td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">' + (item.total || 0) + '</td>';
-                                impactosTable.appendChild(tr);
-                            });
-                        }
-                    }
+                    // Heatmap Mes × Condición
+                    fesHeatmap('fes-imp-heatmap', impData);
 
-                    // Tabla de especies rescatadas
-                    var especiesTable = document.getElementById('especies-rescatadas-table-body');
-                    if (especiesTable) {
-                        if (!especiesRescatadas || especiesRescatadas.length === 0) {
-                            especiesTable.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#6b7280;text-align:center;">Sin datos</td></tr>';
-                        } else {
-                            especiesTable.innerHTML = '';
-                            especiesRescatadas.forEach(function(item) {
-                                var tr = document.createElement('tr');
-                                tr.innerHTML = '<td style="padding:10px;border-bottom:1px solid #e5e7eb;">' + (item.clase || 'N/A') + '</td>' +
-                                               '<td style="padding:10px;border-bottom:1px solid #e5e7eb;">' + (item.especie || 'N/A') + '</td>' +
-                                               '<td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">' + (item.total_rescates || 0) + '</td>';
-                                especiesTable.appendChild(tr);
-                            });
+                    // Distribución por hora del día
+                    var countsByHour = new Array(24).fill(0);
+                    impData.forEach(function(r){
+                        var hora = r.hora_evento; // '08:30'
+                        if (!hora && r.created_at) {
+                            var d = new Date(r.created_at);
+                            hora = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
                         }
+                        if (!hora) return;
+                        var h = parseInt(hora.split(':')[0], 10);
+                        if (h >= 0 && h < 24) countsByHour[h]++;
+                    });
+                    var horaLabels = Array.from({length:24}, function(_,i){ return i.toString().padStart(2,'0')+':00'; });
+                    fesBarChart('fes-imp-chart-hora', 'fes-imp-chart-hora-labels', countsByHour, horaLabels, '#f59e0b');
+
+                    // Top horas críticas (top 5 horas con más eventos)
+                    var horaIndexed = countsByHour.map(function(v,i){ return [i, v]; }).filter(function(x){ return x[1]>0; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+                    var topHorasEl = document.getElementById('fes-imp-top-horas');
+                    if (topHorasEl) {
+                        topHorasEl.innerHTML = horaIndexed.length ? horaIndexed.map(function(x){
+                            return '<span style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #fde68a;">' +
+                                x[0].toString().padStart(2,'0') + ':00 · ' + x[1] + '</span>';
+                        }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos de hora</span>';
                     }
 
-                    // Tabla de estadísticas diarias
-                    var diariaTable = document.getElementById('estadisticas-diarias-table-body');
-                    if (diariaTable) {
-                        if (!estadisticasDiarias || estadisticasDiarias.length === 0) {
-                            diariaTable.innerHTML = '<tr><td colspan="2" style="padding:12px;color:#6b7280;text-align:center;">Sin datos</td></tr>';
-                        } else {
-                            diariaTable.innerHTML = '';
-                            estadisticasDiarias.forEach(function(item) {
-                                var tr = document.createElement('tr');
-                                var fecha = item.fecha_reporte ? new Date(item.fecha_reporte).toLocaleDateString('es-ES') : 'N/A';
-                                tr.innerHTML = '<td style="padding:10px;border-bottom:1px solid #e5e7eb;">' + fecha + '</td>' +
-                                               '<td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">' + (item.reportes_pendientes || 0) + '</td>';
-                                diariaTable.appendChild(tr);
-                            });
-                        }
+                    // Resumen por fase de operación
+                    var fases = fesCountBy(impData, 'fase_vuelo');
+                    var fasesEl = document.getElementById('fes-imp-fases-badges');
+                    if (fasesEl) {
+                        var faseColors = { 'Aterrizaje': ['#dbeafe','#1e40af','→'], 'Despegue': ['#dcfce7','#166534','↑'] };
+                        fasesEl.innerHTML = fases.length ? fases.map(function(f){
+                            var c = faseColors[f[0]] || ['#f1f5f9','#374151','✈'];
+                            return '<span style="display:inline-flex;align-items:center;gap:6px;background:' + c[0] + ';color:' + c[1] + ';border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;border:1px solid ' + c[0] + ';">' +
+                                c[2] + ' ' + f[0] + ' · <b>' + f[1] + '</b></span>';
+                        }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos de fase</span>';
                     }
+
+                    // Tablas parte avión + pista
+                    var impPartes = fesCountBy(impData, 'parte_avion');
+                    var impPistas = fesCountBy(impData, 'pista');
+                    fesFillTable('fes-imp-parte-tbody', impPartes, 'Sin datos');
+                    fesFillTable('fes-imp-pista-tbody', impPistas, 'Sin datos');
+
+                    // ── RESCATES KPIs ─────────────────────────────────────────
+                    var resEspecies  = {};
+                    resData.forEach(function(r){
+                        var k = (r.clase||'N/A') + '||' + (r.especie||'N/A');
+                        resEspecies[k] = resEspecies[k] || { clase: r.clase||'N/A', especie: r.especie||'N/A', total: 0 };
+                        resEspecies[k].total++;
+                    });
+                    var resEspArr = Object.values(resEspecies).sort(function(a,b){ return b.total-a.total; });
+                    var resSitios    = fesCountBy(resData, 'sitio_reubicacion');
+                    var resInst      = fesCountBy(resData, 'institucion_responsable');
+                    var resClases    = fesCountBy(resData, 'clase');
+
+                    var setText = function(id, v){ var e = document.getElementById(id); if (e) e.textContent = v; };
+                    setText('fes-res-total',      resData.length);
+                    setText('fes-res-especie-top', resEspArr.length ? resEspArr[0].especie : '–');
+                    setText('fes-res-clase-top',   fesTopKey(resClases));
+                    setText('fes-res-sitio-top',   fesTopKey(resSitios));
+
+                    fesFill3ColTable('fes-res-especie-tbody',
+                        resEspArr.slice(0,15).map(function(r){ return [r.clase, r.especie, r.total]; }),
+                        'Sin rescates registrados'
+                    );
+                    fesFillTable('fes-res-institucion-tbody', resInst,   'Sin datos');
+                    fesFillTable('fes-res-sitio-tbody',       resSitios, 'Sin datos');
+
+                    // Barras mensuales rescates
+                    var resCountsByMonth = new Array(12).fill(0);
+                    resData.forEach(function(r){
+                        var d = r.created_at ? new Date(r.created_at) : null;
+                        if (d) resCountsByMonth[d.getMonth()]++;
+                    });
+                    fesBarChart('fes-res-mensual-bars', 'fes-res-mensual-labels', resCountsByMonth, MESES, '#16a34a');
+
+                    // Refresh aerolíneas panel if visible
+                    var aeroPanel = document.getElementById('fes-sub-aerolineas');
+                    if (aeroPanel && aeroPanel.style.display !== 'none') fesRenderAerolineas(impData);
 
                 } catch (err) {
                     console.error('Error in loadFaunaStatistics:', err);
@@ -400,6 +1231,7 @@ window.MHRFaunaDashboardPage = (function () {
 
             // Función para cargar reportes de fauna desde Supabase
             async function loadFaunaReports(filters) {
+                filters = filters || {};
                 const client = window.supabaseClient;
                 if (!client) {
                     console.error('Supabase client not ready');
@@ -408,7 +1240,18 @@ window.MHRFaunaDashboardPage = (function () {
 
                 const reportsList = document.getElementById('fauna-reports-list');
                 const reportsCount = document.getElementById('fauna-reports-count');
-                
+
+                // PDF delegation (safe to re-assign; only one handler needed)
+                if (reportsList && !reportsList._pdfDelegated) {
+                    reportsList._pdfDelegated = true;
+                    reportsList.addEventListener('click', function (e) {
+                        var btn = e.target.closest('.fh-pdf-btn');
+                        if (btn && btn.dataset.pdfUrl && typeof window.mhrOpenPdfPreview === 'function') {
+                            window.mhrOpenPdfPreview(btn.dataset.pdfUrl);
+                        }
+                    });
+                }
+
                 if (reportsList) {
                     reportsList.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#6b7280;">Cargando reportes...</td></tr>';
                 }
@@ -437,8 +1280,18 @@ window.MHRFaunaDashboardPage = (function () {
                             reportsList.innerHTML = '';
                             var faunaRows = [];
                             allReports.forEach(function(report) {
-                                let fechaReporte = report.fecha_reporte ? new Date(report.fecha_reporte).toLocaleDateString('es-ES') : '-';
-                                
+                                // Usar created_at (timestamp completo) para evitar desfase UTC en fechas date-only
+                                let fechaReporte = '-';
+                                if (report.created_at) {
+                                    const d = new Date(report.created_at);
+                                    fechaReporte = d.toLocaleDateString('es-ES');
+                                } else if (report.fecha_reporte) {
+                                    // Parsear manualmente para evitar que 'YYYY-MM-DD' se interprete como UTC midnight
+                                    const p = report.fecha_reporte.split('-');
+                                    if (p.length === 3) fechaReporte = p[2] + '/' + p[1] + '/' + p[0];
+                                    else fechaReporte = report.fecha_reporte;
+                                }
+
                                 // Extraer hora: primero intentar del folio, luego de created_at
                                 let horaExtraida = null;
                                 
@@ -494,7 +1347,7 @@ window.MHRFaunaDashboardPage = (function () {
                                 // Crear link de PDF si existe
                                 let pdfLink = '<a href="#" style="color:#6b7280;text-decoration:none;font-size:12px;">-</a>';
                                 if (report.pdf_url && report.pdf_url.trim() !== '') {
-                                    pdfLink = '<a href="' + report.pdf_url + '" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:12px;font-weight:600;">📄 Ver PDF</a>';
+                                    pdfLink = '<button class="fh-pdf-btn" data-pdf-url="' + report.pdf_url.replace(/"/g, '&quot;') + '" style="background:none;border:none;cursor:pointer;color:#3b82f6;font-size:12px;font-weight:600;padding:0;">📄 Ver PDF</button>';
                                 } else {
                                     console.warn('⚠️ Sin PDF para folio', report.folio, '- pdf_url:', report.pdf_url);
                                 }
@@ -664,9 +1517,10 @@ window.MHRFaunaDashboardPage = (function () {
                     bounds.push([lat, lng]);
                     var clase = row.clase || 'Sin clase';
                     var especie = row.especie || 'Sin especie';
+                    var tipo = row.tipo_reporte || '-';
                     var key = clase + ' / ' + especie;
                     resumen[key] = (resumen[key] || 0) + 1;
-                    var markerColor = getFaunaClaseMarkerColor(clase);
+                    var markerColor = (tipo === 'Rescate') ? '#16a34a' : (tipo === 'Posible Impacto' ? '#f59e0b' : getFaunaClaseMarkerColor(clase));
                     L.circleMarker([lat, lng], {
                         radius: 8,
                         color: '#ffffff',
@@ -674,13 +1528,14 @@ window.MHRFaunaDashboardPage = (function () {
                         fillColor: markerColor,
                         fillOpacity: 0.95
                     }).bindPopup(
+                        '<strong>Tipo:</strong> ' + tipo + '<br>' +
                         '<strong>Folio:</strong> ' + (row.folio || '-') + '<br>' +
                         '<strong>Fecha:</strong> ' + (row.fecha_reporte || '-') + '<br>' +
                         '<strong>Clase:</strong> ' + clase + '<br>' +
                         '<strong>Especie:</strong> ' + especie + '<br>' +
                         '<strong>Ubicación:</strong> ' + (row.ubicacion_texto || 'N/D')
                     ).bindTooltip(
-                        '<strong>Especie:</strong> ' + especie + '<br><strong>Fecha:</strong> ' + (row.fecha_reporte || '-'),
+                        '<strong>' + tipo + '</strong><br><strong>Especie:</strong> ' + especie + '<br><strong>Fecha:</strong> ' + (row.fecha_reporte || '-'),
                         { direction: 'top', offset: [0, -8], opacity: 0.95 }
                     ).addTo(faunaHallazgosMarkersLayer);
                 });
@@ -714,6 +1569,9 @@ window.MHRFaunaDashboardPage = (function () {
                     try {
                         await ensureFaunaSkeletonMap();
                         renderMonthOptions();
+                        // Reset clase/especie filters so all records show by default
+                        if (faunaClaseSelect) faunaClaseSelect.value = '';
+                        if (faunaEspecieSelect) faunaEspecieSelect.value = '';
                         await loadFaunaHallazgosClaseEspecieCombos();
                         await loadFaunaHallazgosYears();
                         if (faunaYearSelect && faunaHallazgosYears.length) faunaYearSelect.value = faunaHallazgosYears[0];
@@ -765,6 +1623,304 @@ window.MHRFaunaDashboardPage = (function () {
 
             // Event listener para el botón de actualizar estadísticas de fauna
             document.getElementById('refresh-estadisticas-fauna-btn')?.addEventListener('click', loadFaunaStatistics);
+
+            // Exponer para uso externo (fauna-submit-page, supabase-orchestrator)
+            window.loadFaunaReports = loadFaunaReports;
+            window.loadFaunaStatistics = loadFaunaStatistics;
+
+            // ═══════════════════════════════════════════════════════
+            // VISTA DE DATOS — tabla completa fauna_reports con
+            // filtros por columna, búsqueda global y export a Excel
+            // ═══════════════════════════════════════════════════════
+            (function () {
+                // Columnas a mostrar (en orden) con etiqueta y clave en el registro
+                var FHD_COLS = [
+                    { key: 'folio',                  label: 'Folio' },
+                    { key: 'created_at',              label: 'Fecha / Hora' },
+                    { key: 'tipo_reporte',            label: 'Tipo' },
+                    { key: 'evento',                  label: 'Evento' },
+                    { key: 'clase',                   label: 'Clase' },
+                    { key: 'especie',                 label: 'Especie' },
+                    { key: 'fase_vuelo',              label: 'Fase Vuelo' },
+                    { key: 'pista',                   label: 'Pista' },
+                    { key: 'zona',                    label: 'Zona' },
+                    { key: 'parte_avion',             label: 'Parte Avión' },
+                    { key: 'aerolinea',               label: 'Aerolínea' },
+                    { key: 'ubicacion_texto',         label: 'Ubicación Texto' },
+                    { key: 'sitio_reubicacion',       label: 'Sitio Reubicación' },
+                    { key: 'institucion_responsable', label: 'Institución' },
+                    { key: 'responsable',             label: 'Responsable' },
+                    { key: 'cargo',                   label: 'Cargo' },
+                    { key: 'observaciones',           label: 'Observaciones' },
+                    { key: 'estado',                  label: 'Estado' },
+                    { key: 'pdf_url',                 label: 'PDF' }
+                ];
+
+                var _allRows  = [];   // todos los registros crudos
+                var _filtered = [];   // después de filtros columna + búsqueda
+                var _colFilters = {}; // { key: Set de valores seleccionados }
+
+                // ── helpers ──────────────────────────────────────────
+                function _esc(s) {
+                    return String(s == null ? '' : s)
+                        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                }
+
+                function _fmt(key, val) {
+                    if (val == null || val === '') return '<span style="color:#d1d5db">—</span>';
+                    if (key === 'created_at') {
+                        try {
+                            var d = new Date(val);
+                            var pad = function(n){ return String(n).padStart(2,'0'); };
+                            return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+
+                                   ' '+pad(d.getHours())+':'+pad(d.getMinutes());
+                        } catch(e) { return _esc(val); }
+                    }
+                    if (key === 'pdf_url') {
+                        return '<button class="fh-pdf-btn" data-pdf-url="' + _esc(val) + '" style="background:none;border:none;cursor:pointer;color:#2563eb;font-weight:600;font-size:inherit;padding:0;">📄 PDF</button>';
+                    }
+                    if (key === 'tipo_reporte') {
+                        var isRescate = String(val).toLowerCase().includes('rescate');
+                        return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:'+(isRescate?'#dcfce7;color:#166534':'#fee2e2;color:#991b1b')+';">'+_esc(val)+'</span>';
+                    }
+                    if (key === 'estado') {
+                        var isPend = String(val).toLowerCase().includes('pend');
+                        return '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:'+(isPend?'#fef9c3;color:#854d0e':'#dbeafe;color:#1e40af')+';">'+_esc(val)+'</span>';
+                    }
+                    return '<span title="'+_esc(val)+'" style="display:inline-block;max-width:220px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;">'+_esc(val)+'</span>';
+                }
+
+                // ── render ────────────────────────────────────────────
+                function _renderTable() {
+                    var search = (document.getElementById('fhd-search') || {}).value || '';
+                    search = search.trim().toLowerCase();
+
+                    // Aplicar filtros de columna
+                    _filtered = _allRows.filter(function(row) {
+                        return FHD_COLS.every(function(col) {
+                            var set = _colFilters[col.key];
+                            if (!set || set.size === 0) return true;
+                            var v = String(row[col.key] == null ? '' : row[col.key]);
+                            return set.has(v);
+                        });
+                    });
+
+                    // Aplicar búsqueda global
+                    if (search) {
+                        _filtered = _filtered.filter(function(row) {
+                            return FHD_COLS.some(function(col) {
+                                return String(row[col.key] == null ? '': row[col.key]).toLowerCase().includes(search);
+                            });
+                        });
+                    }
+
+                    // Renderizar tbody
+                    var tbody = document.getElementById('fhd-tbody');
+                    if (!tbody) return;
+
+                    // PDF delegation
+                    if (!tbody._pdfDelegated) {
+                        tbody._pdfDelegated = true;
+                        tbody.addEventListener('click', function (e) {
+                            var btn = e.target.closest('.fh-pdf-btn');
+                            if (btn && btn.dataset.pdfUrl && typeof window.mhrOpenPdfPreview === 'function') {
+                                window.mhrOpenPdfPreview(btn.dataset.pdfUrl);
+                            }
+                        });
+                    }
+
+                    if (_filtered.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="'+FHD_COLS.length+'" style="padding:30px;text-align:center;color:#6b7280;">Sin resultados</td></tr>';
+                    } else {
+                        var frag = document.createDocumentFragment();
+                        _filtered.forEach(function(row, ri) {
+                            var tr = document.createElement('tr');
+                            tr.style.cssText = 'border-bottom:1px solid #e5e7eb;background:'+(ri%2===0?'#fff':'#f9fafb')+';';
+                            tr.addEventListener('mouseenter', function(){ this.style.background='#eff6ff'; });
+                            tr.addEventListener('mouseleave', function(){ this.style.background=(ri%2===0?'#fff':'#f9fafb'); });
+                            var cells = '';
+                            FHD_COLS.forEach(function(col) {
+                                cells += '<td style="padding:8px 12px;vertical-align:middle;border-right:1px solid #f3f4f6;">'+_fmt(col.key, row[col.key])+'</td>';
+                            });
+                            tr.innerHTML = cells;
+                            frag.appendChild(tr);
+                        });
+                        tbody.innerHTML = '';
+                        tbody.appendChild(frag);
+                    }
+
+                    var countEl = document.getElementById('fhd-count');
+                    if (countEl) countEl.textContent = _filtered.length + ' / ' + _allRows.length + ' registros';
+                }
+
+                // ── build headers ─────────────────────────────────────
+                function _buildHeader() {
+                    var thead = document.getElementById('fhd-thead');
+                    if (!thead) return;
+                    var html = '<tr>';
+                    FHD_COLS.forEach(function(col) {
+                        html += '<th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.3px;border-right:1px solid #2d5a8e;white-space:nowrap;user-select:none;">'+col.label+'</th>';
+                    });
+                    html += '</tr>';
+                    thead.innerHTML = html;
+                }
+
+                // ── build column filter dropdowns ─────────────────────
+                function _buildColFilters() {
+                    var container = document.getElementById('fhd-col-filters');
+                    if (!container) return;
+                    container.innerHTML = '';
+
+                    var FILTERABLE = ['tipo_reporte','evento','clase','especie','fase_vuelo','pista','zona','estado','responsable'];
+
+                    FILTERABLE.forEach(function(key) {
+                        var col = FHD_COLS.find(function(c){ return c.key === key; });
+                        if (!col) return;
+
+                        // Unique values
+                        var vals = [];
+                        var seen = {};
+                        _allRows.forEach(function(r) {
+                            var v = String(r[key] == null ? '' : r[key]);
+                            if (!seen[v]) { seen[v] = true; vals.push(v); }
+                        });
+                        if (vals.length <= 1) return; // no vale la pena filtrar
+
+                        vals.sort(function(a,b){ return a.localeCompare(b,'es'); });
+
+                        var sel = document.createElement('select');
+                        sel.style.cssText = 'padding:5px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;background:#fff;cursor:pointer;min-width:120px;max-width:170px;';
+                        sel.title = 'Filtrar por '+col.label;
+
+                        var defOpt = document.createElement('option');
+                        defOpt.value = '';
+                        defOpt.textContent = col.label+': todos';
+                        sel.appendChild(defOpt);
+
+                        vals.forEach(function(v) {
+                            var o = document.createElement('option');
+                            o.value = v;
+                            o.textContent = v === '' ? '(vacío)' : v;
+                            sel.appendChild(o);
+                        });
+
+                        sel.addEventListener('change', function() {
+                            if (this.value === '') {
+                                delete _colFilters[key];
+                            } else {
+                                _colFilters[key] = new Set([this.value]);
+                            }
+                            _renderTable();
+                        });
+
+                        container.appendChild(sel);
+                    });
+
+                    // Botón limpiar filtros columna
+                    if (container.children.length > 0) {
+                        var clearBtn = document.createElement('button');
+                        clearBtn.textContent = '✕ Limpiar filtros';
+                        clearBtn.style.cssText = 'padding:5px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;background:#fff;cursor:pointer;color:#6b7280;white-space:nowrap;';
+                        clearBtn.onclick = function() {
+                            _colFilters = {};
+                            container.querySelectorAll('select').forEach(function(s){ s.value=''; });
+                            _renderTable();
+                        };
+                        container.appendChild(clearBtn);
+                    }
+                }
+
+                // ── load data ─────────────────────────────────────────
+                window.loadFhData = async function() {
+                    var tbody = document.getElementById('fhd-tbody');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="'+FHD_COLS.length+'" style="padding:30px;text-align:center;color:#6b7280;"><span style="animation:spin 1s linear infinite;display:inline-block;font-size:20px;">⏳</span> Cargando…</td></tr>';
+                    var countEl = document.getElementById('fhd-count');
+                    if (countEl) countEl.textContent = '';
+
+                    var client = window.supabaseClient;
+                    if (!client) return;
+
+                    try {
+                        var keys = FHD_COLS.map(function(c){ return c.key; }).join(',');
+                        var res = await client.from('fauna_reports').select(keys).order('created_at', { ascending: false });
+                        if (res.error) throw res.error;
+                        _allRows = res.data || [];
+                        _colFilters = {};
+                        _buildHeader();
+                        _buildColFilters();
+                        _renderTable();
+                    } catch (e) {
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="'+FHD_COLS.length+'" style="padding:30px;text-align:center;color:#ef4444;">Error: '+_esc(e.message)+'</td></tr>';
+                    }
+                };
+
+                // ── search handler ────────────────────────────────────
+                window.fhdApplySearch = function() { _renderTable(); };
+
+                // ── tab switch ────────────────────────────────────────
+                window.fhSwitchTab = function(tab) {
+                    var panelH = document.getElementById('fh-panel-historial');
+                    var panelD = document.getElementById('fh-panel-datos');
+                    var btnH   = document.getElementById('fh-tab-historial');
+                    var btnD   = document.getElementById('fh-tab-datos');
+
+                    var activeStyle   = 'padding:10px 22px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid #2563eb;color:#2563eb;cursor:pointer;margin-bottom:-2px;';
+                    var inactiveStyle = 'padding:10px 22px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid transparent;color:#6b7280;cursor:pointer;margin-bottom:-2px;';
+
+                    if (tab === 'historial') {
+                        if (panelH) panelH.style.display = '';
+                        if (panelD) panelD.style.display = 'none';
+                        if (btnH) btnH.style.cssText = activeStyle;
+                        if (btnD) btnD.style.cssText = inactiveStyle;
+                    } else {
+                        if (panelH) panelH.style.display = 'none';
+                        if (panelD) panelD.style.display = '';
+                        if (btnH) btnH.style.cssText = inactiveStyle;
+                        if (btnD) btnD.style.cssText = activeStyle;
+                        // Cargar datos solo si la tabla está vacía
+                        if (_allRows.length === 0) window.loadFhData();
+                    }
+                };
+
+                // ── Excel export ──────────────────────────────────────
+                window.fhdExportExcel = function() {
+                    var rows = _filtered.length > 0 ? _filtered : _allRows;
+                    if (rows.length === 0) { alert('No hay datos para exportar.'); return; }
+
+                    // Construir CSV con BOM UTF-8 para que Excel abra bien acentos
+                    var BOM = '\uFEFF';
+                    var headers = FHD_COLS.map(function(c){ return '"'+c.label.replace(/"/g,'""')+'"'; }).join(',');
+                    var lines = [headers];
+                    rows.forEach(function(row) {
+                        var cells = FHD_COLS.map(function(col) {
+                            var v = row[col.key];
+                            if (v == null) v = '';
+                            if (col.key === 'created_at' && v) {
+                                try {
+                                    var d = new Date(v);
+                                    var p = function(n){ return String(n).padStart(2,'0'); };
+                                    v = p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());
+                                } catch(e){}
+                            }
+                            return '"'+String(v).replace(/"/g,'""')+'"';
+                        });
+                        lines.push(cells.join(','));
+                    });
+
+                    var csv = BOM + lines.join('\r\n');
+                    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    var url  = URL.createObjectURL(blob);
+                    var a    = document.createElement('a');
+                    var now  = new Date();
+                    var pad  = function(n){ return String(n).padStart(2,'0'); };
+                    a.href     = url;
+                    a.download = 'fauna_reports_'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                };
+
+            })(); // end Vista de Datos IIFE
   }
   return { init: init };
 })();

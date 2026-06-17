@@ -11,13 +11,17 @@
         padding: 16px;
     }
 
-    .report-header {
-        padding: 14px 20px;
-        gap: 14px;
+    .report-header img {
+        height: 90px;
     }
 
-    .report-header img {
-        height: 100px;
+    .report-header .left {
+        padding: 14px 18px;
+    }
+
+    .report-header .meta {
+        padding: 14px 16px 12px;
+        min-width: 200px;
     }
 
     #main-title {
@@ -38,11 +42,11 @@
     }
 
     .sidebar {
-        width: 220px;
+        width: 240px;
     }
 
     .main-content {
-        margin-left: 220px;
+        margin-left: 240px;
         padding: 20px;
     }
 }
@@ -66,16 +70,17 @@
     /* --- Header: apilar verticalmente --- */
     .report-header {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         text-align: center;
-        padding: 16px;
-        gap: 10px;
         border-radius: 0 0 14px 14px;
     }
 
     .report-header .left {
         justify-content: center;
         width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        padding: 16px;
     }
 
     .report-header img {
@@ -83,7 +88,9 @@
     }
 
     .report-header .header-center {
-        padding: 0;
+        padding: 14px 16px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
         width: 100%;
     }
 
@@ -262,16 +269,7 @@
         padding: 5px 10px;
     }
 
-    #user-info #user-email {
-        display: none;
-    }
-
-    /* --- Login modal: ajuste extra --- */
-    #login-box {
-        padding: 28px 20px;
-    }
-
-    /* --- Sidebar: horizontal + scrollable en móvil (ya definida, reforzamos) --- */
+    /* --- Sidebar: horizontal + scrollable en móvil --- */
     .sidebar {
         width: 100%;
         height: auto;
@@ -280,22 +278,35 @@
         border-bottom: 1px solid rgba(255,255,255,0.12);
     }
 
-    .sidebar-tabs {
+    .sidebar-nav {
         flex-direction: row;
         flex-wrap: nowrap;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        padding: 8px 0;
+        padding: 6px 0;
         scrollbar-width: none;
     }
 
-    .sidebar-tabs::-webkit-scrollbar {
-        display: none;
+    .sidebar-nav::-webkit-scrollbar { display: none; }
+
+    .sidebar-group {
+        flex-shrink: 0;
+    }
+
+    .sidebar-group-toggle {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .sidebar-group-body {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
     }
 
     .sidebar-tab {
-        padding: 10px 14px;
-        font-size: 13px;
+        padding: 8px 14px;
+        font-size: 12.5px;
         white-space: nowrap;
         flex: 0 0 auto;
         border-left: none;
@@ -304,16 +315,13 @@
 
     .sidebar-tab.active {
         border-left-color: transparent;
-        border-bottom-color: var(--blue-mid);
+        border-bottom-color: #3b82f6;
+        padding-left: 14px;
     }
 
-    .sidebar-brand {
-        display: none; /* ocultar logo-brand en móvil para ahorrar espacio */
-    }
-
-    .sidebar-footer {
-        display: none;
-    }
+    .sidebar-brand { display: none; }
+    .sidebar-footer { display: none; }
+    .sidebar-user-section { display: none !important; }
 
     .main-content {
         margin-left: 0;
@@ -322,7 +330,7 @@
 
     /* Ocultar el botón de menú flotante ya que la sidebar es estática en móvil */
     body.sidebar-hidden #menu-toggle-btn {
-        display: none;
+        display: none !important;
     }
 
     /* Asegurar que sidebar hidden no se aplique en móvil */

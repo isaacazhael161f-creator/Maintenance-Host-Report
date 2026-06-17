@@ -3,7 +3,7 @@
     async getCatalogoAerolineas(client){
       var resp = await client
         .from('catalogo_aerolineas')
-        .select('codigo_iata,nombre_aerolinea')
+        .select('codigo_iata,codigo_oaci,nombre_aerolinea,logo_url')
         .order('nombre_aerolinea', { ascending: true });
       return (!resp.error && Array.isArray(resp.data)) ? resp.data : [];
     },

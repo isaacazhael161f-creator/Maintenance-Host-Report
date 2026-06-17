@@ -91,15 +91,59 @@ window.MHRAuthSessionPage = (function () {
                     }
                 
                     role = String(role || 'viewer').toLowerCase();
+                    window.mhrCurrentRole = role;
                 
                     if (loginModal) loginModal.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'flex';
                     if (userEmailSpan) userEmailSpan.textContent = fullName || username;
                     if (userRoleSpan) userRoleSpan.textContent = role;
-                
+
+                    // Update sidebar avatar initial
+                    var avatarEl = document.getElementById('sidebar-user-initial');
+                    if (avatarEl) {
+                        var displayName = fullName || username || '';
+                        avatarEl.textContent = displayName.charAt(0).toUpperCase() || 'U';
+                    }
+
                     if (reportHeader) reportHeader.style.display = 'flex';
                     if (mainTitle) mainTitle.style.display = 'block';
                     document.body.classList.remove('loading-auth');
+
+                    // Auto-cargar todos los datos al iniciar sesión (estadísticas, historiales)
+                    if (typeof window.mhrAutoLoadData === 'function') window.mhrAutoLoadData();
+
+                    // Admin popup: show/hide on user section click
+                    var adminGroup = document.getElementById('sidebar-group-admin');
+                    var popup = document.getElementById('sidebar-admin-popup');
+                    var userInfoEl = document.getElementById('user-info');
+                    var isAdmin = ['admin', 'superuser', 'ingenieria'].includes(role);
+
+                    // Keep legacy sidebar-group-admin hidden (not used anymore)
+                    if (adminGroup) adminGroup.style.display = 'none';
+
+                    if (isAdmin && popup && userInfoEl) {
+                        userInfoEl.classList.add('admin-clickable');
+                        userInfoEl.addEventListener('click', function (e) {
+                            if (e.target.closest('#logout-btn')) return;
+                            var open = popup.style.display !== 'none';
+                            popup.style.display = open ? 'none' : 'block';
+                            userInfoEl.classList.toggle('admin-open', !open);
+                        });
+                        // Close popup when clicking outside
+                        document.addEventListener('click', function (e) {
+                            if (!userInfoEl.contains(e.target) && !popup.contains(e.target)) {
+                                popup.style.display = 'none';
+                                userInfoEl.classList.remove('admin-open');
+                            }
+                        });
+                        // Adjust popup bottom to match actual user section height
+                        setTimeout(function () {
+                            var rect = userInfoEl.getBoundingClientRect();
+                            popup.style.bottom = (window.innerHeight - rect.top) + 'px';
+                        }, 100);
+                    } else if (popup) {
+                        popup.style.display = 'none';
+                    }
                 
                     var allowedRoles = [
                         'admin',
@@ -115,11 +159,13 @@ window.MHRAuthSessionPage = (function () {
                         if (reportForm) reportForm.style.display = 'block';
                     } else {
                         if (reportForm) reportForm.style.display = 'none';
-                        alert('Tu usuario (' + role + ') no tiene permisos para llenar reportes.');
+                        if (role !== 'ingenieria') {
+                            alert('Tu usuario (' + role + ') no tiene permisos para llenar reportes.');
+                        }
                     }
                 
                     var adminPanel = document.getElementById('admin-panel');
-                    if (adminPanel && ['admin', 'superuser'].includes(role)) {
+                    if (adminPanel && ['admin', 'superuser', 'ingenieria'].includes(role)) {
                         adminPanel.style.display = 'block';
                         if (typeof loadAdminReports === 'function') {
                             loadAdminReports();
@@ -128,13 +174,9 @@ window.MHRAuthSessionPage = (function () {
                 }
                 
                 async function checkSession() {
-                    var savedUser = getCurrentUser();
-                
-                    if (savedUser) {
-                        handleUser(savedUser);
-                    } else {
-                        showLogin();
-                    }
+                    // Siempre pedir credenciales al cargar la página — no restaurar sesión automáticamente
+                    clearCurrentUser();
+                    showLogin();
                 }
 
                 function safeJsonParse(value) {
@@ -159,7 +201,22 @@ window.MHRAuthSessionPage = (function () {
 
                 async function loadRevisionResponsibleOptions() {
                     var select = document.getElementById('report-authors-select');
+                    var resetBtn = document.getElementById('report-authors-reset');
+                    var roleSelect = document.getElementById('report-role');
+                    var roleResetBtn = document.getElementById('report-role-reset');
                     if (!select || !supabase) return;
+
+                    // Get logged-in user data
+                    var currentUser = getCurrentUser();
+                    var currentUserId = currentUser && currentUser.id;
+                    var profile = null;
+                    if (currentUserId && window.MHRUserService && window.MHRUserService.getUserProfile) {
+                        try { profile = await window.MHRUserService.getUserProfile(supabase, currentUserId); } catch(_) {}
+                    }
+                    var currentFullName = (profile && profile.full_name) ||
+                        (currentUser && (currentUser.full_name || (currentUser.user_metadata && currentUser.user_metadata.full_name))) || '';
+                    var currentCargo = (profile && profile.cargo) || '';
+
                     try {
                         var usuarios = await window.MHRUserService.fetchAppUsuarios(supabase);
 
@@ -178,6 +235,11 @@ window.MHRAuthSessionPage = (function () {
                             return a.localeCompare(b, 'es', { sensitivity: 'base' });
                         });
 
+                        // Ensure current user's name is in the list
+                        if (currentFullName && usuariosFiltrados.indexOf(currentFullName) < 0) {
+                            usuariosFiltrados.unshift(currentFullName);
+                        }
+
                         select.innerHTML = '<option value="" disabled selected>-- Seleccionar Responsable --</option>';
                         usuariosFiltrados.forEach(function (nombre) {
                             var option = document.createElement('option');
@@ -185,6 +247,38 @@ window.MHRAuthSessionPage = (function () {
                             option.textContent = nombre;
                             select.appendChild(option);
                         });
+
+                        // Auto-select current user and lock
+                        if (currentFullName) {
+                            select.value = currentFullName;
+                            select.disabled = true;
+                            if (resetBtn) resetBtn.style.display = 'none';
+                        }
+
+                        // Auto-fill cargo and lock
+                        if (currentCargo && roleSelect) {
+                            // Try to match existing option
+                            var matched = false;
+                            for (var i = 0; i < roleSelect.options.length; i++) {
+                                if (roleSelect.options[i].text.trim().toLowerCase() === currentCargo.trim().toLowerCase() ||
+                                    roleSelect.options[i].value.trim().toLowerCase() === currentCargo.trim().toLowerCase()) {
+                                    roleSelect.selectedIndex = i;
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                            if (!matched) {
+                                // Add as custom option
+                                var opt = document.createElement('option');
+                                opt.value = currentCargo;
+                                opt.textContent = currentCargo;
+                                roleSelect.appendChild(opt);
+                                roleSelect.value = currentCargo;
+                            }
+                            roleSelect.disabled = true;
+                            if (roleResetBtn) roleResetBtn.style.display = 'none';
+                        }
+
                     } catch (e) {
                         console.error('No se pudo cargar responsables desde vw_app_usuarios:', e);
                     }
@@ -239,6 +333,37 @@ window.MHRAuthSessionPage = (function () {
                     });
                 }
 
+                if (emailInput) {
+                    emailInput.addEventListener('keydown', function (event) {
+                        if (event.key === 'Enter' && loginBtn && !loginBtn.disabled) {
+                            event.preventDefault();
+                            loginBtn.click();
+                        }
+                    });
+                }
+
+                // Native form submit — handles Enter key reliably on first load
+                var loginForm = document.getElementById('login-form');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', function (event) {
+                        event.preventDefault();
+                        if (loginBtn && !loginBtn.disabled) {
+                            loginBtn.click();
+                        }
+                    });
+                }
+
+                // Global Enter listener: fires whenever the login modal is visible,
+                // regardless of which element has focus (covers autofill cases).
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Enter') return;
+                    if (!loginModal || loginModal.style.display === 'none') return;
+                    if (loginBtn && !loginBtn.disabled) {
+                        event.preventDefault();
+                        loginBtn.click();
+                    }
+                });
+
                 if (loginBtn) {
                     loginBtn.addEventListener('click', async function () {
                 
@@ -253,14 +378,30 @@ window.MHRAuthSessionPage = (function () {
                         try {
                 
                             if (email && !email.includes('@')) {
-                                const normalized = email
-                                    .trim()
-                                    .toLowerCase()
-                                    .normalize("NFD")
-                                    .replace(/[\u0300-\u036f]/g, "")
-                                    .replace(/\s+/g, '.');
-                
-                                email = `${normalized}@aifa.operaciones`;
+                                // Look up the real auth email by username
+                                try {
+                                    var lookupRes = await supabase.rpc('get_email_by_username', { p_username: email });
+                                    if (!lookupRes.error && lookupRes.data) {
+                                        email = lookupRes.data;
+                                    } else {
+                                        // Fallback: derive from username
+                                        const normalized = email
+                                            .trim()
+                                            .toLowerCase()
+                                            .normalize("NFD")
+                                            .replace(/[\u0300-\u036f]/g, "")
+                                            .replace(/\s+/g, '.');
+                                        email = `${normalized}@aifa.operaciones`;
+                                    }
+                                } catch (_) {
+                                    const normalized = email
+                                        .trim()
+                                        .toLowerCase()
+                                        .normalize("NFD")
+                                        .replace(/[\u0300-\u036f]/g, "")
+                                        .replace(/\s+/g, '.');
+                                    email = `${normalized}@aifa.operaciones`;
+                                }
                             }
                 
                             var { data, error } = await supabase.auth.signInWithPassword({
@@ -284,14 +425,14 @@ window.MHRAuthSessionPage = (function () {
                             } catch (_) {}
                 
                             sessionStorage.setItem('user_role', role);
-                
-                            handleUser({
-                                ...data.user,
-                                user_metadata: {
-                                    ...(data.user.user_metadata || {}),
-                                    role: role
-                                }
+
+                            var userToSave = Object.assign({}, data.user, {
+                                role: role,
+                                user_metadata: Object.assign({}, data.user.user_metadata || {}, { role: role })
                             });
+                            saveCurrentUser(userToSave);
+
+                            handleUser(userToSave);
                             loadRevisionResponsibleOptions();
                 
                         } catch (error) {

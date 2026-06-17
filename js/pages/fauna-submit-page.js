@@ -61,11 +61,16 @@ window.MHRFaunaSubmitPage = (function () {
                             var parteAvion = faunaForm.querySelector('select[name="fauna_report_parte_avion"]')?.value || '';
                             var zona = faunaForm.querySelector('select[name="fauna_report_ubicacion"]')?.value || '';
 
+                            var horaEvento = faunaForm.querySelector('input[name="fauna_report_hora_evento"]')?.value || '';
+                            var condicionMeteo = faunaForm.querySelector('select[name="fauna_report_condicion_meteo"]')?.value || '';
+
                             var impactPayload = {
                                 folio: folio,
                                 fecha_reporte: new Date().toISOString().split('T')[0],
                                 evento: evento,
                                 fase_vuelo: faseVuelo,
+                                hora_evento: horaEvento || null,
+                                condicion_meteo: condicionMeteo || null,
                                 pista: pista,
                                 responsable: responsable,
                                 cargo: cargo,
@@ -366,6 +371,26 @@ window.MHRFaunaSubmitPage = (function () {
                                 'Reporte generado automáticamente • ' + new Date().toLocaleString('es-ES') +
                                 '</div>';
                             
+                            // ═════ FIRMAS ═════
+                            var _firmasFauna = window.obtenerFirmasFauna ? window.obtenerFirmasFauna() : {};
+                            var _imgAifa = _firmasFauna.aifa
+                                ? '<img src="' + _firmasFauna.aifa + '" style="max-width:200px;height:80px;display:block;margin:0 auto 8px;border:1px solid #e2e8f0;border-radius:4px;">'
+                                : '<div style="height:70px;"></div>';
+                            var _imgAfac = _firmasFauna.afac
+                                ? '<img src="' + _firmasFauna.afac + '" style="max-width:200px;height:80px;display:block;margin:0 auto 8px;border:1px solid #e2e8f0;border-radius:4px;">'
+                                : '<div style="height:70px;"></div>';
+                            impactoHtml += '<div style="margin-top:40px;padding-top:16px;border-top:2px solid #e6eef9;">' +
+                                '<table style="width:100%;"><tr>' +
+                                '<td style="text-align:center;width:50%;padding:0 16px;">' +
+                                    _imgAifa +
+                                    '<div style="border-top:1px solid #374151;padding-top:6px;font-size:11px;font-weight:700;">Firma - AIFA (Responsable)</div>' +
+                                '</td>' +
+                                '<td style="text-align:center;width:50%;padding:0 16px;">' +
+                                    _imgAfac +
+                                    '<div style="border-top:1px solid #374151;padding-top:6px;font-size:11px;font-weight:700;">Firma - AFAC (Supervisor)</div>' +
+                                '</td></tr></table>' +
+                            '</div>';
+                            
                             impactoHtml += '</div>';
                             impactoReportSummary.innerHTML = impactoHtml;
 
@@ -378,207 +403,149 @@ window.MHRFaunaSubmitPage = (function () {
                                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
                             };
 
-                            // Generar PDF - toPdf() retorna promesa
-                            html2pdf().set(opt).from(impactoReportSummary).toPdf().get('pdf').then(async function(pdf) {
+                            // Generar PDF usando el HTML como string (evita problema de elemento fuera del DOM)
+                            html2pdf().set(opt).from(impactoHtml, 'string').toPdf().get('pdf').then(async function(pdf) {
                                 
                                 try {
-                                    // ═══ Agregar páginas de mapas capturados ═══
-                                    var mapaPageCounter = 0;
-                                    var mapTypes = ['avistamiento', 'presencia', 'daino'];
-                                    
-                                    
-                                    // Recopilar todas las imágenes de mapas de los items de fauna
-                                    mapTypes.forEach(function(faunaType) {
-                                        var inp = document.querySelector('input[name="fauna_details[' + faunaType + '][lugar]"]');
-                                        
-                                        if (inp) {
-                                        }
-                                        
-                                        if (inp && inp.dataset.mapImage) {
-                                            try {
-                                                mapaPageCounter++;
-                                                pdf.addPage([297, 210], 'l'); // A4 apaisado (landscape)
-                                                
-                                                var mapImgData = inp.dataset.mapImage;
-                                                // Dibujar la imagen del mapa ocupando casi toda la página
-                                                pdf.addImage(mapImgData, 'JPEG', 8, 8, 281, 194);
-                                                
-                                                // Agregar número de página y título
-                                                pdf.setFontSize(10);
-                                                pdf.setTextColor(100, 100, 100);
-                                                pdf.text('Mapa - ' + (faunaType === 'avistamiento' ? 'Avistamiento de Aves' : 
-                                                                     faunaType === 'presencia' ? 'Presencia de Animales' : 
-                                                                     'Daño a Infraestructura'), 8, 206);
-                                                
-                                                var pdfPageCount = pdf.getNumberOfPages();
-                                                pdf.text('Página ' + pdfPageCount, 270, 206, { align: 'right' });
-                                                
-                                            } catch (mapPageErr) {
-                                                console.warn('Error agregando página de mapa para ' + faunaType + ':', mapPageErr);
-                                            }
-                                        }
-                                    });
-                                    
-                                    
-                                    // ═══ Agregar página final con links de Google Maps ═══
-                                    var linkCounter = 0;
-                                    var faunaTypeLabels = {
-                                        'avistamiento': 'Avistamiento de Aves',
-                                        'presencia': 'Presencia de Animales',
-                                        'daino': 'Daño a Infraestructura'
-                                    };
-                                    
-                                    var linksData = [];
-                                    mapTypes.forEach(function(faunaType) {
-                                        var inp = document.querySelector('input[name="fauna_details[' + faunaType + '][lugar]"]');
-                                        if (inp && inp.dataset.mapsUrl) {
-                                            linkCounter++;
-                                            linksData.push({
-                                                number: linkCounter,
-                                                type: faunaType,
-                                                label: faunaTypeLabels[faunaType],
-                                                coords: inp.value || 'Coordenadas no disponibles',
-                                                url: inp.dataset.mapsUrl
-                                            });
-                                        }
-                                    });
-                                    
-                                    if (linksData.length > 0) {
+                                    // ═══ Página de mapa con Leaflet (igual que pdf-renderer.js) ═══
+                                    var _impLat = impactPayload.ubicacion_lat;
+                                    var _impLng = impactPayload.ubicacion_lng;
+
+                                    if (_impLat && _impLng && typeof window.L !== 'undefined' && typeof window.html2canvas === 'function') {
+                                        var _mapWrap, _tempMap;
                                         try {
-                                            // Agregar nueva página
-                                            pdf.addPage();
-                                            
-                                            // Título
-                                            pdf.setFontSize(16);
-                                            pdf.setTextColor(0, 61, 153);
-                                            pdf.setFont(undefined, 'bold');
-                                            pdf.text('Ubicaciones de Hallazgos', 20, 25);
-                                            
-                                            // Línea separadora
-                                            pdf.setDrawColor(0, 61, 153);
-                                            pdf.setLineWidth(1);
-                                            pdf.line(20, 28, 190, 28);
-                                            
-                                            // Descripción
-                                            pdf.setFontSize(11);
-                                            pdf.setTextColor(100, 100, 100);
-                                            pdf.setFont(undefined, 'normal');
-                                            pdf.text('Haga clic en cada enlace para ver la ubicación exacta en Google Maps', 20, 37);
-                                            pdf.text('(vista satelital)', 20, 42);
-                                            
-                                            // Contenido de links
-                                            var yPosition = 55;                                            linksData.forEach(function(link, idx) {
-                                                // Circunferencia del número
-                                                pdf.setFillColor(220, 38, 38); // Rojo
-                                                pdf.circle(25, yPosition - 1, 2.5, 'F');
-                                                pdf.setTextColor(255, 255, 255);
-                                                pdf.setFont(undefined, 'bold');
-                                                pdf.setFontSize(9);
-                                                pdf.text(link.number.toString(), 25, yPosition + 0.5, { align: 'center' });
-                                                
-                                                // Título del hallazgo
-                                                pdf.setTextColor(0, 61, 153);
-                                                pdf.setFont(undefined, 'bold');  
-                                                pdf.setFontSize(11);
-                                                pdf.text(link.label, 35, yPosition);
-                                                
-                                                yPosition += 8;
-                                                
-                                                // Coordenadas
-                                                pdf.setTextColor(100, 100, 100);
-                                                pdf.setFont(undefined, 'normal');
-                                                pdf.setFontSize(10);
-                                                pdf.text('Coordenadas: ' + link.coords, 35, yPosition);
-                                                
-                                                yPosition += 8;
-                                                
-                                                // URL clickeable
-                                                pdf.setTextColor(0, 85, 165);
-                                                pdf.setFont(undefined, 'underline');
-                                                pdf.setFontSize(9);
-                                                pdf.textWithLink('🌐 Ver en Google Maps', 35, yPosition, {pageNumber: 0, x: 0, y: 0});
-                                                
-                                                // Agregar la URL como enlace de PDF
-                                                var urlText = link.url;
-                                                pdf.setTextColor(150, 150, 150);
-                                                pdf.setFont(undefined, 'italic');
-                                                pdf.setFontSize(8);
-                                                var urlWrapped = pdf.splitTextToSize(urlText, 150);
-                                                pdf.text(urlWrapped, 35, yPosition + 5);
-                                                
-                                                yPosition += 18;
+                                            var _mapsLink = 'https://maps.google.com/maps?q=' + _impLat + ',' + _impLng + '&t=k&z=17';
+
+                                            _mapWrap = document.createElement('div');
+                                            _mapWrap.style.cssText = 'position:fixed;top:0;left:-1400px;width:1122px;height:794px;background:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden;';
+
+                                            var _mapId = 'pdf-fauna-map-' + Date.now();
+                                            _mapWrap.innerHTML =
+                                                '<div style="padding:10px 20px 0 20px;">' +
+                                                '<span style="font-size:14px;font-weight:700;color:#0b66c3;">Ubicación del Impacto</span>' +
+                                                '<span style="font-size:10px;color:#6b7280;margin-left:14px;">' + _impLat + ', ' + _impLng + '</span>' +
+                                                '<div style="border-top:2px solid #0b66c3;margin-top:6px;"></div></div>' +
+                                                '<div id="' + _mapId + '" style="width:1122px;height:740px;"></div>';
+                                            document.body.appendChild(_mapWrap);
+
+                                            _tempMap = window.L.map(_mapId, {
+                                                zoomControl: false, attributionControl: false,
+                                                preferCanvas: true, fadeAnimation: false, zoomAnimation: false
                                             });
-                                            
-                                        } catch (linksErr) {
-                                            console.warn('Error agregando página de links:', linksErr);
+                                            window.L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                                                subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20, crossOrigin: true
+                                            }).addTo(_tempMap);
+
+                                            var _pinIcon = window.L.divIcon({
+                                                className: '',
+                                                html: '<div style="background:#dc2626;color:#fff;font-size:13px;font-weight:700;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.55);">1</div>',
+                                                iconSize: [30, 30], iconAnchor: [15, 30]
+                                            });
+                                            window.L.marker([_impLat, _impLng], { icon: _pinIcon }).addTo(_tempMap);
+                                            _tempMap.setView([_impLat, _impLng], 17);
+
+                                            await new Promise(function(resolve) {
+                                                var done = false;
+                                                function finish() { if (!done) { done = true; resolve(); } }
+                                                _tempMap.once('load', finish);
+                                                setTimeout(finish, 2500);
+                                            });
+                                            await new Promise(function(resolve) { setTimeout(resolve, 300); });
+
+                                            var _mc = await window.html2canvas(_mapWrap, {
+                                                scale: 1.5, useCORS: true, allowTaint: true, logging: false
+                                            });
+
+                                            pdf.addPage([297, 210], 'l');
+                                            pdf.addImage(_mc.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 297, 210);
+
+                                        } catch (mapErr) {
+                                            console.warn('Error generando página de mapa:', mapErr);
+                                        } finally {
+                                            if (_tempMap) { try { _tempMap.remove(); } catch(e) {} }
+                                            if (_mapWrap && _mapWrap.parentNode) document.body.removeChild(_mapWrap);
                                         }
+                                    }
+
+                                    // ═══ Página de link clickeable a Google Maps ═══
+                                    if (_impLat && _impLng) {
+                                        var _mapsUrl = 'https://maps.google.com/maps?q=' + _impLat + ',' + _impLng + '&t=k&z=17';
+                                        pdf.addPage();
+                                        pdf.setFontSize(16); pdf.setTextColor(0, 61, 153); pdf.setFont(undefined, 'bold');
+                                        pdf.text('Ubicacion del Impacto', 20, 25);
+                                        pdf.setDrawColor(0, 61, 153); pdf.setLineWidth(0.8); pdf.line(20, 28, 190, 28);
+
+                                        pdf.setFontSize(11); pdf.setTextColor(80, 80, 80); pdf.setFont(undefined, 'normal');
+                                        pdf.text('Coordenadas: ' + _impLat + ', ' + _impLng, 20, 40);
+
+                                        pdf.setFontSize(11); pdf.setTextColor(0, 85, 165); pdf.setFont(undefined, 'normal');
+                                        var linkText = 'Ver ubicacion en Google Maps (vista satelital)';
+                                        pdf.textWithLink(linkText, 20, 52, { url: _mapsUrl });
+                                        // Subrayado manual
+                                        var textW = pdf.getTextWidth(linkText);
+                                        pdf.setDrawColor(0, 85, 165); pdf.setLineWidth(0.3); pdf.line(20, 53.5, 20 + textW, 53.5);
+
+                                        pdf.setFontSize(8); pdf.setTextColor(130, 130, 130); pdf.setFont(undefined, 'italic');
+                                        var urlLines = pdf.splitTextToSize(_mapsUrl, 170);
+                                        pdf.text(urlLines, 20, 62);
                                     }
                                     
                                     // Obtener blob del PDF
                                     var pdfBlob = pdf.output('blob');
                                     
-                                    // Mostrar preview en iframe
+                                    // Mostrar preview en iframe (igual que pdf-renderer.js)
                                     var previewContainer = document.getElementById('pdf-preview-container');
-                                    var previewFrame = document.getElementById('pdf-preview-frame');
-                                    var spinner = document.getElementById('pdf-spinner');
-                                    
-                                    if (previewContainer && previewFrame) {
-                                        var blobUrl = URL.createObjectURL(pdfBlob);
-                                        previewFrame.src = blobUrl;
-                                        previewContainer.style.display = 'flex';
-                                        if (spinner) spinner.style.display = 'none';
-                                        
-                                        // Wire download button
-                                        var downloadBtn = document.getElementById('pdf-download-btn');
-                                        if (downloadBtn) {
-                                            downloadBtn.onclick = function() {
-                                                pdf.save(filename);
-                                            };
-                                        }
-                                        
-                                        // Wire close button
-                                        var closeBtn = document.getElementById('pdf-preview-close');
-                                        if (closeBtn) {
-                                            closeBtn.onclick = function() {
-                                                previewContainer.style.display = 'none';
-                                                URL.revokeObjectURL(blobUrl);
-                                            };
-                                        }
+                                    var previewFrame    = document.getElementById('pdf-preview-frame');
+                                    var backdrop        = document.getElementById('pdf-modal-backdrop');
+                                    var spinner         = document.getElementById('pdf-spinner');
+                                    var downloadBtn     = document.getElementById('pdf-download-btn');
+                                    var closeBtn        = document.getElementById('pdf-preview-close');
+
+                                    if (spinner) spinner.style.display = 'none';
+                                    submitBtn.disabled = false;
+                                    submitBtn.value = 'Generar reporte';
+
+                                    var blobUrl = URL.createObjectURL(pdfBlob);
+                                    if (previewFrame) previewFrame.src = blobUrl;
+                                    if (previewContainer) {
+                                        previewContainer.style.setProperty('display', 'flex', 'important');
+                                        previewContainer.setAttribute('aria-hidden', 'false');
+                                    }
+                                    if (backdrop) backdrop.style.setProperty('display', 'block', 'important');
+
+                                    if (downloadBtn) {
+                                        downloadBtn.onclick = function() {
+                                            var a = document.createElement('a');
+                                            a.href = blobUrl;
+                                            a.download = filename;
+                                            a.click();
+                                        };
+                                    }
+                                    if (closeBtn) {
+                                        closeBtn.onclick = function() {
+                                            if (previewContainer) previewContainer.style.setProperty('display', 'none', 'important');
+                                            if (backdrop) backdrop.style.setProperty('display', 'none', 'important');
+                                            if (previewFrame) previewFrame.src = '';
+                                        };
                                     }
                                     
-                                    // Upload PDF a bucket fauna-reports (si falla, continuar sin PDF)
-                                    var pdfPath = 'fauna/' + Date.now() + '-' + folio + '.pdf';
-                                    var { data: uploadData, error: uploadError } = await client.storage
-                                        .from('fauna-reports')
-                                        .upload(pdfPath, pdfBlob, { contentType: 'application/pdf' });
-                                    
+                                    // Upload PDF a bucket fauna_impact_pdfs
+                                    var pdfPath = 'impactos/' + Date.now() + '-' + folio + '.pdf';
                                     var pdfUrl = null;
-                                    if (uploadError) {
-                                        console.warn('⚠️ No se pudo subir PDF (continuará guardado en BD sin URL):', uploadError);
-                                        if ((uploadError.message || '').toLowerCase().indexOf('row-level security') !== -1) {
-                                            alert('⚠️ El PDF no se pudo subir por políticas RLS de Storage, pero el reporte SÍ se guardará en la base de datos sin PDF adjunto.');
+                                    try {
+                                        var { data: uploadData, error: uploadError } = await client.storage
+                                            .from('fauna_impact_pdfs')
+                                            .upload(pdfPath, pdfBlob, { contentType: 'application/pdf' });
+                                        if (uploadError) {
+                                            console.warn('⚠️ No se pudo subir PDF:', uploadError.message);
+                                        } else if (uploadData) {
+                                            var { data: pubData } = client.storage
+                                                .from('fauna_impact_pdfs')
+                                                .getPublicUrl(pdfPath);
+                                            pdfUrl = pubData && pubData.publicUrl ? pubData.publicUrl : null;
                                         }
-                                    } else {
-                                    }
-                                    
-                                    if (uploadData && !uploadError) {
-                                        try {
-                                            var { data: signedUrlData, error: signedUrlError } = await client.storage
-                                                .from('fauna-reports')
-                                                .createSignedUrl(pdfPath, 7 * 24 * 60 * 60);
-                                            
-                                            if (signedUrlError) {
-                                                console.warn('⚠️ Error generando Signed URL. Se guardará sin pdf_url:', signedUrlError);
-                                            } else if (signedUrlData && signedUrlData.signedUrl) {
-                                                pdfUrl = signedUrlData.signedUrl;
-                                            } else {
-                                                console.warn('⚠️ signedUrlData sin signedUrl. Se guardará sin pdf_url:', signedUrlData);
-                                            }
-                                        } catch (e) {
-                                            console.warn('⚠️ Excepción al generar URL. Se guardará sin pdf_url:', e);
-                                        }
-                                    } else {
-                                        console.warn('⚠️ Sin uploadData; continuando guardado en BD sin URL de PDF.');
+                                    } catch (upErr) {
+                                        console.warn('⚠️ Excepción subiendo PDF:', upErr);
                                     }
                                     
                                     // Actualizar payload con PDF URL
@@ -603,7 +570,7 @@ window.MHRFaunaSubmitPage = (function () {
                                     faunaForm.reset();
                                     
                                     // Recargar historial
-                                    setTimeout(loadFaunaReports, 500);
+                                    setTimeout(function() { loadFaunaReports({}); }, 500);
 
                                     submitBtn.disabled = false;
                                     submitBtn.value = 'Generar reporte';
@@ -699,8 +666,17 @@ window.MHRFaunaSubmitPage = (function () {
                             '<td style="' + _cLR + 'width:22%;"><span ' + _lbR + '>Especie</span><span ' + _vR + '>' + (especie || '-') + '</span></td>' +
                             '</tr></tbody></table>' +
                             '<hr style="border:none;border-top:1px solid #e6eef9;margin:12px 0">';
+                        // ═════ FIRMAS rescate ═════
+                        var _firmasR = window.obtenerFirmasFauna ? window.obtenerFirmasFauna() : {};
+                        var _rImgAifa = _firmasR.aifa
+                            ? '<img src="' + _firmasR.aifa + '" style="max-width:200px;height:80px;display:block;margin:0 auto 8px;border:1px solid #e2e8f0;border-radius:4px;">'
+                            : '<div style="height:70px;"></div>';
+                        var _rImgAfac = _firmasR.afac
+                            ? '<img src="' + _firmasR.afac + '" style="max-width:200px;height:80px;display:block;margin:0 auto 8px;border:1px solid #e2e8f0;border-radius:4px;">'
+                            : '<div style="height:70px;"></div>';
+
                         // Construir HTML del reporte con formato profesional
-                        reportSummary.innerHTML = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;">' +
+                        var _rescateHtml = '<div style="font-family:Arial,Helvetica,sans-serif;color:#0f1724;">' +
                             _rHdr +
                             
                             '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
@@ -724,16 +700,22 @@ window.MHRFaunaSubmitPage = (function () {
                             '<div style="padding:10px;border:1px solid #e6eef9;background:#fafbfc;font-size:12px;line-height:1.6;min-height:50px;white-space:pre-wrap">' + (observaciones || 'N/A') + '</div>' +
                             
                             '<div style="margin-top:60px;padding-top:20px;border-top:2px solid #e6eef9;">' +
-                                '<table style="width:100%;margin-top:40px;">' +
-                                    '<tr><td style="text-align:center;width:50%;"><div style="border-top:1px solid #1f2937;padding-top:40px;font-size:11px;"><strong>Firma - AIFA</strong><br>(Responsable)</div></td>' +
-                                        '<td style="text-align:center;width:50%;"><div style="border-top:1px solid #1f2937;padding-top:40px;font-size:11px;"><strong>Firma - AFAC</strong><br>(Supervisor)</div></td></tr>' +
-                                '</table>' +
+                                '<table style="width:100%;"><tr>' +
+                                '<td style="text-align:center;width:50%;padding:0 16px;">' +
+                                    _rImgAifa +
+                                    '<div style="border-top:1px solid #374151;padding-top:6px;font-size:11px;font-weight:700;">Firma - AIFA (Responsable)</div>' +
+                                '</td>' +
+                                '<td style="text-align:center;width:50%;padding:0 16px;">' +
+                                    _rImgAfac +
+                                    '<div style="border-top:1px solid #374151;padding-top:6px;font-size:11px;font-weight:700;">Firma - AFAC (Supervisor)</div>' +
+                                '</td></tr></table>' +
                             '</div>' +
                             
                             '<div style="text-align:center;color:#6b7280;font-size:10px;margin-top:20px;padding-top:12px;border-top:1px solid #e5e7eb;">' +
                                 'Reporte generado automáticamente • ' + new Date().toLocaleString('es-ES') +
                             '</div>' +
                         '</div>';
+                        reportSummary.innerHTML = _rescateHtml;
 
                         // Configurar html2pdf
                         var filename = 'Reporte-Fauna-' + folio + '.pdf';
@@ -745,41 +727,51 @@ window.MHRFaunaSubmitPage = (function () {
                             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
                         };
 
-                        // Generar PDF - toPdf() retorna promesa
-                        html2pdf().set(opt).from(reportSummary).toPdf().get('pdf').then(async function(pdf) {
+                        // Generar PDF usando el HTML como string (evita problema de display:none)
+                        html2pdf().set(opt).from(_rescateHtml, 'string').toPdf().get('pdf').then(async function(pdf) {
                             
                             try {
                                 // Obtener blob del PDF
                                 var pdfBlob = pdf.output('blob');
-                                
+                                var blobUrl = URL.createObjectURL(pdfBlob);
+
                                 // Mostrar preview en iframe
                                 var previewContainer = document.getElementById('pdf-preview-container');
                                 var previewFrame = document.getElementById('pdf-preview-frame');
                                 var spinner = document.getElementById('pdf-spinner');
-                                
-                                if (previewContainer && previewFrame) {
-                                    var blobUrl = URL.createObjectURL(pdfBlob);
-                                    previewFrame.src = blobUrl;
-                                    previewContainer.style.display = 'flex';
-                                    if (spinner) spinner.style.display = 'none';
-                                    
-                                    // Wire download button
+
+                                if (true) {
+                                    // Mostrar preview (igual que pdf-renderer.js)
+                                    var backdrop    = document.getElementById('pdf-modal-backdrop');
                                     var downloadBtn = document.getElementById('pdf-download-btn');
+                                    var closeBtn    = document.getElementById('pdf-preview-close');
+
+                                    if (spinner) spinner.style.display = 'none';
+                                    if (submitBtn) { submitBtn.disabled = false; submitBtn.value = 'Generar reporte'; }
+
+                                    if (previewFrame) previewFrame.src = blobUrl;
+                                    if (previewContainer) {
+                                        previewContainer.style.setProperty('display', 'flex', 'important');
+                                        previewContainer.setAttribute('aria-hidden', 'false');
+                                    }
+                                    if (backdrop) backdrop.style.setProperty('display', 'block', 'important');
+
                                     if (downloadBtn) {
                                         downloadBtn.onclick = function() {
-                                            pdf.save(filename);
+                                            var a = document.createElement('a');
+                                            a.href = blobUrl;
+                                            a.download = filename;
+                                            a.click();
                                         };
                                     }
-                                    
-                                    // Wire close button
-                                    var closeBtn = document.getElementById('pdf-preview-close');
                                     if (closeBtn) {
                                         closeBtn.onclick = function() {
-                                            previewContainer.style.display = 'none';
-                                            URL.revokeObjectURL(blobUrl);
+                                            if (previewContainer) previewContainer.style.setProperty('display', 'none', 'important');
+                                            if (backdrop) backdrop.style.setProperty('display', 'none', 'important');
+                                            if (previewFrame) previewFrame.src = '';
                                         };
                                     }
-                                }
+                                } // end preview block
                                 
                                 // Ahora guardar en Supabase
                                 var client = window.supabaseClient;
@@ -803,23 +795,23 @@ window.MHRFaunaSubmitPage = (function () {
                                 }
 
                                 
-                                // Upload PDF a storage
-                                var pdfPath = 'fauna/' + Date.now() + '-' + folio + '.pdf';
-                                var { data: uploadData, error: uploadError } = await client.storage
-                                    .from('fauna-reports')
-                                    .upload(pdfPath, pdfBlob, { contentType: 'application/pdf' });
-                                
-                                if (uploadError) {
-                                    console.warn('Warning subiendo PDF:', uploadError);
-                                    // Continuar sin URL
-                                }
-                                
+                                // Upload PDF a storage (bucket: fauna_impact_pdfs)
+                                var pdfPath = 'rescates/' + Date.now() + '-' + folio + '.pdf';
                                 var pdfUrl = null;
-                                if (uploadData && !uploadError) {
-                                    var { data: { publicUrl } } = client.storage
-                                        .from('fauna-reports')
-                                        .getPublicUrl(pdfPath);
-                                    pdfUrl = publicUrl;
+                                try {
+                                    var { data: uploadData, error: uploadError } = await client.storage
+                                        .from('fauna_impact_pdfs')
+                                        .upload(pdfPath, pdfBlob, { contentType: 'application/pdf' });
+                                    if (uploadError) {
+                                        console.warn('Warning subiendo PDF rescate:', uploadError.message);
+                                    } else if (uploadData) {
+                                        var { data: pubData } = client.storage
+                                            .from('fauna_impact_pdfs')
+                                            .getPublicUrl(pdfPath);
+                                        pdfUrl = pubData && pubData.publicUrl ? pubData.publicUrl : null;
+                                    }
+                                } catch (upErr) {
+                                    console.warn('⚠️ Excepción subiendo PDF rescate:', upErr);
                                 }
 
                                 // Guardar reporte de rescate
@@ -861,7 +853,7 @@ window.MHRFaunaSubmitPage = (function () {
                                 faunaForm.reset();
                                 
                                 // Recargar historial
-                                setTimeout(loadFaunaReports, 500);
+                                setTimeout(function() { loadFaunaReports({}); }, 500);
 
                                 if (submitBtn) {
                                     submitBtn.disabled = false;

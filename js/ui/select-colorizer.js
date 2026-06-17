@@ -1,32 +1,63 @@
 (function () {
-    var priorityMap = { '1': '#28a745', '2': '#ffc107', '3': '#dc3545' };
-    var condicionMap = { 'Satisfactorio': '#28a745', 'No Satisfactorio': '#dc3545', 'N/A': '#6c757d' };
+    var CONDICION_CLASSES = ['cond-ok', 'cond-bad', 'cond-na', 'cond-leve', 'cond-medio', 'cond-alto', 'cond-critico'];
+    var condicionClassMap = {
+        'Satisfactorio': 'cond-ok',
+        'No Satisfactorio': 'cond-bad',
+        'N/A': 'cond-na',
+        'Daño Menor': 'cond-leve',
+        'Daño Mayor': 'cond-medio',
+        'Daño Severo': 'cond-alto',
+        'Daño Catastrofico': 'cond-critico'
+    };
 
-    function applyColor(sel, map) {
+    function applyPriority(sel) {
         try {
-            var v = sel.value;
-            sel.style.backgroundColor = map[v] || '';
+            sel.classList.remove('prio-1', 'prio-2', 'prio-3');
+            var v = String(sel.value || '');
+            if (v === '1' || v === '2' || v === '3') {
+                sel.classList.add('prio-' + v);
+            }
+            sel.style.backgroundColor = '';
         } catch (e) { }
     }
 
-    function initPriority() {
-        var prios = document.querySelectorAll('select.priority-select');
-        prios.forEach(function (s) {
-            s.addEventListener('change', function () { applyColor(s, priorityMap); });
-            applyColor(s, priorityMap);
-        });
+    function applyCondicion(sel) {
+        try {
+            CONDICION_CLASSES.forEach(function (c) { sel.classList.remove(c); });
+            var cls = condicionClassMap[sel.value];
+            if (cls) sel.classList.add(cls);
+            sel.style.backgroundColor = '';
+        } catch (e) { }
     }
 
-    function initCondicion() {
-        var conds = document.querySelectorAll('select.condicion-select');
-        conds.forEach(function (s) {
-            s.addEventListener('change', function () { applyColor(s, condicionMap); });
-            applyColor(s, condicionMap);
-        });
+    function refreshAll(root) {
+        var scope = root && root.querySelectorAll ? root : document;
+        scope.querySelectorAll('select.priority-select').forEach(applyPriority);
+        scope.querySelectorAll('select.condicion-select').forEach(applyCondicion);
     }
+
+    document.addEventListener('change', function (e) {
+        var t = e.target;
+        if (!t || t.tagName !== 'SELECT') return;
+        if (t.classList.contains('priority-select')) applyPriority(t);
+        else if (t.classList.contains('condicion-select')) applyCondicion(t);
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
-        initPriority();
-        initCondicion();
+        refreshAll(document);
+        try {
+            var observer = new MutationObserver(function (mutations) {
+                for (var i = 0; i < mutations.length; i++) {
+                    var added = mutations[i].addedNodes;
+                    for (var j = 0; j < added.length; j++) {
+                        var n = added[j];
+                        if (n && n.nodeType === 1) refreshAll(n);
+                    }
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        } catch (e) { }
     });
+
+    window.MHRSelectColorizer = { refresh: refreshAll, applyPriority: applyPriority, applyCondicion: applyCondicion };
 })();

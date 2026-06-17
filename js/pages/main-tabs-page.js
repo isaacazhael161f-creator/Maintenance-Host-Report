@@ -30,6 +30,7 @@ window.MHRMainTabsPage = (function () {
               if (typeof cargarCatalogosFauna === 'function') cargarCatalogosFauna();
             } else if (targetTab === 'historial') {
               mainTitle.textContent = 'Historial de Reportes';
+              if (typeof window.loadAdminReports === 'function') window.loadAdminReports();
               if (typeof window.resetHistorialFilters === 'function') window.resetHistorialFilters();
             } else if (targetTab === 'estadistica') {
               mainTitle.textContent = 'Estadísticas';
@@ -58,6 +59,37 @@ window.MHRMainTabsPage = (function () {
       menuToggleBtn.addEventListener('click', function () {
         document.body.classList.remove('sidebar-hidden');
       });
+    }
+
+    // Collapse sidebar button (inside brand)
+    var collapseBtn = document.getElementById('sidebar-collapse-btn');
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', function () {
+        document.body.classList.add('sidebar-hidden');
+      });
+    }
+
+    // Collapsible sidebar groups (using open class → CSS max-height animation)
+    document.querySelectorAll('.sidebar-group-toggle').forEach(function (toggleBtn) {
+      toggleBtn.addEventListener('click', function () {
+        var group = this.closest('.sidebar-group');
+        if (group) {
+          group.classList.toggle('open');
+        }
+      });
+    });
+
+    // Update user avatar initial when user info is shown
+    var userEmailEl = document.getElementById('user-email');
+    if (userEmailEl) {
+      var avatarEl = document.getElementById('sidebar-user-initial');
+      var observer = new MutationObserver(function () {
+        if (avatarEl) {
+          var text = userEmailEl.textContent || '';
+          avatarEl.textContent = text.charAt(0).toUpperCase() || 'U';
+        }
+      });
+      observer.observe(userEmailEl, { childList: true, characterData: true, subtree: true });
     }
   }
 

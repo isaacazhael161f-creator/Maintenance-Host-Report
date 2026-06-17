@@ -23,9 +23,9 @@ window.MHRSupabaseOrchestratorPage = (function () {
 
     if (window.MHRMainTabsPage && typeof window.MHRMainTabsPage.init === 'function') {
       window.MHRMainTabsPage.init({
-        cargarCatalogosFauna: window.cargarCatalogosFauna,
-        loadFaunaStatistics: window.loadFaunaStatistics,
-        loadFaunaReports: window.loadFaunaReports,
+        cargarCatalogosFauna: function () { if (typeof window.cargarCatalogosFauna === 'function') window.cargarCatalogosFauna(); },
+        loadFaunaStatistics:  function () { if (typeof window.loadFaunaStatistics  === 'function') window.loadFaunaStatistics(); },
+        loadFaunaReports:     function (f) { if (typeof window.loadFaunaReports    === 'function') window.loadFaunaReports(f || {}); },
         loadEstadisticas: estadisticaSoApi ? estadisticaSoApi.loadEstadisticas : null
       });
     }
@@ -43,6 +43,17 @@ window.MHRSupabaseOrchestratorPage = (function () {
         resolvePdfUrl: resolvePdfUrl
       });
     }
+
+    // Función global para cargar todos los datos automáticamente tras el login
+    window.mhrAutoLoadData = function () {
+      // Pequeño delay para que Supabase client y módulos estén listos
+      setTimeout(function () {
+        try { if (typeof window.loadFaunaStatistics === 'function') window.loadFaunaStatistics(); } catch(e) {}
+        try { if (typeof window.loadFaunaReports === 'function') window.loadFaunaReports({}); } catch(e) {}
+        try { if (typeof window.loadAdminReports === 'function') window.loadAdminReports(); } catch(e) {}
+        try { if (estadisticaSoApi && typeof estadisticaSoApi.loadEstadisticas === 'function') estadisticaSoApi.loadEstadisticas(); } catch(e) {}
+      }, 800);
+    };
 
     document.addEventListener('DOMContentLoaded', function () {
       if (window.MHRFaunaInteractionsPage && typeof window.MHRFaunaInteractionsPage.init === 'function') {

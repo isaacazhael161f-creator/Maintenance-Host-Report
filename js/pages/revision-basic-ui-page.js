@@ -32,8 +32,8 @@
             } else {
               el.value = '';
               try {
-                if (el.classList && el.classList.contains('priority-select')) el.style.backgroundColor = '';
-                if (el.classList && el.classList.contains('condicion-select')) el.style.backgroundColor = '';
+                if (el.classList && el.classList.contains('priority-select')) { el.style.backgroundColor = ''; el.classList.remove('prio-1','prio-2','prio-3'); }
+                if (el.classList && el.classList.contains('condicion-select')) { el.style.backgroundColor = ''; el.classList.remove('cond-ok','cond-bad','cond-na','cond-leve','cond-medio','cond-alto','cond-critico'); }
               } catch (e) { }
             }
           });

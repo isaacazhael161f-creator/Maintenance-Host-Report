@@ -22,6 +22,15 @@
         .single();
       if (r.error) return null;
       return r.data && r.data.role ? r.data.role : null;
+    },
+    async getUserProfile(client, userId){
+      var r = await client
+        .from('profiles')
+        .select('full_name, username, cargo')
+        .eq('id', userId)
+        .maybeSingle();
+      if (r.error) return null;
+      return r.data || null;
     }
   };
 })();

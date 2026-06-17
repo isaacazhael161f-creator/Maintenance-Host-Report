@@ -168,6 +168,46 @@
             box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
         }
 
+        /* Selects deshabilitados: ocultar la flecha para que no parezca editable */
+        select:disabled {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: none;
+            cursor: default;
+            opacity: 1;
+            color: #0f172a;
+        }
+
+        /* Colores por prioridad (Baja=verde, Media=amarillo, Alta=rojo) */
+        select.priority-select.prio-1 { background-color: #28a745 !important; color: #fff !important; border-color: #1e7e34 !important; }
+        select.priority-select.prio-2 { background-color: #ffc107 !important; color: #1f2937 !important; border-color: #d39e00 !important; }
+        select.priority-select.prio-3 { background-color: #dc3545 !important; color: #fff !important; border-color: #b02a37 !important; }
+        select.priority-select.prio-1:focus,
+        select.priority-select.prio-2:focus,
+        select.priority-select.prio-3:focus {
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18);
+        }
+        select.priority-select option[value="1"] { background:#28a745; color:#fff; }
+        select.priority-select option[value="2"] { background:#ffc107; color:#1f2937; }
+        select.priority-select option[value="3"] { background:#dc3545; color:#fff; }
+
+        /* Colores por condición (Satisfactorio/No Satisfactorio y daños fauna) */
+        select.condicion-select.cond-ok { background-color: #28a745 !important; color: #fff !important; border-color: #1e7e34 !important; }
+        select.condicion-select.cond-bad { background-color: #dc3545 !important; color: #fff !important; border-color: #b02a37 !important; }
+        select.condicion-select.cond-na { background-color: #6c757d !important; color: #fff !important; border-color: #565e64 !important; }
+        select.condicion-select.cond-leve { background-color: #28a745 !important; color: #fff !important; border-color: #1e7e34 !important; }
+        select.condicion-select.cond-medio { background-color: #ffc107 !important; color: #1f2937 !important; border-color: #d39e00 !important; }
+        select.condicion-select.cond-alto { background-color: #ff8c00 !important; color: #fff !important; border-color: #d97706 !important; }
+        select.condicion-select.cond-critico { background-color: #dc3545 !important; color: #fff !important; border-color: #b02a37 !important; }
+        select.condicion-select option[value="Satisfactorio"] { background:#28a745; color:#fff; }
+        select.condicion-select option[value="No Satisfactorio"] { background:#dc3545; color:#fff; }
+        select.condicion-select option[value="N/A"] { background:#6c757d; color:#fff; }
+        select.condicion-select option[value="Daño Menor"] { background:#28a745; color:#fff; }
+        select.condicion-select option[value="Daño Mayor"] { background:#ffc107; color:#1f2937; }
+        select.condicion-select option[value="Daño Severo"] { background:#ff8c00; color:#fff; }
+        select.condicion-select option[value="Daño Catastrofico"] { background:#dc3545; color:#fff; }
+
         /* Filtros multi-select: oculto hasta ser activado */
         .filter-multi {
             position: relative;
@@ -596,6 +636,9 @@
             border-radius: 12px !important;
             overflow: hidden !important;
         }
+        #pdf-preview-container.pdf-visible {
+            display: flex !important;
+        }
         
         /* Backdrop para el modal */
         #pdf-modal-backdrop {
@@ -607,6 +650,9 @@
             background: rgba(0, 0, 0, 0.5) !important;
             z-index: 9999 !important;
             display: none !important;
+        }
+        #pdf-modal-backdrop.pdf-visible {
+            display: block !important;
         }
 
         #pdf-preview-actions {
@@ -645,6 +691,18 @@
             font-weight: 600;
             font-size: 13px;
         }
+
+        #pdf-open-tab-btn {
+            background: #f1f5fb;
+            color: var(--blue);
+            border: 1px solid #c8d8ee;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        #pdf-open-tab-btn:hover { background: #e6eef9; }
 
         /* ===== SPINNER ===== */
         #pdf-spinner {

@@ -1,0 +1,2646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — MHR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --au-bg:       #f4f6f9;
+      --au-white:    #ffffff;
+      --au-border:   #e2e8f0;
+      --au-text:     #1e293b;
+      --au-muted:    #64748b;
+      --au-primary:  #2563eb;
+      --au-radius:   10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      background: var(--au-bg);
+      color: var(--au-text);
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      margin: 0;
+    }
+    /* ── Top bar ── */
+    .au-topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--au-border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 32px;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .au-topbar-brand {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--au-text);
+      letter-spacing: .5px;
+    }
+    .au-topbar-sub {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--au-primary);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+    /* ── Nav Tabs ── */
+    .au-tabs .nav-link {
+      color: var(--au-muted);
+      border-color: transparent;
+      padding: 10px 18px;
+      font-weight: 500;
+      font-size: 13.5px;
+    }
+    .au-tabs .nav-link.active {
+      color: var(--au-primary);
+      background: #fff;
+      border-color: var(--au-border) var(--au-border) #fff;
+      font-weight: 600;
+    }
+    .au-tabs .nav-link:hover:not(.active) { color: var(--au-text); }
+    .tab-content {
+      background: #fff;
+      border: 1px solid var(--au-border);
+      border-top: none;
+      border-radius: 0 0 var(--au-radius) var(--au-radius);
+    }
+    /* ── Stat Cards ── */
+    .au-stat {
+      background: #fff;
+      border: 1px solid var(--au-border);
+      border-radius: var(--au-radius);
+      padding: 20px 16px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .au-stat .n { font-size: 32px; font-weight: 800; line-height: 1; }
+    .au-stat .l { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--au-muted); margin-top: 6px; }
+    /* ── Avatar ── */
+    .au-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    /* ── User Card ── */
+    .au-user-card .card {
+      background: #fff !important;
+      border: 1px solid var(--au-border) !important;
+      border-radius: 8px !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .au-user-card .card:hover {
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+    }
+    /* ── Inline Panel ── */
+    .au-inline-panel {
+      background: #f8fafc;
+      border: 1px solid var(--au-border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    /* ── Filter pills ── */
+    .au-filter-btn {
+      background: #fff;
+      border: 1px solid var(--au-border);
+      color: var(--au-muted);
+      border-radius: 20px;
+      padding: 5px 16px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .au-filter-btn.active {
+      background: var(--au-primary);
+      border-color: var(--au-primary);
+      color: #fff;
+      font-weight: 600;
+    }
+    .au-filter-btn:hover:not(.active) {
+      border-color: #94a3b8;
+      color: var(--au-text);
+    }
+    /* ── Role Select ── */
+    .au-role-sel {
+      font-size: 12px !important;
+      max-width: 140px;
+    }
+    /* ── Create box ── */
+    .au-create-box {
+      background: #f8fafc;
+      border: 1px solid var(--au-border);
+      border-radius: var(--au-radius);
+      padding: 20px;
+    }
+    /* ── Page Header ── */
+    .au-page-hdr {
+      border-bottom: 1px solid var(--au-border);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+    /* ── Org Tree ── */
+    .au-org-node  { position: relative; }
+    .au-org-children { margin-top: 3px; }
+    .au-org-tree-wrap { padding: 4px 0; }
+    .au-org-node-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .au-org-node-hdr:hover { background: #f1f5f9 !important; }
+    .opacity-60 { opacity: .6; }
+    /* ── Toast ── */
+    @keyframes auToastIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    /* ── Collapse chevron ── */
+    .au-coll-btn::after {
+      content: '\f107';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      margin-left: 8px;
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+    .au-coll-btn[aria-expanded="true"]::after { transform: rotate(180deg); }
+    /* ── Access denied ── */
+    #au-access-denied {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: var(--au-bg);
+    }
+    /* ── Badge xs ── */
+    .badge-xs { font-size: 10px !important; padding: 2px 7px !important; }
+    /* ── Group sections ── */
+    .au-group-section { margin-bottom: 28px; }
+    .au-group-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .au-group-body {
+      border-left: 3px solid var(--group-color, #94a3b8);
+      padding-left: 12px;
+      margin-left: 6px;
+    }
+    /* ── Action buttons in user card ── */
+    .au-action-btn {
+      width: 32px; height: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 7px;
+      border: 1px solid var(--au-border);
+      background: #fff;
+      color: var(--au-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .au-action-btn:hover { background: #f1f5f9; color: var(--au-text); border-color: #94a3b8; }
+    .au-action-btn.danger { color: #ef4444; } 
+    .au-action-btn.danger:hover { background: #fef2f2; border-color: #fca5a5; }
+    .au-action-btn.warn:hover { background: #fffbeb; border-color: #fcd34d; color: #d97706; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     ACCESS DENIED
+═══════════════════════════════════════════════════ -->
+<div id="au-access-denied" style="display:none">
+  <div class="text-center p-5">
+    <i class="fa fa-lock fa-3x text-danger mb-4 d-block"></i>
+    <h5 class="fw-bold mb-2" style="color:#1e293b">Acceso Restringido</h5>
+    <p class="text-muted">Este panel requiere rol de <code>admin</code>.</p>
+    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="history.back()">
+      <i class="fa fa-arrow-left me-2"></i>Volver
+    </button>
+  </div>
+</div>
+
+<div id="au-main" style="display:none">
+  <!-- Top Bar -->
+  <div class="au-topbar">
+    <div style="display:flex;flex-direction:column;line-height:1">
+      <span class="au-topbar-brand">MHR</span>
+      <span class="au-topbar-sub">Admin Panel</span>
+    </div>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <span class="badge bg-danger" style="font-size:11px">ADMIN</span>
+      <button class="btn btn-sm btn-light border" onclick="adminUsersLoad()" title="Actualizar">
+        <i class="fa fa-rotate-right fa-sm"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="container-fluid py-4 px-4" style="max-width:1300px">
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs au-tabs" id="au-tabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
+          <i class="fa fa-users me-2"></i>Usuarios
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-org" id="au-org-tab" type="button">
+          <i class="fa fa-sitemap me-2"></i>Organigrama
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-db" id="au-db-tab" type="button" onclick="auDbLoad()">
+          <i class="fa fa-database me-2"></i>Base de Datos
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mail" id="au-mail-tab" type="button" onclick="auMailLoad()">
+          <i class="fa fa-envelope me-2"></i>Destinatarios de correo
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content p-4" id="au-tab-content">
+
+      <!-- ═══════════════════════
+           TAB 1 — USUARIOS
+      ═══════════════════════ -->
+      <div class="tab-pane fade show active" id="tab-users">
+
+        <!-- Header -->
+        <div class="au-page-hdr d-flex align-items-center flex-wrap gap-3">
+          <div>
+            <h5 class="fw-bold mb-0" style="color:var(--au-text);font-size:16px">
+              <i class="fa fa-users me-2 text-primary"></i>Usuarios
+            </h5>
+            <span id="au-status" class="small text-muted">–</span>
+          </div>
+          <div class="ms-auto d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" onclick="adminUsersLoad()">
+              <i class="fa fa-rotate-right me-1"></i>Actualizar
+            </button>
+            <button class="btn btn-sm btn-primary au-coll-btn"
+              type="button" data-bs-toggle="collapse" data-bs-target="#au-create-collapse" aria-expanded="false">
+              <i class="fa fa-user-plus me-1"></i>Nuevo usuario
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+          <div class="col-4">
+            <div class="au-stat">
+              <div class="n" style="color:#1e293b" id="au-stat-total">–</div>
+              <div class="l">Total</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="au-stat">
+              <div class="n text-success" id="au-stat-activos">–</div>
+              <div class="l">Activos</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="au-stat">
+              <div class="n text-danger" id="au-stat-bajas">–</div>
+              <div class="l">Baja</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create User Form (collapse) -->
+        <div class="collapse mb-4" id="au-create-collapse">
+          <div class="au-create-box">
+            <h6 class="fw-bold mb-3" style="color:var(--au-text)">
+              <i class="fa fa-user-plus me-2 text-primary"></i>Nuevo Usuario
+            </h6>
+            <form id="au-reg-form" onsubmit="event.preventDefault()">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nombre Completo</label>
+                  <input type="text" id="au-reg-fullname" class="form-control form-control-sm" placeholder="Nombre Apellido" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">
+                    Usuario / ID <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" id="au-reg-username" class="form-control form-control-sm" placeholder="usuario o correo" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">
+                    Contraseña <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group input-group-sm">
+                    <input type="password" id="au-reg-password" class="form-control" placeholder="••••••••" required />
+                    <button type="button" class="btn btn-outline-secondary" onclick="auRegTogglePwd()" title="Mostrar/ocultar contraseña">
+                      <i class="fa fa-eye" id="au-reg-pwd-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="auRegGenPassword()" title="Generar contraseña aleatoria">
+                      <i class="fa fa-shuffle"></i>
+                    </button>
+                  </div>
+                  <div id="au-reg-pwd-preview" style="display:none;margin-top:5px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-family:monospace;font-size:12px;color:#166534;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <span id="au-reg-pwd-text"></span>
+                    <button type="button" class="btn btn-link p-0" style="font-size:11px;color:#16a34a;text-decoration:none" onclick="auRegCopyPassword()" title="Copiar"><i class="fa fa-copy"></i> Copiar</button>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Correo Electrónico</label>
+                  <input type="email" id="au-reg-email" class="form-control form-control-sm" placeholder="correo@ejemplo.com" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Cargo</label>
+                  <input type="text" id="au-reg-cargo" class="form-control form-control-sm" placeholder="Ej. Inspector, Supervisor…" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">
+                    Rol <span class="text-danger">*</span>
+                  </label>
+                  <select id="au-reg-role" class="form-select form-select-sm" required>
+                    <option value="">-- Seleccionar --</option>
+                    <option value="admin">admin</option>
+                    <option value="editor">editor</option>
+                    <option value="viewer">viewer</option>
+                    <option value="colab_viewer">colab_viewer</option>
+                    <option value="colab_editor">colab_editor</option>
+                    <option value="control_fauna">control_fauna</option>
+                    <option value="servicio_medico">servicio_medico</option>
+                    <option value="ingenieria">ingenieria</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Dirección</label>
+                  <select id="au-reg-dir" class="form-select form-select-sm" onchange="auRegCascadeDir()">
+                    <option value="">-- Ninguna --</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Subdirección</label>
+                  <select id="au-reg-subdir" class="form-select form-select-sm" onchange="auRegCascadeSubdir()">
+                    <option value="">-- Ninguna --</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Gerencia</label>
+                  <select id="au-reg-gerencia" class="form-select form-select-sm">
+                    <option value="">-- Ninguna --</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Acceso a Vistas -->
+              <div class="mt-3">
+                <div class="small fw-semibold text-muted mb-2">Acceso a vistas</div>
+                <div class="d-flex gap-4 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="au-reg-access"
+                      id="au-reg-access-full" value="full" checked onchange="auRegAccessTypeChange()">
+                    <label class="form-check-label small" for="au-reg-access-full">Acceso completo</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="au-reg-access"
+                      id="au-reg-access-manual" value="manual" onchange="auRegAccessTypeChange()">
+                    <label class="form-check-label small" for="au-reg-access-manual">Seleccionar vistas</label>
+                  </div>
+                </div>
+                <div id="au-reg-views-section" style="display:none; background:rgba(0,0,0,0.25); border-radius:8px; padding:14px">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <div class="mt-3 d-flex align-items-center gap-3">
+                <button id="au-reg-btn" type="button" class="btn btn-primary btn-sm" onclick="auCreateUser()">
+                  <i class="fa fa-user-plus me-1"></i>Crear Usuario
+                </button>
+                <span id="au-reg-msg" class="small" style="display:none"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Filters + Search -->
+        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+          <div class="d-flex gap-2">
+            <button class="au-filter-btn active" id="au-filter-all"    onclick="auFilterSet('all')">Todos</button>
+            <button class="au-filter-btn"         id="au-filter-activo" onclick="auFilterSet('activo')">Activos</button>
+            <button class="au-filter-btn"         id="au-filter-baja"   onclick="auFilterSet('baja')">Baja</button>
+          </div>
+          <div style="max-width:300px; flex:1">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text" style="background:var(--au-surface2);border-color:var(--au-border)">
+                <i class="fa fa-search text-muted"></i>
+              </span>
+              <input type="search" id="au-search" class="form-control"
+                placeholder="Buscar nombre, email, usuario…" oninput="auSearchHandler()" />
+            </div>
+          </div>
+        </div>
+
+        <!-- User List -->
+        <div id="au-tbody"></div>
+
+      </div><!-- /tab-users -->
+
+
+      <!-- ═══════════════════════
+           TAB 2 — ORGANIGRAMA
+      ═══════════════════════ -->
+      <div class="tab-pane fade" id="tab-org">
+
+        <!-- Header -->
+        <div class="au-page-hdr d-flex align-items-center flex-wrap gap-3">
+          <div>
+            <h5 class="fw-bold mb-0" style="color:var(--au-text);font-size:16px">
+              <i class="fa fa-sitemap me-2 text-primary"></i>Organigrama
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Estructura jerárquica organizacional</p>
+          </div>
+          <div class="ms-auto">
+            <button class="btn btn-sm btn-outline-info au-coll-btn"
+              type="button" data-bs-toggle="collapse" data-bs-target="#au-org-create-collapse" aria-expanded="false">
+              <i class="fa fa-plus me-1"></i>Agregar Área
+            </button>
+          </div>
+        </div>
+
+        <!-- Create Area Form -->
+        <div class="collapse mb-4" id="au-org-create-collapse">
+          <div class="au-create-box">
+            <h6 class="fw-bold mb-3" style="color:var(--au-text)">
+              <i class="fa fa-plus me-2 text-primary"></i>Nueva Área
+            </h6>
+            <form id="au-org-form" onsubmit="event.preventDefault()">
+              <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">
+                    Clave <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" id="au-org-clave" class="form-control form-control-sm"
+                    placeholder="CLAVE" maxlength="12" oninput="this.value=this.value.toUpperCase()" required />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">
+                    Nombre <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" id="au-org-nombre" class="form-control form-control-sm" placeholder="Nombre del área" required />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Pertenece a</label>
+                  <select id="au-org-parent" class="form-select form-select-sm">
+                    <option value="">-- Sin padre (raíz) --</option>
+                  </select>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label small fw-semibold text-muted mb-1">Color</label>
+                  <input type="color" id="au-org-color" class="form-control form-control-sm form-control-color w-100" value="#0EA5E9" />
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label small fw-semibold text-muted mb-1">Orden</label>
+                  <input type="number" id="au-org-orden" class="form-control form-control-sm" value="999" min="1" />
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                  <button id="au-org-btn-save" type="button"
+                    class="btn btn-info btn-sm text-dark fw-bold w-100" onclick="orgSaveArea()">
+                    <i class="fa fa-save"></i>
+                  </button>
+                </div>
+              </div>
+              <div id="au-org-msg" class="mt-2 small" style="display:none"></div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Org Stats -->
+        <div id="au-org-stats" class="mb-3"></div>
+
+        <!-- Tree -->
+        <div id="au-org-tree" class="p-2">
+          <div class="text-center text-muted py-5">
+            <i class="fa fa-spinner fa-spin fa-2x mb-3 d-block"></i>
+            Cargando organigrama…
+          </div>
+        </div>
+
+      </div><!-- /tab-org -->
+
+      <!-- ═══════════════════════════════════════════
+           TAB 3 — BASE DE DATOS (Aerolíneas)
+      ═══════════════════════════════════════════ -->
+      <div class="tab-pane fade" id="tab-db">
+
+        <div class="au-page-hdr d-flex align-items-center flex-wrap gap-3">
+          <div>
+            <h2 class="fw-bold mb-0" style="font-size:1.25rem;"><i class="fa fa-database me-2 text-primary"></i>Base de Datos</h2>
+            <p class="text-muted mb-0" style="font-size:12px;">Gestión del catálogo de aerolíneas</p>
+          </div>
+          <button class="btn btn-primary btn-sm ms-auto" onclick="auDbNewRow()">
+            <i class="fa fa-plus me-1"></i>Nueva aerolínea
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="auDbLoad()">
+            <i class="fa fa-rotate-right me-1"></i>Actualizar
+          </button>
+        </div>
+
+        <!-- Buscador -->
+        <div class="mt-3" style="max-width:360px;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted"></i></span>
+            <input type="search" id="au-db-search" class="form-control border-start-0" placeholder="Buscar por IATA o nombre…" oninput="auDbFilter(this.value)" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Tabla aerolíneas -->
+        <div class="card border-0 shadow-sm mt-2">
+          <div class="card-body p-0">
+            <div style="overflow-x:auto;">
+              <table class="table table-hover mb-0" style="font-size:13px;">
+                <thead style="background:#f8fafc;">
+                  <tr>
+                    <th style="padding:12px 16px;border-bottom:2px solid #e2e8f0;">Logo</th>
+                    <th style="padding:12px 16px;border-bottom:2px solid #e2e8f0;">Código IATA</th>
+                    <th style="padding:12px 16px;border-bottom:2px solid #e2e8f0;">Código OACI</th>
+                    <th style="padding:12px 16px;border-bottom:2px solid #e2e8f0;">Nombre Aerolínea</th>
+                    <th style="padding:12px 16px;border-bottom:2px solid #e2e8f0;">URL del Logo</th>
+                    <th style="padding:12px 16px;border-bottom:2px solid #e2e8f0;text-align:center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="au-db-tbody">
+                  <tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8;">Cargando…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit row (inline panel) -->
+        <div id="au-db-edit-panel" style="display:none;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin-top:16px;box-shadow:0 2px 8px rgba(0,0,0,.07);">
+          <h6 class="fw-bold mb-3"><i class="fa fa-pen me-2 text-warning"></i><span id="au-db-edit-title">Nueva aerolínea</span></h6>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold text-muted mb-1">Código IATA <span class="text-danger">*</span></label>
+              <input type="text" id="au-db-iata" class="form-control form-control-sm" maxlength="10" placeholder="Ej: AM, 6N" oninput="auDbPreviewLogo()" />
+            </div>
+            <div class="col-md-2">
+              <label class="form-label small fw-semibold text-muted mb-1">Código OACI</label>
+              <input type="text" id="au-db-oaci" class="form-control form-control-sm" maxlength="4" placeholder="Ej: AMX" oninput="this.value=this.value.toUpperCase()" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-muted mb-1">Nombre Aerolínea <span class="text-danger">*</span></label>
+              <input type="text" id="au-db-nombre" class="form-control form-control-sm" placeholder="Ej: Aeroméxico" />
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold text-muted mb-1">Logo</label>
+              <div class="d-flex align-items-start gap-3 flex-wrap">
+                <!-- Zona drag & drop -->
+                <div id="au-db-drop-zone"
+                     onclick="document.getElementById('au-db-logo-file').click()"
+                     ondragover="auDbDragOver(event)"
+                     ondragleave="auDbDragLeave(event)"
+                     ondrop="auDbOnDrop(event)"
+                     style="width:96px;height:96px;border:2px dashed #cbd5e1;border-radius:12px;background:#f8fafc;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,background .15s;overflow:hidden;flex-shrink:0;">
+                  <div id="au-db-logo-preview" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                    <div style="text-align:center;color:#94a3b8;font-size:11px;line-height:1.5;pointer-events:none;">
+                      <i class="fa fa-image" style="font-size:22px;display:block;margin-bottom:4px;"></i>Arrastra o<br>haz clic
+                    </div>
+                  </div>
+                </div>
+                <input type="file" id="au-db-logo-file" accept="image/*" style="display:none" onchange="auDbOnFileSelect(this)" />
+                <!-- URL manual -->
+                <div style="flex:1;min-width:200px;">
+                  <label class="form-label small fw-semibold text-muted mb-1">O pega una URL directa</label>
+                  <input type="url" id="au-db-logo" class="form-control form-control-sm" placeholder="https://…/logo.png" oninput="auDbPreviewLogo()" />
+                  <div class="small text-muted mt-1">PNG o SVG con fondo transparente, mín 70×70 px.</div>
+                  <div id="au-db-file-name" style="font-size:11px;color:#2563eb;font-style:italic;margin-top:2px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="au-db-msg" class="mt-3 small" style="display:none;"></div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-primary btn-sm" onclick="auDbSave()">
+              <i class="fa fa-save me-1"></i>Guardar
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="auDbCancelEdit()">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /tab-db -->
+
+      <!-- ═══════════════════════
+           TAB 4 — DESTINATARIOS DE CORREO
+      ═══════════════════════ -->
+      <div class="tab-pane fade" id="tab-mail">
+        <div class="au-page-hdr d-flex align-items-center flex-wrap gap-3">
+          <div>
+            <h5 class="fw-bold mb-0" style="color:var(--au-text);font-size:16px">
+              <i class="fa fa-envelope me-2 text-primary"></i>Destinatarios de correo
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-2" style="font-size:10px;font-weight:600;">
+                <i class="fa fa-lock me-1"></i>Solo administradores
+              </span>
+            </h5>
+            <span class="small text-muted">Personas a las que se enviará automáticamente cada reporte de inspección al guardarse.</span>
+          </div>
+          <div class="ms-auto d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" onclick="auMailLoad()">
+              <i class="fa fa-rotate-right me-1"></i>Actualizar
+            </button>
+            <button class="btn btn-sm btn-primary" type="button" onclick="auMailShowForm()">
+              <i class="fa fa-plus me-1"></i>Agregar destinatario
+            </button>
+          </div>
+        </div>
+
+        <!-- Formulario crear / editar -->
+        <div id="au-mail-form-card" class="card mt-3" style="display:none;background:var(--au-surface);border-color:var(--au-border);">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3" id="au-mail-form-title">Nuevo destinatario</h6>
+            <input type="hidden" id="au-mail-id">
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label small fw-semibold text-muted mb-1">Correo <span class="text-danger">*</span></label>
+                <input type="email" id="au-mail-email" class="form-control form-control-sm" placeholder="persona@aifanlu.com.mx" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold text-muted mb-1">Nombre</label>
+                <input type="text" id="au-mail-nombre" class="form-control form-control-sm" placeholder="Ej. Juan Pérez">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Rol</label>
+                <select id="au-mail-rol" class="form-select form-select-sm">
+                  <option value="">— Sin rol —</option>
+                  <option value="jefe">Jefe</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="auditor">Auditor</option>
+                  <option value="ingenieria">Ingeniería</option>
+                  <option value="operaciones">Operaciones</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold text-muted mb-1">Notas</label>
+                <input type="text" id="au-mail-notas" class="form-control form-control-sm" placeholder="Opcional">
+              </div>
+              <div class="col-12 d-flex align-items-center gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="au-mail-activo" checked>
+                  <label class="form-check-label small" for="au-mail-activo">Activo (recibe correos)</label>
+                </div>
+                <div class="ms-auto d-flex gap-2">
+                  <button class="btn btn-sm btn-secondary" onclick="auMailHideForm()">Cancelar</button>
+                  <button class="btn btn-sm btn-primary" onclick="auMailSave()">
+                    <i class="fa fa-save me-1"></i>Guardar
+                  </button>
+                </div>
+              </div>
+              <div class="col-12">
+                <div id="au-mail-form-msg" class="small"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista -->
+        <div class="mt-3">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" style="background:var(--au-surface);">
+              <thead style="background:#f1f5f9;">
+                <tr>
+                  <th style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#475569;">Correo</th>
+                  <th style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#475569;">Nombre</th>
+                  <th style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#475569;">Rol</th>
+                  <th style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#475569;">Notas</th>
+                  <th style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#475569;width:90px;">Estado</th>
+                  <th style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#475569;width:130px;text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="au-mail-tbody">
+                <tr><td colspan="6" class="text-center text-muted py-3 small">Cargando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Test -->
+        <div class="card mt-3" style="background:var(--au-surface);border-color:var(--au-border);">
+          <div class="card-body">
+            <h6 class="fw-bold mb-2"><i class="fa fa-paper-plane me-2 text-primary"></i>Probar envío</h6>
+            <p class="small text-muted mb-2">Manda un correo de prueba con un reporte existente para validar la configuración de Resend.</p>
+            <div class="d-flex gap-2 flex-wrap align-items-end">
+              <div>
+                <label class="form-label small fw-semibold text-muted mb-1">Folio o ID del reporte</label>
+                <input type="text" id="au-mail-test-rid" class="form-control form-control-sm" style="min-width:280px;" placeholder="UUID o folio (20260617-143052)">
+              </div>
+              <button class="btn btn-sm btn-outline-primary" onclick="auMailSendTest()">
+                <i class="fa fa-paper-plane me-1"></i>Enviar prueba
+              </button>
+              <div id="au-mail-test-msg" class="small"></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /tab-mail -->
+
+    </div><!-- /tab-content -->
+  </div><!-- /container -->
+</div><!-- /au-main -->
+
+
+<!-- ═══════════════════════════════════════════════════
+     EDIT AREA MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="au-org-edit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--au-surface);border-color:var(--au-border)">
+      <div class="modal-header" style="border-color:var(--au-border)">
+        <h6 class="modal-title fw-bold">
+          <i class="fa fa-pen me-2 text-warning"></i>Editar Área
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Clave <span class="text-danger">*</span></label>
+            <input type="text" id="au-oe-clave" class="form-control form-control-sm"
+              maxlength="12" oninput="this.value=this.value.toUpperCase()" />
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small fw-semibold text-muted mb-1">Nombre <span class="text-danger">*</span></label>
+            <input type="text" id="au-oe-nombre" class="form-control form-control-sm" />
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small fw-semibold text-muted mb-1">Pertenece a</label>
+            <select id="au-oe-parent" class="form-select form-select-sm">
+              <option value="">-- Sin padre (raíz) --</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Color</label>
+            <input type="color" id="au-oe-color" class="form-control form-control-sm form-control-color w-100" value="#0EA5E9" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold text-muted mb-1">Orden</label>
+            <input type="number" id="au-oe-orden" class="form-control form-control-sm" value="999" />
+          </div>
+        </div>
+        <div id="au-oe-msg" class="mt-3 small" style="display:none"></div>
+      </div>
+      <div class="modal-footer" style="border-color:var(--au-border)">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button id="au-oe-btn" type="button" class="btn btn-warning btn-sm fw-bold text-dark" onclick="orgEditSave()">
+          <i class="fa fa-save me-1"></i>Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Toast Container -->
+<div id="au-toast-container"
+  style="position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;align-items:flex-end">
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     EDIT USER MODAL
+═══════════════════════════════════════════════════ -->
+<div class="modal fade" id="au-user-edit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--au-white);border-color:var(--au-border)">
+      <div class="modal-header" style="border-color:var(--au-border)">
+        <h6 class="modal-title fw-bold">
+          <i class="fa fa-user-pen me-2 text-primary"></i>Editar datos del usuario
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="au-ue-userid" />
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label small fw-semibold mb-1" style="color:#92400e">
+              <i class="fa fa-key me-1" style="color:#d97706"></i>Usuario de acceso (solo lectura)
+            </label>
+            <input type="text" id="au-ue-login-display" class="form-control form-control-sm"
+              style="background:#fefce8;border-color:#fde68a;color:#1e293b;font-family:monospace;font-weight:600"
+              readonly />
+            <div class="small text-muted mt-1">Este es el correo que el usuario debe escribir para iniciar sesión.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">Nombre Completo</label>
+            <input type="text" id="au-ue-fullname" class="form-control form-control-sm" placeholder="Nombre Apellido" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">Nombre de Usuario</label>
+            <input type="text" id="au-ue-username" class="form-control form-control-sm" placeholder="usuario" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">Correo Electrónico</label>
+            <input type="email" id="au-ue-email" class="form-control form-control-sm" placeholder="correo@ejemplo.com" autocomplete="off" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">Puesto</label>
+            <input type="text" id="au-ue-cargo" class="form-control form-control-sm" placeholder="Ej. Inspector, Supervisor…" />
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">
+              Nueva Contraseña
+              <span class="fw-normal text-muted">(dejar vacío para no cambiar)</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <input type="password" id="au-ue-password" class="form-control" placeholder="Nueva contraseña (opcional)" autocomplete="new-password" />
+              <button type="button" class="btn btn-outline-secondary" onclick="auUETogglePwd()" title="Mostrar/ocultar">
+                <i class="fa fa-eye" id="au-ue-pwd-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="au-ue-msg" class="mt-3 small" style="display:none"></div>
+      </div>
+      <div class="modal-footer" style="border-color:var(--au-border)">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button id="au-ue-btn" type="button" class="btn btn-primary btn-sm fw-bold" onclick="auUserEditSave()">
+          <i class="fa fa-save me-1"></i>Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ════════════════════════════════════════════════
+  // CONFIG  ← Editar antes de usar
+  // ════════════════════════════════════════════════
+  var SUPABASE_URL     = 'https://fgstncvuuhpgyzmjceyr.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnc3RuY3Z1dWhwZ3l6bWpjZXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4NzQ0NDQsImV4cCI6MjA4MTQ1MDQ0NH0.YEDIKuWt5iKUEI0BAvidINUz0aZBvQM0h6XRJ-uslB8';
+  var EMAIL_DOMAIN     = 'aifa.operaciones';
+
+  // ════════════════════════════════════════════════
+  // CATALOG DE SECCIONES
+  // ════════════════════════════════════════════════
+  var AU_SECTIONS = {
+    'Seguridad Operacional': [
+      { key: 'revision',    label: 'Formato de Revisión del Área de Movimiento' },
+      { key: 'historial',   label: 'Historial Seguridad Operacional' },
+      { key: 'estadistica', label: 'Estadística Seguridad Operacional' }
+    ],
+    'Control de Fauna': [
+      { key: 'fauna',             label: 'Formato Informes Control de Fauna' },
+      { key: 'historial-fauna',   label: 'Historial Control de Fauna' },
+      { key: 'estadistica-fauna', label: 'Estadística Control de Fauna' }
+    ],
+    'Administración': [
+      { key: 'admin-usuarios', label: 'Administración de Usuarios' }
+    ]
+  };
+
+  // ════════════════════════════════════════════════
+  // CONSTANTES
+  // ════════════════════════════════════════════════
+  var ROLE_COLORS = {
+    admin: 'danger', editor: 'warning', viewer: 'secondary',
+    colab_viewer: 'info', colab_editor: 'primary',
+    control_fauna: 'success', servicio_medico: 'success'
+  };
+  var VALID_ROLES = ['admin','editor','viewer','colab_viewer','colab_editor','control_fauna','servicio_medico'];
+
+  // ════════════════════════════════════════════════
+  // ESTADO
+  // ════════════════════════════════════════════════
+  var _sb           = null;
+  var _auUsers      = [];
+  var _auAreas      = [];   // for selects (no color_hex needed)
+  var _auOrgAreas   = [];   // for org tree (with color_hex)
+  var _auFilter     = 'all';
+  var _auSearch     = '';
+  var _auOpenShort  = null;
+  var _auOpenType   = null;
+  var _auEditAreaId = null;
+  var _auEditUserId = null;
+
+  // ════════════════════════════════════════════════
+  // INIT
+  // ════════════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', function () {
+    _sb = window.supabaseClient ||
+          (window.supabase && window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+    window.supabaseClient = _sb; // expose for auDb* functions outside IIFE
+
+    // Resolve role from all available sources
+    var role = '';
+
+    // 1. sessionStorage.user_role (same-tab login)
+    role = sessionStorage.getItem('user_role') || '';
+
+    // 2. localStorage mhr_current_user (cross-tab — set by main app on login)
+    if (!role || role === 'authenticated') {
+      try {
+        var raw = localStorage.getItem('mhr_current_user');
+        if (raw) {
+          var stored = JSON.parse(raw);
+          var r = stored.role ||
+                  (stored.user_metadata && stored.user_metadata.role) ||
+                  '';
+          if (r && r !== 'authenticated') role = r;
+        }
+      } catch (_) {}
+    }
+
+    // 3. window.currentUser (same-page context)
+    if (!role || role === 'authenticated') {
+      try {
+        var cu = window.currentUser;
+        if (cu) {
+          var r2 = cu.role || (cu.user_metadata && cu.user_metadata.role) || '';
+          if (r2 && r2 !== 'authenticated') role = r2;
+        }
+      } catch (_) {}
+    }
+
+    // 4. Supabase localStorage session (sb-*-auth-token key)
+    if (!role || role === 'authenticated') {
+      try {
+        for (var k = 0; k < localStorage.length; k++) {
+          var key = localStorage.key(k);
+          if (key && key.indexOf('auth-token') >= 0) {
+            var tokenRaw = localStorage.getItem(key);
+            if (tokenRaw) {
+              var tokenData = JSON.parse(tokenRaw);
+              var appMeta  = tokenData && tokenData.user && tokenData.user.app_metadata;
+              var userMeta = tokenData && tokenData.user && tokenData.user.user_metadata;
+              var r3 = (appMeta  && appMeta.role)  ||
+                       (userMeta && userMeta.role)  || '';
+              if (r3 && r3 !== 'authenticated') { role = r3; break; }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    role = String(role || '').toLowerCase().trim();
+    console.log('[AdminPanel] role resolved:', role);
+    var main   = document.getElementById('au-main');
+    var denied = document.getElementById('au-access-denied');
+
+    if (role === 'admin' || role === 'superuser') {
+      if (main)   main.style.display   = '';
+      if (denied) denied.style.display = 'none';
+      _buildRegSections();
+      adminUsersLoad();
+    } else {
+      if (main)   main.style.display   = 'none';
+      if (denied) denied.style.display = '';
+    }
+
+    // Load org on first tab show
+    var orgBtn = document.getElementById('au-org-tab');
+    if (orgBtn) {
+      orgBtn.addEventListener('shown.bs.tab', function () {
+        if (_auOrgAreas.length === 0) orgLoad();
+      });
+    }
+  });
+
+  // Build section checkboxes for create form
+  function _buildRegSections() {
+    var container = document.getElementById('au-reg-views-section');
+    if (!container) return;
+    container.innerHTML = Object.entries(AU_SECTIONS).map(function (entry) {
+      var group = entry[0], items = entry[1];
+      return '<div class="mb-3">' +
+        '<div class="text-muted fw-semibold mb-1" style="font-size:11px">' + group + '</div>' +
+        items.map(function (s) {
+          return '<div class="form-check form-check-inline">' +
+            '<input class="form-check-input" type="checkbox" id="au-reg-sec-' + s.key + '" value="' + s.key + '">' +
+            '<label class="form-check-label" style="font-size:12px" for="au-reg-sec-' + s.key + '">' + s.label + '</label>' +
+            '</div>';
+        }).join('') + '</div>';
+    }).join('');
+  }
+
+  // ════════════════════════════════════════════════
+  // LOAD USERS
+  // ════════════════════════════════════════════════
+  window.adminUsersLoad = async function () {
+    _setStatus('Cargando…', 'text-warning');
+    try {
+      // Fetch view (basic info) + user_roles permissions + profiles (cargo) in parallel
+      var [ur, pr, ar, pfr] = await Promise.all([
+        _sb.from('v_usuarios_roles').select('*'),
+        _sb.from('user_roles').select('user_id, permissions'),
+        _sb.from('areas')
+          .select('id, clave, nombre, nivel, parent_area_id')
+          .eq('estado', 'ACTIVO')
+          .order('nivel').order('orden_visualizacion'),
+        _sb.from('profiles').select('id, full_name, username, cargo')
+      ]);
+
+      if (ur.error) throw ur.error;
+      _auUsers = ur.data || [];
+
+      // Merge permissions into each user
+      if (!pr.error && pr.data) {
+        var permMap = {};
+        pr.data.forEach(function (r) { permMap[r.user_id] = r.permissions; });
+        _auUsers.forEach(function (u) {
+          if (permMap[u.user_id] !== undefined) {
+            u.permissions = permMap[u.user_id];
+          }
+        });
+      }
+
+      // Merge profile data (full_name, username, cargo) — profiles is authoritative
+      if (!pfr.error && pfr.data) {
+        var profileMap = {};
+        pfr.data.forEach(function (p) { profileMap[p.id] = p; });
+        _auUsers.forEach(function (u) {
+          var prof = profileMap[u.user_id];
+          if (prof) {
+            if (prof.full_name) u.full_name = prof.full_name;
+            if (prof.username)  u.username  = prof.username;
+            u.cargo = prof.cargo || u.cargo || null;
+          }
+        });
+      }
+
+      if (!ar.error) _auAreas = ar.data || [];
+
+      // Sort: online first → last login desc
+      _auUsers.sort(function (a, b) {
+        if (a.is_online && !b.is_online) return -1;
+        if (!a.is_online && b.is_online) return 1;
+        var da = a.last_sign_in_at ? new Date(a.last_sign_in_at) : new Date(0);
+        var db = b.last_sign_in_at ? new Date(b.last_sign_in_at) : new Date(0);
+        return db - da;
+      });
+
+      _renderStats();
+      _renderList();
+      _populateDirSel('au-reg-dir');
+      _setStatus(_auUsers.length + ' usuarios', 'text-success');
+    } catch (e) {
+      console.error(e);
+      _setStatus('Error: ' + e.message, 'text-danger');
+      showToast('Error cargando usuarios: ' + e.message, 'danger');
+    }
+  };
+
+  function _setStatus(txt, cls) {
+    var el = document.getElementById('au-status');
+    if (el) { el.textContent = txt; el.className = 'small ' + (cls || 'text-muted'); }
+  }
+
+  function _renderStats() {
+    var total   = _auUsers.length;
+    var activos = _auUsers.filter(function (u) { return _perm(u.permissions).estado !== 'INACTIVO'; }).length;
+    var bajas   = total - activos;
+    _setText('au-stat-total',   total);
+    _setText('au-stat-activos', activos);
+    _setText('au-stat-bajas',   bajas);
+  }
+
+  window.auFilterSet = function (type) {
+    _auFilter = type;
+    document.querySelectorAll('.au-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+    var btn = document.getElementById('au-filter-' + type);
+    if (btn) btn.classList.add('active');
+    _renderList();
+  };
+
+  window.auSearchHandler = function () {
+    var el = document.getElementById('au-search');
+    _auSearch = el ? el.value.toLowerCase() : '';
+    _renderList();
+  };
+
+  function _getAreaGroupKey(u) {
+    var perm = _perm(u.permissions);
+    // Most specific area ID available
+    var id = perm.gerencia_id || perm.subdireccion_id || perm.direccion_id;
+    if (!id) return '__sin_area__';
+    return id;
+  }
+
+  function _getAreaGroupLabel(id) {
+    if (id === '__sin_area__') return null; // handled separately
+    var a = _auAreas.find(function (x) { return x.id === id; });
+    if (!a) return { clave: '?', nombre: 'Área desconocida', nivel: 0, color: '#64748b' };
+    // Build breadcrumb: walk up the tree
+    var parts = [];
+    var cur = a;
+    while (cur) {
+      parts.unshift(cur.nombre);
+      cur = cur.parent_area_id ? _auAreas.find(function (x) { return x.id === cur.parent_area_id; }) : null;
+    }
+    return {
+      clave:  a.clave,
+      nombre: parts.join(' › '),
+      nivel:  a.nivel,
+      color:  a.color_hex || '#3b82f6'
+    };
+  }
+
+  function _renderList() {
+    var tbody = document.getElementById('au-tbody');
+    if (!tbody) return;
+
+    var users = _auUsers.slice();
+
+    if (_auFilter === 'activo') {
+      users = users.filter(function (u) { return _perm(u.permissions).estado !== 'INACTIVO'; });
+    } else if (_auFilter === 'baja') {
+      users = users.filter(function (u) { return _perm(u.permissions).estado === 'INACTIVO'; });
+    }
+
+    if (_auSearch) {
+      users = users.filter(function (u) {
+        return (u.full_name  || '').toLowerCase().includes(_auSearch) ||
+               (u.email      || '').toLowerCase().includes(_auSearch) ||
+               (u.username   || '').toLowerCase().includes(_auSearch);
+      });
+    }
+
+    if (users.length === 0) {
+      tbody.innerHTML = '<div class="text-center text-muted py-5"><i class="fa fa-users fa-2x mb-3 d-block opacity-25"></i>Sin usuarios</div>';
+      return;
+    }
+
+    // Group by area
+    var groups = {};
+    var groupOrder = [];
+    users.forEach(function (u) {
+      var key = _getAreaGroupKey(u);
+      if (!groups[key]) {
+        groups[key] = [];
+        groupOrder.push(key);
+      }
+      groups[key].push(u);
+    });
+
+    // Sort groups: GSO first, then named areas (by nivel then nombre), sin área last
+    groupOrder.sort(function (a, b) {
+      if (a === '__sin_area__') return 1;
+      if (b === '__sin_area__') return -1;
+      var aa = _auAreas.find(function (x) { return x.id === a; });
+      var ab = _auAreas.find(function (x) { return x.id === b; });
+      var aIsGSO = aa && aa.clave === 'GSO';
+      var bIsGSO = ab && ab.clave === 'GSO';
+      if (aIsGSO && !bIsGSO) return -1;
+      if (bIsGSO && !aIsGSO) return 1;
+      var na = aa ? aa.nivel : 99, nb = ab ? ab.nivel : 99;
+      if (na !== nb) return na - nb;
+      return (aa ? aa.nombre : '').localeCompare(ab ? ab.nombre : '', 'es');
+    });
+
+    var html = groupOrder.map(function (key) {
+      var groupUsers = groups[key];
+      var info = key === '__sin_area__'
+        ? { clave: '–', nombre: 'Sin área asignada', nivel: 0, color: '#64748b' }
+        : _getAreaGroupLabel(key);
+
+      var levelTag = info.nivel > 0
+        ? '<span style="font-size:9px;font-weight:700;opacity:.55;margin-left:6px">N' + info.nivel + '</span>'
+        : '';
+      var countBadge = '<span style="font-size:11px;color:#64748b;margin-left:4px">' + groupUsers.length + ' usuario' + (groupUsers.length !== 1 ? 's' : '') + '</span>';
+
+      return (
+        '<div class="au-group-section">' +
+          '<div class="au-group-header" style="--group-color:' + info.color + '">' +
+            '<span style="display:inline-block;width:4px;height:18px;border-radius:2px;background:' + info.color + ';flex-shrink:0"></span>' +
+            '<span class="badge rounded-pill" style="background:' + info.color + '1a;color:' + info.color + ';border:1px solid ' + info.color + '44;font-size:10px;font-weight:700;letter-spacing:.5px">' +
+              _esc(info.clave) +
+            '</span>' +
+            '<span style="font-size:13px;font-weight:700;color:#1e293b">' + _esc(info.nombre) + '</span>' +
+            levelTag +
+            countBadge +
+          '</div>' +
+          '<div class="au-group-body" style="border-left:3px solid ' + info.color + '44">' +
+            groupUsers.map(_userCard).join('') +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    tbody.innerHTML = html;
+  }
+
+  function _userCard(u) {
+    var sid      = u.user_id.substring(0, 8);
+    var perm     = _perm(u.permissions);
+    var isOnline = !!u.is_online;
+    var isBaja   = perm.estado === 'INACTIVO';
+    var ini      = _initials(u.full_name || u.username || u.email);
+    var avColor  = _avatarColor(u.full_name || u.username || u.email || '');
+    var role     = u.role || 'viewer';
+    var rColor   = ROLE_COLORS[role] || 'secondary';
+    var lastLog  = u.last_sign_in_at
+      ? new Date(u.last_sign_in_at).toLocaleString('es-MX', { day:'2-digit', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : 'Nunca';
+
+    var areaLabel = _resolveAreaLabel(perm);
+
+    // Build inline area panel options
+    var dirOpts    = _buildDirOpts(perm.direccion_id);
+    var subdirOpts = perm.direccion_id
+      ? _buildSubdirOpts(perm.direccion_id, perm.subdireccion_id)
+      : '<option value="">-- Ninguna --</option>';
+    var gerOpts    = perm.subdireccion_id
+      ? _buildGerOpts(perm.subdireccion_id, perm.gerencia_id)
+      : '<option value="">-- Ninguna --</option>';
+
+    // Build views checkboxes
+    var viewsChecked = perm.allowed_sections || [];
+    var viewsHtml = Object.entries(AU_SECTIONS).map(function (entry) {
+      var group = entry[0], items = entry[1];
+      return '<div class="mb-2">' +
+        '<div class="text-muted fw-semibold mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px">' + group + '</div>' +
+        items.map(function (s) {
+          var chk = viewsChecked.indexOf(s.key) >= 0 ? ' checked' : '';
+          return '<div class="form-check form-check-inline">' +
+            '<input class="form-check-input" type="checkbox" id="av-' + sid + '-' + s.key + '" value="' + s.key + '"' + chk + '>' +
+            '<label class="form-check-label" style="font-size:11px" for="av-' + sid + '-' + s.key + '">' + s.label + '</label>' +
+            '</div>';
+        }).join('') + '</div>';
+    }).join('');
+
+    var uid = u.user_id;
+
+    return (
+      '<div class="au-user-card mb-2" id="au-row-' + sid + '">' +
+      '<div class="card">' +
+      '<div class="card-body py-2 px-3">' +
+      '<div class="d-flex align-items-center gap-3">' +
+
+      // Avatar
+      '<div class="au-avatar" style="background:' + avColor + ';font-size:12px">' + _esc(ini) + '</div>' +
+
+      // Info
+      '<div style="flex:1;min-width:0">' +
+        '<div class="d-flex align-items-center gap-2 flex-wrap">' +
+          '<span class="fw-semibold" style="color:#1e293b;font-size:13.5px">' + _esc(u.full_name || u.username || u.email) + '</span>' +
+          (isOnline ? '<span class="badge bg-success badge-xs"><i class="fa fa-circle me-1" style="font-size:6px"></i>En línea</span>' : '') +
+          (isBaja   ? '<span class="badge bg-danger badge-xs">BAJA</span>' : '') +
+          '<span class="badge bg-' + rColor + ' badge-xs">' + role + '</span>' +
+          (u.cargo ? '<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:9px;font-weight:600"><i class="fa fa-id-badge me-1" style="font-size:7px"></i>' + _esc(u.cargo) + '</span>' : '') +
+          (areaLabel ? '<span class="badge" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-size:9px;font-weight:600">' +
+            '<i class="fa fa-building me-1" style="font-size:7px"></i>' + _esc(areaLabel) + '</span>' : '') +
+        '</div>' +
+        '<div class="text-muted mt-1" style="font-size:11px">' +
+          '<i class="fa fa-envelope me-1"></i>' + _esc(u.email || '') +
+          '<span class="ms-3"><i class="fa fa-clock me-1"></i>' + lastLog + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      // Actions
+      '<div class="d-flex align-items-center gap-1">' +
+        '<select id="au-sel-' + sid + '" class="form-select form-select-sm au-role-sel"' +
+          ' style="width:130px" data-prev-role="' + role + '"' +
+          ' onchange="auChangeRole(\'' + uid + '\',this)">' +
+          VALID_ROLES.map(function (r) {
+            return '<option value="' + r + '"' + (r === role ? ' selected' : '') + '>' + r + '</option>';
+          }).join('') +
+        '</select>' +
+        '<button class="au-action-btn" title="Área" onclick="auTogglePanel(\'' + sid + '\',\'area\')"><i class="fa fa-building"></i></button>' +
+        '<button class="au-action-btn" title="Cargo" onclick="auTogglePanel(\'' + sid + '\',\'cargo\')"><i class="fa fa-id-badge"></i></button>' +
+        '<button id="au-views-btn-' + sid + '" class="au-action-btn" title="Vistas" onclick="auTogglePanel(\'' + sid + '\',\'views\')"><i class="fa fa-eye"></i></button>' +
+        '<button class="au-action-btn" title="Editar datos del usuario" onclick="auUserEditOpen(\'' + uid + '\')"><i class="fa fa-user-pen"></i></button>' +
+        (isBaja
+          ? '<button class="au-action-btn" style="color:#16a34a" title="Reactivar" onclick="auToggleStatus(\'' + uid + '\',\'INACTIVO\',\'' + sid + '\')"><i class="fa fa-user-check"></i></button>'
+          : '<button class="au-action-btn warn" title="Dar de baja" onclick="auToggleStatus(\'' + uid + '\',\'ACTIVO\',\'' + sid + '\')"><i class="fa fa-user-slash"></i></button>'
+        ) +
+        '<button class="au-action-btn danger" title="Eliminar" onclick="auDeleteUser(\'' + uid + '\',\'' + _esc(u.full_name || u.email) + '\')"><i class="fa fa-trash"></i></button>' +
+      '</div>' +
+
+      '</div></div></div>' + // card-body, card, upper wrapper
+
+      // ── Inline panels ──
+      '<div id="au-panel-' + sid + '" class="au-inline-panel" style="display:none">' +
+
+        // Area panel
+        '<div id="au-panel-area-' + sid + '" style="display:none; padding:14px 16px">' +
+          '<div class="row g-2 align-items-end">' +
+            '<div class="col-md-3"><label class="form-label small text-muted mb-1">Dirección</label>' +
+              '<select id="au-dir-' + sid + '" class="form-select form-select-sm" onchange="auCascadeDir(\'' + sid + '\')">' +
+                '<option value="">-- Ninguna --</option>' + dirOpts +
+              '</select></div>' +
+            '<div class="col-md-3"><label class="form-label small text-muted mb-1">Subdirección</label>' +
+              '<select id="au-subdir-' + sid + '" class="form-select form-select-sm" onchange="auCascadeSubdir(\'' + sid + '\')">' +
+                subdirOpts +
+              '</select></div>' +
+            '<div class="col-md-3"><label class="form-label small text-muted mb-1">Gerencia</label>' +
+              '<select id="au-ger-' + sid + '" class="form-select form-select-sm">' +
+                gerOpts +
+              '</select></div>' +
+            '<div class="col-md-3"><button class="btn btn-sm btn-primary w-100" onclick="auSaveArea(\'' + uid + '\',\'' + sid + '\')">' +
+              '<i class="fa fa-save me-1"></i>Guardar área</button></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Cargo panel
+        '<div id="au-panel-cargo-' + sid + '" style="display:none; padding:14px 16px">' +
+          '<div class="row g-2 align-items-end">' +
+            '<div class="col-md-6"><label class="form-label small text-muted mb-1">Cargo</label>' +
+              '<input type="text" id="au-cargo-' + sid + '" class="form-control form-control-sm" placeholder="Ej. Inspector, Supervisor…" value="' + _esc(u.cargo || '') + '"></div>' +
+            '<div class="col-md-3"><button class="btn btn-sm btn-success w-100" onclick="auSaveCargo(\'' + uid + '\',\'' + sid + '\')">' +
+              '<i class="fa fa-save me-1"></i>Guardar cargo</button></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Views panel
+        '<div id="au-panel-views-' + sid + '" style="display:none; padding:14px 16px">' +
+          '<div class="d-flex align-items-center justify-content-between mb-2">' +
+            '<span style="font-size:11px" class="text-muted">Sin selección = acceso completo</span>' +
+            '<div class="d-flex gap-2">' +
+              '<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px" onclick="auSelectAllViews(\'' + sid + '\',true)">Todo</button>' +
+              '<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px" onclick="auSelectAllViews(\'' + sid + '\',false)">Ninguno</button>' +
+              '<button class="btn btn-sm btn-primary" onclick="auSaveViews(\'' + uid + '\',\'' + sid + '\')">' +
+                '<i class="fa fa-save me-1"></i>Guardar</button>' +
+            '</div>' +
+          '</div>' +
+          viewsHtml +
+        '</div>' +
+
+      '</div>' + // /au-panel
+      '</div>'   // /au-user-card
+    );
+  }
+
+  // ════════════════════════════════════════════════
+  // PANEL TOGGLES
+  // ════════════════════════════════════════════════
+  window.auTogglePanel = function (sid, type) {
+    var panel       = document.getElementById('au-panel-' + sid);
+    var areaPanel   = document.getElementById('au-panel-area-'  + sid);
+    var viewsPanel  = document.getElementById('au-panel-views-' + sid);
+    var cargoPanel  = document.getElementById('au-panel-cargo-' + sid);
+    if (!panel) return;
+
+    var isSame = _auOpenShort === sid && _auOpenType === type;
+
+    // Close all
+    document.querySelectorAll('.au-inline-panel').forEach(function (p) { p.style.display = 'none'; });
+    document.querySelectorAll('[id^="au-panel-area-"]').forEach(function (p)  { p.style.display = 'none'; });
+    document.querySelectorAll('[id^="au-panel-views-"]').forEach(function (p) { p.style.display = 'none'; });
+    document.querySelectorAll('[id^="au-panel-cargo-"]').forEach(function (p) { p.style.display = 'none'; });
+    _auOpenShort = null;
+    _auOpenType  = null;
+
+    if (!isSame) {
+      panel.style.display = '';
+      if (type === 'area'  && areaPanel)  areaPanel.style.display  = '';
+      if (type === 'views' && viewsPanel) viewsPanel.style.display = '';
+      if (type === 'cargo' && cargoPanel) cargoPanel.style.display = '';
+      _auOpenShort = sid;
+      _auOpenType  = type;
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // CASCADE SELECTS
+  // ════════════════════════════════════════════════
+  window.auCascadeDir = function (sid) {
+    var dirId = (_el('au-dir-'    + sid) || {}).value;
+    var ss    =  _el('au-subdir-' + sid);
+    var gs    =  _el('au-ger-'    + sid);
+    if (ss) ss.innerHTML = _buildSubdirOpts(dirId, '');
+    if (gs) gs.innerHTML = '<option value="">-- Ninguna --</option>';
+  };
+
+  window.auCascadeSubdir = function (sid) {
+    var subdirId = (_el('au-subdir-' + sid) || {}).value;
+    var gs = _el('au-ger-' + sid);
+    if (gs) gs.innerHTML = _buildGerOpts(subdirId, '');
+  };
+
+  // ════════════════════════════════════════════════
+  // PASSWORD GENERATOR (create form)
+  // ════════════════════════════════════════════════
+  window.auRegGenPassword = function () {
+    var chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*';
+    var length = 12;
+    var pwd = '';
+    var array = new Uint8Array(length);
+    window.crypto.getRandomValues(array);
+    for (var i = 0; i < length; i++) {
+      pwd += chars[array[i] % chars.length];
+    }
+    var pwEl      = _el('au-reg-password');
+    var previewEl = _el('au-reg-pwd-preview');
+    var textEl    = _el('au-reg-pwd-text');
+    var eyeEl     = _el('au-reg-pwd-eye');
+    if (pwEl) { pwEl.value = pwd; pwEl.type = 'text'; }
+    if (eyeEl) eyeEl.className = 'fa fa-eye-slash';
+    if (textEl)    textEl.textContent = pwd;
+    if (previewEl) previewEl.style.display = 'flex';
+  };
+
+  window.auRegTogglePwd = function () {
+    var pwEl  = _el('au-reg-password');
+    var eyeEl = _el('au-reg-pwd-eye');
+    if (!pwEl) return;
+    if (pwEl.type === 'password') {
+      pwEl.type = 'text';
+      if (eyeEl) eyeEl.className = 'fa fa-eye-slash';
+    } else {
+      pwEl.type = 'password';
+      if (eyeEl) eyeEl.className = 'fa fa-eye';
+    }
+  };
+
+  window.auRegCopyPassword = function () {
+    var pwd = ((_el('au-reg-password') || {}).value || '');
+    if (!pwd) return;
+    navigator.clipboard.writeText(pwd).then(function () {
+      showToast('Contraseña copiada al portapapeles', 'success');
+    });
+  };
+
+  window.auRegCascadeDir = function () {
+    var dirId = (_el('au-reg-dir')    || {}).value;
+    var ss    =  _el('au-reg-subdir');
+    var gs    =  _el('au-reg-gerencia');
+    if (ss) ss.innerHTML = _buildSubdirOpts(dirId, '');
+    if (gs) gs.innerHTML = '<option value="">-- Ninguna --</option>';
+  };
+
+  window.auRegCascadeSubdir = function () {
+    var subdirId = (_el('au-reg-subdir') || {}).value;
+    var gs = _el('au-reg-gerencia');
+    if (gs) gs.innerHTML = _buildGerOpts(subdirId, '');
+  };
+
+  window.auRegAccessTypeChange = function () {
+    var full = _el('au-reg-access-full');
+    var sec  = _el('au-reg-views-section');
+    if (sec) sec.style.display = (full && full.checked) ? 'none' : '';
+  };
+
+  window.auSelectAllViews = function (sid, checked) {
+    document.querySelectorAll('[id^="av-' + sid + '-"]').forEach(function (cb) {
+      if (cb.type === 'checkbox') cb.checked = checked;
+    });
+  };
+
+  function _populateDirSel(selId) {
+    var sel = _el(selId);
+    if (!sel) return;
+    var dirs = _auAreas.filter(function (a) { return a.nivel === 2; });
+    sel.innerHTML = '<option value="">-- Ninguna --</option>' +
+      dirs.map(function (a) { return '<option value="' + a.id + '">' + _esc(a.nombre) + '</option>'; }).join('');
+  }
+
+  function _buildDirOpts(selId) {
+    return _auAreas.filter(function (a) { return a.nivel === 2; }).map(function (a) {
+      return '<option value="' + a.id + '"' + (a.id === selId ? ' selected' : '') + '>' + _esc(a.nombre) + '</option>';
+    }).join('');
+  }
+
+  function _buildSubdirOpts(dirId, selId) {
+    if (!dirId) return '<option value="">-- Ninguna --</option>';
+    var items = _auAreas.filter(function (a) { return a.nivel === 3 && a.parent_area_id === dirId; });
+    return '<option value="">-- Ninguna --</option>' +
+      items.map(function (a) {
+        return '<option value="' + a.id + '"' + (a.id === selId ? ' selected' : '') + '>' + _esc(a.nombre) + '</option>';
+      }).join('');
+  }
+
+  function _buildGerOpts(subdirId, selId) {
+    if (!subdirId) return '<option value="">-- Ninguna --</option>';
+    var items = _auAreas.filter(function (a) { return a.nivel === 4 && a.parent_area_id === subdirId; });
+    return '<option value="">-- Ninguna --</option>' +
+      items.map(function (a) {
+        return '<option value="' + a.id + '"' + (a.id === selId ? ' selected' : '') + '>' + _esc(a.nombre) + '</option>';
+      }).join('');
+  }
+
+  function _resolveAreaLabel(perm) {
+    // Use the most specific area available
+    var id = perm.gerencia_id || perm.subdireccion_id || perm.direccion_id;
+    if (!id) {
+      // Fallback: check if perm.area is a clave string directly
+      return perm.area ? String(perm.area) : '';
+    }
+    var a = _auAreas.find(function (x) { return x.id === id; });
+    if (!a) return perm.area || String(id).substring(0, 8);
+    return a.clave + ' · ' + a.nombre;
+  }
+
+  // ════════════════════════════════════════════════
+  // CHANGE ROLE
+  // ════════════════════════════════════════════════
+  window.auChangeRole = async function (userId, selectEl) {
+    var newRole = selectEl.value;
+    var oldRole = selectEl.dataset.prevRole || newRole;
+    selectEl.disabled = true;
+    try {
+      var res = await _sb.rpc('admin_update_user_role', { p_user_id: userId, p_role: newRole });
+      if (res.error) throw res.error;
+      if (res.data && res.data.ok === false) throw new Error(res.data.error || 'RPC error');
+
+      // Verify
+      var vr = await _sb.from('v_usuarios_roles').select('role').eq('user_id', userId).maybeSingle();
+      if (vr.error) throw vr.error;
+      if (vr.data && vr.data.role !== newRole)
+        throw new Error('Verificación falló: rol guardado = "' + vr.data.role + '"');
+
+      var u = _auUsers.find(function (x) { return x.user_id === userId; });
+      if (u) u.role = newRole;
+      selectEl.dataset.prevRole = newRole;
+      showToast('Rol actualizado a "' + newRole + '"', 'success');
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+      selectEl.value = oldRole;
+    } finally {
+      selectEl.disabled = false;
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // SAVE AREA
+  // ════════════════════════════════════════════════
+  window.auSaveArea = async function (userId, sid) {
+    var dirId    = (_el('au-dir-'    + sid) || {}).value || null;
+    var subdirId = (_el('au-subdir-' + sid) || {}).value || null;
+    var gerId    = (_el('au-ger-'   + sid)  || {}).value || null;
+
+    var lookupId = gerId || subdirId || dirId;
+    var areaClave = '';
+    if (lookupId) {
+      var a = _auAreas.find(function (x) { return x.id === lookupId; });
+      if (a) areaClave = a.clave;
+    }
+
+    try {
+      var cur = await _sb.from('user_roles').select('permissions').eq('user_id', userId).maybeSingle();
+      var perms = _perm(cur.data && cur.data.permissions);
+
+      if (dirId)    perms.direccion_id    = dirId;    else delete perms.direccion_id;
+      if (subdirId) perms.subdireccion_id = subdirId; else delete perms.subdireccion_id;
+      if (gerId)    perms.gerencia_id     = gerId;    else delete perms.gerencia_id;
+      if (areaClave) perms.area = areaClave; else delete perms.area;
+
+      var upd = await _sb.from('user_roles').update({ permissions: perms }).eq('user_id', userId);
+      if (upd.error) throw upd.error;
+
+      var u = _auUsers.find(function (x) { return x.user_id === userId; });
+      if (u) u.permissions = perms;
+
+      showToast('Área guardada', 'success');
+      auTogglePanel(sid, 'area');
+      _renderList();
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // SAVE CARGO
+  // ════════════════════════════════════════════════
+  window.auSaveCargo = async function (userId, sid) {
+    var cargoVal = ((_el('au-cargo-' + sid) || {}).value || '').trim();
+    var uCache   = _auUsers.find(function (x) { return x.user_id === userId; });
+    try {
+      var res = await _sb.rpc('admin_update_user_profile', {
+        p_user_id:   userId,
+        p_full_name: (uCache && uCache.full_name) || null,
+        p_username:  (uCache && uCache.username)  || null,
+        p_cargo:     cargoVal || null
+      });
+      if (res.error) throw res.error;
+      if (res.data && res.data.ok === false) throw new Error(res.data.error || 'Error al guardar');
+
+      if (uCache) uCache.cargo = cargoVal || null;
+
+      showToast('Puesto guardado', 'success');
+      auTogglePanel(sid, 'cargo');
+      _renderList();
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // SAVE VIEWS
+  // ════════════════════════════════════════════════
+  window.auSaveViews = async function (userId, sid) {
+    var nodes    = document.querySelectorAll('[id^="av-' + sid + '-"]:checked');
+    var sections = Array.prototype.map.call(nodes, function (cb) { return cb.value; });
+
+    try {
+      var cur = await _sb.from('user_roles').select('permissions').eq('user_id', userId).maybeSingle();
+      var perms = _perm(cur.data && cur.data.permissions);
+
+      if (sections.length > 0) perms.allowed_sections = sections;
+      else delete perms.allowed_sections;
+
+      var upd = await _sb.from('user_roles').update({ permissions: perms }).eq('user_id', userId);
+      if (upd.error) throw upd.error;
+
+      var u = _auUsers.find(function (x) { return x.user_id === userId; });
+      if (u) u.permissions = perms;
+
+      showToast('Vistas actualizadas', 'success');
+      auTogglePanel(sid, 'views');
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // EDIT USER (modal)
+  // ════════════════════════════════════════════════
+  window.auUserEditOpen = function (userId) {
+    _auEditUserId = userId;
+    var u = _auUsers.find(function (x) { return x.user_id === userId; });
+    if (!u) return;
+
+    var fnEl = _el('au-ue-fullname'); if (fnEl) fnEl.value = u.full_name || '';
+    var unEl = _el('au-ue-username'); if (unEl) unEl.value = u.username  || '';
+    var emEl = _el('au-ue-email');    if (emEl) emEl.value = u.email     || '';
+    var cgEl = _el('au-ue-cargo');    if (cgEl) cgEl.value = u.cargo     || '';
+    var pwEl = _el('au-ue-password'); if (pwEl) { pwEl.value = ''; pwEl.type = 'password'; }
+    var ldEl = _el('au-ue-login-display'); if (ldEl) ldEl.value = u.email || '—';
+
+    var eyeEl = _el('au-ue-pwd-eye');
+    if (eyeEl) eyeEl.className = 'fa fa-eye';
+
+    var msgEl = _el('au-ue-msg');
+    if (msgEl) { msgEl.textContent = ''; msgEl.style.display = 'none'; }
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('au-user-edit-modal'));
+    modal.show();
+  };
+
+  window.auUETogglePwd = function () {
+    var pwEl  = _el('au-ue-password');
+    var eyeEl = _el('au-ue-pwd-eye');
+    if (!pwEl) return;
+    if (pwEl.type === 'password') {
+      pwEl.type = 'text';
+      if (eyeEl) eyeEl.className = 'fa fa-eye-slash';
+    } else {
+      pwEl.type = 'password';
+      if (eyeEl) eyeEl.className = 'fa fa-eye';
+    }
+  };
+
+  window.auUserEditSave = async function () {
+    var msgEl = _el('au-ue-msg');
+    function setMsg(txt, cls) {
+      if (msgEl) { msgEl.textContent = txt; msgEl.className = 'small ' + (cls || ''); msgEl.style.display = txt ? '' : 'none'; }
+    }
+
+    var userId   = _auEditUserId;
+    if (!userId) return;
+
+    var fullname = ((_el('au-ue-fullname') || {}).value || '').trim();
+    var username = ((_el('au-ue-username') || {}).value || '').trim();
+    var email    = ((_el('au-ue-email')    || {}).value || '').trim();
+    var cargo    = ((_el('au-ue-cargo')    || {}).value || '').trim();
+    var password =  (_el('au-ue-password') || {}).value || '';
+
+    var btn = _el('au-ue-btn');
+    if (btn) btn.disabled = true;
+    setMsg('Guardando…', 'text-info');
+
+    try {
+      // Update profile via RPC (bypasses RLS)
+      var profileRes = await _sb.rpc('admin_update_user_profile', {
+        p_user_id:  userId,
+        p_full_name: fullname || null,
+        p_username:  username || null,
+        p_cargo:     cargo    || null
+      });
+      if (profileRes.error) throw profileRes.error;
+      if (profileRes.data && profileRes.data.ok === false) throw new Error(profileRes.data.error || 'Error al actualizar perfil');
+
+      // Update email if changed
+      var u0 = _auUsers.find(function (x) { return x.user_id === userId; });
+      if (email && u0 && email !== (u0.email || '')) {
+        var emailRes = await _sb.rpc('admin_update_user_email', { p_user_id: userId, p_email: email });
+        if (emailRes.error) throw emailRes.error;
+        if (emailRes.data && emailRes.data.ok === false) throw new Error(emailRes.data.error || 'Error al cambiar correo');
+      }
+
+      // Update password if provided
+      if (password) {
+        var res = await _sb.rpc('admin_update_user_password', { p_user_id: userId, p_password: password });
+        if (res.error) throw res.error;
+        if (res.data && res.data.ok === false) throw new Error(res.data.error || 'Error al cambiar contraseña');
+      }
+
+      // Update local cache
+      var u = _auUsers.find(function (x) { return x.user_id === userId; });
+      if (u) {
+        u.full_name = fullname || u.full_name;
+        u.username  = username || u.username;
+        if (email) u.email = email;
+        u.cargo     = cargo    || null;
+      }
+
+      setMsg('✓ Cambios guardados.', 'text-success');
+      showToast('Usuario actualizado', 'success');
+
+      setTimeout(function () {
+        var modal = bootstrap.Modal.getInstance(document.getElementById('au-user-edit-modal'));
+        if (modal) modal.hide();
+        _renderList();
+      }, 700);
+    } catch (e) {
+      setMsg('Error: ' + e.message, 'text-danger');
+      showToast('Error: ' + e.message, 'danger');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // TOGGLE STATUS
+  // ════════════════════════════════════════════════
+  window.auToggleStatus = async function (userId, currentStatus, sid) {
+    var newStatus = currentStatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+    var action    = newStatus === 'INACTIVO' ? 'dar de baja' : 'reactivar';
+    if (!confirm('¿Seguro que deseas ' + action + ' a este usuario?')) return;
+
+    try {
+      var cur   = await _sb.from('user_roles').select('permissions').eq('user_id', userId).maybeSingle();
+      var perms = _perm(cur.data && cur.data.permissions);
+      perms.estado = newStatus;
+
+      var upd = await _sb.from('user_roles').update({ permissions: perms }).eq('user_id', userId);
+      if (upd.error) throw upd.error;
+
+      var u = _auUsers.find(function (x) { return x.user_id === userId; });
+      if (u) u.permissions = perms;
+
+      showToast('Usuario ' + (newStatus === 'INACTIVO' ? 'dado de baja' : 'reactivado'), 'success');
+      _renderStats();
+      _renderList();
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // DELETE USER
+  // ════════════════════════════════════════════════
+  window.auDeleteUser = async function (userId, name) {
+    if (!confirm('¿Eliminar permanentemente a "' + name + '"?\nEsta acción no se puede deshacer.')) return;
+    try {
+      var res = await _sb.rpc('admin_delete_user', { p_user_id: userId });
+      if (res.error) throw res.error;
+      if (res.data && res.data.ok === false) throw new Error(res.data.error || 'Error al eliminar');
+
+      _auUsers = _auUsers.filter(function (u) { return u.user_id !== userId; });
+      _renderStats();
+      _renderList();
+      showToast('Usuario eliminado', 'success');
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // CREATE USER
+  // ════════════════════════════════════════════════
+  window.auCreateUser = async function () {
+    var msgEl = _el('au-reg-msg');
+    function setMsg(txt, cls) {
+      if (msgEl) { msgEl.textContent = txt; msgEl.className = 'small ' + (cls||''); msgEl.style.display = txt ? '' : 'none'; }
+    }
+
+    var fullname = ((_el('au-reg-fullname')  || {}).value || '').trim();
+    var username = ((_el('au-reg-username')  || {}).value || '').trim();
+    var password =  (_el('au-reg-password')  || {}).value || '';
+    var role     =  (_el('au-reg-role')      || {}).value || '';
+    var cargo    = ((_el('au-reg-cargo')     || {}).value || '').trim();
+    var emailInput = ((_el('au-reg-email')   || {}).value || '').trim();
+    var dirId    = ((_el('au-reg-dir')       || {}).value || '') || null;
+    var subdirId = ((_el('au-reg-subdir')    || {}).value || '') || null;
+    var gerId    = ((_el('au-reg-gerencia')  || {}).value || '') || null;
+
+    if (!username || !password || !role) {
+      setMsg('Usuario, contraseña y rol son requeridos.', 'text-danger');
+      return;
+    }
+
+    // Use explicitly entered email if provided, otherwise derive from username
+    var email = emailInput || (username.includes('@') ? username : (_normalize(username) + '@' + EMAIL_DOMAIN));
+
+    var radioFull = _el('au-reg-access-full');
+    var sections  = [];
+    if (!(radioFull && radioFull.checked)) {
+      var checks = document.querySelectorAll('#au-reg-views-section input[type=checkbox]:checked');
+      sections = Array.prototype.map.call(checks, function (c) { return c.value; });
+    }
+
+    var btn = _el('au-reg-btn');
+    if (btn) btn.disabled = true;
+    setMsg('Creando usuario…', 'text-info');
+
+    try {
+      // 0. Save admin session before signUp replaces it
+      var adminSessionRes = await _sb.auth.getSession();
+      var adminSession = adminSessionRes.data && adminSessionRes.data.session;
+
+      // 1. Create auth user
+      var signUp = await _sb.auth.signUp({
+        email: email,
+        password: password,
+        options: { data: { full_name: fullname, username: username } }
+      });
+      if (signUp.error) throw signUp.error;
+
+      var newId = signUp.data && signUp.data.user && signUp.data.user.id;
+      if (!newId) throw new Error('No se obtuvo el ID del usuario creado.');
+
+      // Restore admin session so subsequent RPCs run as admin
+      if (adminSession) {
+        await _sb.auth.setSession({
+          access_token:  adminSession.access_token,
+          refresh_token: adminSession.refresh_token
+        });
+      }
+
+      // 2. Upsert profile via RPC (bypasses RLS)
+      if (fullname || username || cargo) {
+        await _sb.rpc('admin_update_user_profile', {
+          p_user_id:  newId,
+          p_full_name: fullname || null,
+          p_username:  username || null,
+          p_cargo:     cargo    || null
+        });
+      }
+
+      // 3. Create role
+      var rpc = await _sb.rpc('admin_create_user_role', {
+        p_user_id:          newId,
+        p_role:             role,
+        p_dir_id:           dirId,
+        p_subdir_id:        subdirId,
+        p_ger_id:           gerId,
+        p_allowed_sections: sections.length > 0 ? sections : null
+      });
+      if (rpc.error) throw rpc.error;
+      if (rpc.data && rpc.data.ok === false) throw new Error(rpc.data.error || 'Error asignando rol');
+
+      var finalPwd = (_el('au-reg-password') || {}).value || '';
+      setMsg(
+        '✓ Usuario creado. ' +
+        'Correo de acceso: ' + email + ' · ' +
+        (finalPwd ? 'Contraseña: ' + finalPwd : '(contraseña no disponible — ya fue ocultada)'),
+        'text-success'
+      );
+      showToast('Usuario creado: ' + email, 'success');
+
+      // Don't reset the form immediately — let admin read/copy the credentials first
+      var vs = _el('au-reg-views-section');
+      if (vs) vs.style.display = 'none';
+
+      await adminUsersLoad();
+    } catch (e) {
+      setMsg('Error: ' + e.message, 'text-danger');
+      showToast('Error: ' + e.message, 'danger');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // ORGANIGRAMA
+  // ════════════════════════════════════════════════
+  window.orgLoad = async function () {
+    var treeEl = _el('au-org-tree');
+    if (treeEl) treeEl.innerHTML = '<div class="text-center text-muted py-5"><i class="fa fa-spinner fa-spin fa-2x mb-3 d-block"></i>Cargando…</div>';
+
+    try {
+      var res = await _sb.from('areas')
+        .select('id, clave, nombre, nivel, parent_area_id, color_hex, orden_visualizacion, estado')
+        .order('nivel').order('orden_visualizacion');
+      if (res.error) throw res.error;
+      _auOrgAreas = res.data || [];
+
+      _orgRenderStats();
+      _orgRenderTree();
+      _orgPopulateParentSel('au-org-parent', null);
+    } catch (e) {
+      showToast('Error: ' + e.message, 'danger');
+    }
+  };
+
+  function _orgRenderStats() {
+    var total   = _auOrgAreas.length;
+    var dirs    = _auOrgAreas.filter(function (a) { return a.nivel === 2; }).length;
+    var subdirs = _auOrgAreas.filter(function (a) { return a.nivel === 3; }).length;
+    var otros   = _auOrgAreas.filter(function (a) { return a.nivel > 3;  }).length;
+    var el = _el('au-org-stats');
+    if (el) el.innerHTML =
+      '<span class="badge me-2" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0"><i class="fa fa-sitemap me-1"></i>' + total + ' áreas</span>' +
+      '<span class="badge bg-primary me-2">' + dirs + ' Direcciones</span>' +
+      '<span class="badge bg-info text-dark me-2">' + subdirs + ' Subdirecciones</span>' +
+      '<span class="badge bg-secondary">' + otros + ' Otras</span>';
+  }
+
+  function _orgRenderTree() {
+    var container = _el('au-org-tree');
+    if (!container) return;
+    var roots = _auOrgAreas.filter(function (a) { return !a.parent_area_id; });
+    if (roots.length === 0) {
+      container.innerHTML = '<div class="text-muted text-center py-5">No hay áreas registradas</div>';
+      return;
+    }
+    container.innerHTML = roots.map(function (r) { return _orgNode(r, 0); }).join('');
+  }
+
+  function _orgNode(area, depth) {
+    var children = _auOrgAreas.filter(function (a) { return a.parent_area_id === area.id; });
+    var color    = area.color_hex || '#3b82f6';
+    var ml       = depth > 0 ? 'margin-left:' + (depth * 22) + 'px;' : '';
+    return (
+      '<div class="au-org-node" style="' + ml + '">' +
+        '<div class="au-org-tree-wrap">' +
+          '<div class="au-org-node-hdr" style="border-left:3px solid ' + color + '">' +
+            '<span class="badge rounded-pill text-white" style="background:' + color + ';min-width:52px;font-size:10px">' + _esc(area.clave) + '</span>' +
+            '<span class="fw-semibold" style="color:#1e293b">' + _esc(area.nombre) + '</span>' +
+            '<span class="badge ms-1" style="font-size:9px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0">N' + area.nivel + '</span>' +
+            (children.length > 0
+              ? '<span class="badge ms-1" style="font-size:9px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0">' + children.length + ' <i class="fa fa-chevron-down" style="font-size:7px"></i></span>'
+              : '') +
+            (area.estado === 'INACTIVO' ? '<span class="badge bg-danger ms-1" style="font-size:9px">INACTIVO</span>' : '') +
+            '<button class="btn btn-link btn-sm p-0 ms-auto" style="color:#94a3b8" onclick="orgEditOpen(\'' + area.id + '\')" title="Editar">' +
+              '<i class="fa fa-pen" style="font-size:11px"></i>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        (children.length > 0
+          ? '<div class="au-org-children" style="margin-left:' + (depth > 0 ? 8 : 14) + 'px;border-left:1px solid ' + color + '33;padding-left:8px">' +
+              children.map(function (c) { return _orgNode(c, depth + 1); }).join('') +
+            '</div>'
+          : '') +
+      '</div>'
+    );
+  }
+
+  function _orgPopulateParentSel(selId, excludeId) {
+    var sel = _el(selId);
+    if (!sel) return;
+    var opts = _auOrgAreas
+      .filter(function (a) { return a.id !== excludeId; })
+      .map(function (a) {
+        var indent = Array((a.nivel - 1) * 2 + 1).join('\u00a0');
+        return '<option value="' + a.id + '">' + indent + '[N' + a.nivel + '] ' + _esc(a.clave) + ' — ' + _esc(a.nombre) + '</option>';
+      });
+    sel.innerHTML = '<option value="">-- Sin padre (raíz) --</option>' + opts.join('');
+  }
+
+  window.orgSaveArea = async function () {
+    var msgEl = _el('au-org-msg');
+    function setMsg(txt, cls) {
+      if (msgEl) { msgEl.textContent = txt; msgEl.className = 'mt-2 small ' + (cls||''); msgEl.style.display = txt ? '' : 'none'; }
+    }
+
+    var clave    = ((_el('au-org-clave')  || {}).value || '').trim().toUpperCase();
+    var nombre   = ((_el('au-org-nombre') || {}).value || '').trim();
+    var parentId = ((_el('au-org-parent') || {}).value || '') || null;
+    var color    =  (_el('au-org-color')  || {}).value || '#0EA5E9';
+    var orden    = parseInt((_el('au-org-orden') || {}).value || '999');
+
+    if (!clave || !nombre) { setMsg('Clave y nombre son requeridos.', 'text-danger'); return; }
+
+    var nivel = 1;
+    if (parentId) {
+      var parent = _auOrgAreas.find(function (a) { return a.id === parentId; });
+      nivel = parent ? parent.nivel + 1 : 2;
+    }
+
+    var btn = _el('au-org-btn-save');
+    if (btn) btn.disabled = true;
+    setMsg('Guardando…', 'text-info');
+
+    try {
+      var ins = await _sb.from('areas').insert({
+        clave: clave, nombre: nombre, nivel: nivel,
+        parent_area_id: parentId, color_hex: color,
+        orden_visualizacion: orden, estado: 'ACTIVO'
+      });
+      if (ins.error) throw ins.error;
+
+      setMsg('✓ Área creada.', 'text-success');
+      showToast('Área "' + nombre + '" creada', 'success');
+
+      var form = _el('au-org-form');
+      if (form) form.reset();
+      var colorEl = _el('au-org-color');
+      if (colorEl) colorEl.value = '#0EA5E9';
+
+      await orgLoad();
+      var collapse = _el('au-org-create-collapse');
+      if (collapse) bootstrap.Collapse.getOrCreateInstance(collapse).hide();
+    } catch (e) {
+      setMsg('Error: ' + e.message, 'text-danger');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  window.orgEditOpen = function (areaId) {
+    _auEditAreaId = areaId;
+    var area = _auOrgAreas.find(function (a) { return a.id === areaId; });
+    if (!area) return;
+
+    var claveEl  = _el('au-oe-clave');  if (claveEl)  claveEl.value  = area.clave  || '';
+    var nombreEl = _el('au-oe-nombre'); if (nombreEl) nombreEl.value = area.nombre || '';
+    var colorEl  = _el('au-oe-color');  if (colorEl)  colorEl.value  = area.color_hex || '#0EA5E9';
+    var ordenEl  = _el('au-oe-orden');  if (ordenEl)  ordenEl.value  = area.orden_visualizacion || 999;
+
+    var msgEl = _el('au-oe-msg');
+    if (msgEl) { msgEl.textContent = ''; msgEl.style.display = 'none'; }
+
+    _orgPopulateParentSel('au-oe-parent', areaId);
+    var parentSel = _el('au-oe-parent');
+    if (parentSel) parentSel.value = area.parent_area_id || '';
+
+    new bootstrap.Modal(_el('au-org-edit-modal')).show();
+  };
+
+  window.orgEditSave = async function () {
+    if (!_auEditAreaId) return;
+    var msgEl = _el('au-oe-msg');
+    function setMsg(txt, cls) {
+      if (msgEl) { msgEl.textContent = txt; msgEl.className = 'mt-2 small ' + (cls||''); msgEl.style.display = txt ? '' : 'none'; }
+    }
+
+    var clave    = ((_el('au-oe-clave')  || {}).value || '').trim().toUpperCase();
+    var nombre   = ((_el('au-oe-nombre') || {}).value || '').trim();
+    var parentId = ((_el('au-oe-parent') || {}).value || '') || null;
+    var color    =  (_el('au-oe-color')  || {}).value || '#0EA5E9';
+    var orden    = parseInt((_el('au-oe-orden') || {}).value || '999');
+
+    if (!clave || !nombre) { setMsg('Clave y nombre son requeridos.', 'text-danger'); return; }
+
+    var nivel = 1;
+    if (parentId) {
+      var parent = _auOrgAreas.find(function (a) { return a.id === parentId; });
+      nivel = parent ? parent.nivel + 1 : 2;
+    }
+
+    var btn = _el('au-oe-btn');
+    if (btn) btn.disabled = true;
+    setMsg('Guardando…', 'text-info');
+
+    try {
+      var upd = await _sb.from('areas').update({
+        clave: clave, nombre: nombre, nivel: nivel,
+        parent_area_id: parentId, color_hex: color,
+        orden_visualizacion: orden
+      }).eq('id', _auEditAreaId);
+      if (upd.error) throw upd.error;
+
+      setMsg('✓ Guardado.', 'text-success');
+      showToast('Área actualizada', 'success');
+      await orgLoad();
+      setTimeout(function () {
+        var m = bootstrap.Modal.getInstance(_el('au-org-edit-modal'));
+        if (m) m.hide();
+      }, 600);
+    } catch (e) {
+      setMsg('Error: ' + e.message, 'text-danger');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  // ════════════════════════════════════════════════
+  // HELPERS
+  // ════════════════════════════════════════════════
+  function _perm(val) {
+    if (!val) return {};
+    if (typeof val === 'object') return Object.assign({}, val);
+    try { return Object.assign({}, JSON.parse(val)); } catch (_) { return {}; }
+  }
+
+  function _initials(name) {
+    if (!name) return '?';
+    var parts = String(name).trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : String(name).substring(0, 2).toUpperCase();
+  }
+
+  function _avatarColor(name) {
+    var palette = ['#3b82f6','#8b5cf6','#ec4899','#f97316','#10b981','#06b6d4','#f59e0b','#ef4444','#84cc16','#a855f7'];
+    var hash = 0;
+    var s = String(name);
+    for (var i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+    return palette[Math.abs(hash) % palette.length];
+  }
+
+  function _normalize(str) {
+    return String(str).trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '.');
+  }
+
+  function _esc(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _setText(id, val) {
+    var el = _el(id);
+    if (el) el.textContent = val;
+  }
+
+  window.showToast = function (msg, type) {
+    var colors = { success:'#10b981', danger:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
+    var icons  = { success:'fa-circle-check', danger:'fa-circle-xmark', warning:'fa-triangle-exclamation', info:'fa-circle-info' };
+    var container = _el('au-toast-container');
+    if (!container) return;
+
+    var div = document.createElement('div');
+    div.style.cssText =
+      'background:#ffffff;border-left:4px solid ' + (colors[type] || colors.info) + ';' +
+      'color:#1e293b;padding:12px 16px;border-radius:8px;margin-top:8px;' +
+      'box-shadow:0 4px 20px rgba(0,0,0,0.12);font-size:13px;max-width:340px;' +
+      'border:1px solid #e2e8f0;animation:auToastIn 0.2s ease;display:flex;align-items:center;gap:10px;';
+    div.innerHTML =
+      '<i class="fa ' + (icons[type] || icons.info) + '" style="color:' + (colors[type] || colors.info) + ';flex-shrink:0"></i>' +
+      '<span>' + _esc(msg) + '</span>';
+    container.appendChild(div);
+
+    setTimeout(function () {
+      div.style.transition = 'opacity 0.3s, transform 0.3s';
+      div.style.opacity    = '0';
+      div.style.transform  = 'translateX(12px)';
+      setTimeout(function () { div.remove(); }, 300);
+    }, 3500);
+  };
+
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════
+     BASE DE DATOS — Aerolíneas JS
+═══════════════════════════════════════════════════ -->
+<script>
+(function () {
+    var _auDbRows = [];      // cache de filas cargadas
+    var _auDbEditIata = null; // null = nueva fila
+    var _auDbPendingFile = null; // archivo local pendiente de subir
+
+    // ── Cargar tabla ─────────────────────────────────────────────
+    window.auDbLoad = async function () {
+        var tbody = document.getElementById('au-db-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8;">Cargando…</td></tr>';
+        var searchEl = document.getElementById('au-db-search');
+        if (searchEl) searchEl.value = '';
+
+        var client = window.supabaseClient;
+        if (!client) { tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#ef4444;">Sin conexión Supabase</td></tr>'; return; }
+
+        try {
+            var resp = await client
+                .from('catalogo_aerolineas')
+                .select('codigo_iata,codigo_oaci,nombre_aerolinea,logo_url')
+                .order('nombre_aerolinea', { ascending: true });
+
+            if (resp.error) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#ef4444;">Error: ' + resp.error.message + '</td></tr>';
+                return;
+            }
+
+            _auDbRows = resp.data || [];
+
+            if (!_auDbRows.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8;">Sin aerolíneas registradas.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = _auDbRows.map(function (r) {
+                var logoUrl = r.logo_url || ('https://www.gstatic.com/flights/airline_logos/70px/' + encodeURIComponent(r.codigo_iata) + '.png');
+                var logoCell = '<img src="' + logoUrl + '" alt="' + r.codigo_iata + '" '
+                    + 'style="width:48px;height:48px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;padding:4px;" '
+                    + 'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'" />'
+                    + '<div style="display:none;width:48px;height:48px;border-radius:8px;background:#1d4ed8;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;">'
+                    + r.codigo_iata.substring(0, 2) + '</div>';
+                return '<tr>'
+                    + '<td style="padding:10px 16px;"><div style="display:flex;align-items:center;gap:0;">' + logoCell + '</div></td>'
+                    + '<td style="padding:10px 16px;font-weight:700;color:#1e293b;">' + r.codigo_iata + '</td>'
+                    + '<td style="padding:10px 16px;color:#475569;font-size:12px;">' + (r.codigo_oaci || '<span style="color:#cbd5e1;">—</span>') + '</td>'
+                    + '<td style="padding:10px 16px;">' + r.nombre_aerolinea + '</td>'
+                    + '<td style="padding:10px 16px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#64748b;font-size:12px;">'
+                        + (r.logo_url ? '<a href="' + r.logo_url + '" target="_blank" style="color:#2563eb;">' + r.logo_url + '</a>' : '<span style="color:#94a3b8;">Sin URL (usa Google Flights)</span>')
+                    + '</td>'
+                    + '<td style="padding:10px 16px;text-align:center;white-space:nowrap;">'
+                        + '<button class="btn btn-sm btn-outline-primary me-1" onclick="auDbEditRow(\'' + r.codigo_iata.replace(/'/g, "\\'") + '\')" title="Editar"><i class="fa fa-pen"></i></button>'
+                        + '<button class="btn btn-sm btn-outline-danger" onclick="auDbDelete(\'' + r.codigo_iata.replace(/'/g, "\\'") + '\')" title="Eliminar"><i class="fa fa-trash"></i></button>'
+                    + '</td>'
+                    + '</tr>';
+            }).join('');
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#ef4444;">Error inesperado: ' + err.message + '</td></tr>';
+        }
+    };
+
+    // ── Nueva fila ───────────────────────────────────────────────
+    window.auDbNewRow = function () {
+        _auDbEditIata = null;
+        _auDbPendingFile = null;
+        var nameEl = document.getElementById('au-db-file-name');
+        if (nameEl) nameEl.textContent = '';
+        document.getElementById('au-db-edit-title').textContent = 'Nueva aerolínea';
+        document.getElementById('au-db-iata').value = '';
+        document.getElementById('au-db-iata').disabled = false;
+        document.getElementById('au-db-oaci').value = '';
+        document.getElementById('au-db-nombre').value = '';
+        document.getElementById('au-db-logo').value = '';
+        auDbPreviewLogo();
+        var msg = document.getElementById('au-db-msg');
+        if (msg) msg.style.display = 'none';
+        document.getElementById('au-db-edit-panel').style.display = '';
+        document.getElementById('au-db-iata').focus();
+    };
+
+    // ── Editar fila ──────────────────────────────────────────────
+    window.auDbEditRow = function (iata) {
+        var row = _auDbRows.find(function (r) { return r.codigo_iata === iata; });
+        if (!row) return;
+        _auDbEditIata = iata;
+        _auDbPendingFile = null;
+        var nameEl = document.getElementById('au-db-file-name');
+        if (nameEl) nameEl.textContent = '';
+        document.getElementById('au-db-edit-title').textContent = 'Editar: ' + row.nombre_aerolinea;
+        document.getElementById('au-db-iata').value = row.codigo_iata;
+        document.getElementById('au-db-iata').disabled = true; // PK — no editable
+        document.getElementById('au-db-oaci').value = row.codigo_oaci || '';
+        document.getElementById('au-db-nombre').value = row.nombre_aerolinea;
+        document.getElementById('au-db-logo').value = row.logo_url || '';
+        auDbPreviewLogo();
+        var msg = document.getElementById('au-db-msg');
+        if (msg) msg.style.display = 'none';
+        document.getElementById('au-db-edit-panel').style.display = '';
+        document.getElementById('au-db-nombre').focus();
+        document.getElementById('au-db-edit-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    // ── Preview logo ─────────────────────────────────────────────
+    window.auDbPreviewLogo = function (objectUrl) {
+        var url = objectUrl || document.getElementById('au-db-logo').value.trim();
+        var iata = document.getElementById('au-db-iata').value.trim();
+        var preview = document.getElementById('au-db-logo-preview');
+        var zone = document.getElementById('au-db-drop-zone');
+        if (!preview) return;
+        var src = url || (iata ? 'https://www.gstatic.com/flights/airline_logos/70px/' + encodeURIComponent(iata) + '.png' : '');
+        if (src) {
+            preview.innerHTML = '<img src="' + src + '" alt="preview" style="width:88px;height:88px;object-fit:contain;border-radius:10px;" onerror="this.parentNode.innerHTML=\'<div style=&quot;text-align:center;color:#94a3b8;font-size:11px&quot;>Sin logo</div>\'" />';
+            if (zone) { zone.style.border = '2px solid #2563eb'; zone.style.background = '#eff6ff'; }
+        } else {
+            preview.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:11px;line-height:1.5;pointer-events:none;"><i class="fa fa-image" style="font-size:22px;display:block;margin-bottom:4px;"></i>Arrastra o<br>haz clic</div>';
+            if (zone) { zone.style.border = '2px dashed #cbd5e1'; zone.style.background = '#f8fafc'; }
+        }
+    };
+
+    // ── Drag & Drop ──────────────────────────────────────────────
+    window.auDbDragOver = function (e) {
+        e.preventDefault();
+        var zone = document.getElementById('au-db-drop-zone');
+        if (zone) { zone.style.border = '2px solid #2563eb'; zone.style.background = '#eff6ff'; }
+    };
+    window.auDbDragLeave = function (e) {
+        e.preventDefault();
+        if (_auDbPendingFile) return; // keep highlight if file already loaded
+        var zone = document.getElementById('au-db-drop-zone');
+        if (zone) { zone.style.border = '2px dashed #cbd5e1'; zone.style.background = '#f8fafc'; }
+    };
+    window.auDbOnDrop = function (e) {
+        e.preventDefault();
+        var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) { _auDbSetFile(file); }
+    };
+    window.auDbOnFileSelect = function (input) {
+        var file = input.files && input.files[0];
+        if (file) { _auDbSetFile(file); }
+        input.value = ''; // allow re-selecting same file
+    };
+
+    function _auDbSetFile(file) {
+        _auDbPendingFile = file;
+        var nameEl = document.getElementById('au-db-file-name');
+        if (nameEl) nameEl.textContent = '📎 ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+        // Clear manual URL to avoid conflict
+        var logoInput = document.getElementById('au-db-logo');
+        if (logoInput) logoInput.value = '';
+        // Show preview from local blob
+        var reader = new FileReader();
+        reader.onload = function (ev) { auDbPreviewLogo(ev.target.result); };
+        reader.readAsDataURL(file);
+    }
+
+    // ── Guardar (insert o update) ────────────────────────────────
+    window.auDbSave = async function () {
+        var iata   = document.getElementById('au-db-iata').value.trim().toUpperCase();
+        var oaci   = document.getElementById('au-db-oaci').value.trim().toUpperCase() || null;
+        var nombre = document.getElementById('au-db-nombre').value.trim();
+        var logo   = document.getElementById('au-db-logo').value.trim() || null;
+        var msg    = document.getElementById('au-db-msg');
+
+        if (!iata || !nombre) {
+            msg.textContent = 'Código IATA y Nombre son obligatorios.';
+            msg.className = 'mt-3 small text-danger';
+            msg.style.display = '';
+            return;
+        }
+
+        var client = window.supabaseClient;
+        if (!client) { msg.textContent = 'Sin conexión.'; msg.className = 'mt-3 small text-danger'; msg.style.display = ''; return; }
+
+        // ── Si hay archivo pendiente, subirlo primero ──────────
+        if (_auDbPendingFile) {
+            msg.textContent = 'Subiendo imagen…';
+            msg.className = 'mt-3 small text-muted';
+            msg.style.display = '';
+            try {
+                var ext = _auDbPendingFile.name.split('.').pop().toLowerCase() || 'png';
+                var path = iata.toLowerCase() + '.' + ext;
+                var upResp = await client.storage
+                    .from('logos-aerolineas')
+                    .upload(path, _auDbPendingFile, { upsert: true, contentType: _auDbPendingFile.type });
+                if (upResp.error) {
+                    msg.textContent = 'Error al subir imagen: ' + upResp.error.message;
+                    msg.className = 'mt-3 small text-danger';
+                    return;
+                }
+                var urlData = client.storage.from('logos-aerolineas').getPublicUrl(path);
+                logo = urlData.data.publicUrl;
+                // Update URL input to show the stored URL
+                var logoInput = document.getElementById('au-db-logo');
+                if (logoInput) logoInput.value = logo;
+                _auDbPendingFile = null;
+                var nameEl = document.getElementById('au-db-file-name');
+                if (nameEl) nameEl.textContent = '';
+            } catch (err) {
+                msg.textContent = 'Error inesperado al subir: ' + err.message;
+                msg.className = 'mt-3 small text-danger';
+                return;
+            }
+        }
+
+        msg.textContent = 'Guardando…';
+        msg.className = 'mt-3 small text-muted';
+        msg.style.display = '';
+
+        var payload = { codigo_iata: iata, nombre_aerolinea: nombre, logo_url: logo, codigo_oaci: oaci };
+        var resp;
+
+        if (_auDbEditIata) {
+            resp = await client.from('catalogo_aerolineas')
+                .update({ nombre_aerolinea: nombre, logo_url: logo, codigo_oaci: oaci })
+                .eq('codigo_iata', _auDbEditIata);
+        } else {
+            resp = await client.from('catalogo_aerolineas').insert([payload]);
+        }
+
+        if (resp.error) {
+            msg.textContent = 'Error: ' + resp.error.message;
+            msg.className = 'mt-3 small text-danger';
+            return;
+        }
+
+        msg.textContent = _auDbEditIata ? 'Aerolínea actualizada.' : 'Aerolínea creada.';
+        msg.className = 'mt-3 small text-success';
+        setTimeout(function () {
+            document.getElementById('au-db-edit-panel').style.display = 'none';
+            auDbLoad();
+        }, 900);
+    };
+
+    // ── Cancelar edición ─────────────────────────────────────────
+    window.auDbCancelEdit = function () {
+        document.getElementById('au-db-edit-panel').style.display = 'none';
+    };
+
+    // ── Filtrar tabla ────────────────────────────────────────────
+    window.auDbFilter = function (q) {
+        var tbody = document.getElementById('au-db-tbody');
+        if (!tbody) return;
+        var term = q.toLowerCase().trim();
+        Array.from(tbody.querySelectorAll('tr')).forEach(function (tr) {
+            var cells = tr.querySelectorAll('td');
+            if (!cells.length) return;
+            var iata   = (cells[1] && cells[1].textContent) || '';
+            var oaci   = (cells[2] && cells[2].textContent) || '';
+            var nombre = (cells[3] && cells[3].textContent) || '';
+            tr.style.display = (!term || iata.toLowerCase().includes(term) || oaci.toLowerCase().includes(term) || nombre.toLowerCase().includes(term)) ? '' : 'none';
+        });
+    };
+    window.auDbDelete = async function (iata) {
+        if (!confirm('¿Eliminar la aerolínea "' + iata + '"? Esta acción no se puede deshacer.')) return;
+        var client = window.supabaseClient;
+        if (!client) return;
+        var resp = await client.from('catalogo_aerolineas').delete().eq('codigo_iata', iata);
+        if (resp.error) { alert('Error: ' + resp.error.message); return; }
+        auDbLoad();
+    };
+
+    // ═════════════════════════════════════════════════════════════
+    //   TAB 4 — DESTINATARIOS DE CORREO (mhr_email_recipients)
+    // ═════════════════════════════════════════════════════════════
+    function _auMailEsc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    window.auMailLoad = async function () {
+        var tbody = document.getElementById('au-mail-tbody');
+        if (!tbody) return;
+        var client = window.supabaseClient;
+        if (!client) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-3 small">Supabase no disponible.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3 small">Cargando…</td></tr>';
+        var resp = await client
+            .from('mhr_email_recipients')
+            .select('id, email, nombre, rol, activo, notas, created_at')
+            .order('activo', { ascending: false })
+            .order('email', { ascending: true });
+        if (resp.error) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-3 small">Error: ' + _auMailEsc(resp.error.message) + '</td></tr>';
+            return;
+        }
+        var rows = resp.data || [];
+        if (!rows.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3 small">Sin destinatarios. Agrega el primero con el botón de arriba.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(function (r) {
+            var estadoBadge = r.activo
+                ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>'
+                : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>';
+            return '<tr>' +
+                '<td class="small fw-semibold">' + _auMailEsc(r.email) + '</td>' +
+                '<td class="small">' + _auMailEsc(r.nombre || '-') + '</td>' +
+                '<td class="small text-capitalize">' + _auMailEsc(r.rol || '-') + '</td>' +
+                '<td class="small text-muted">' + _auMailEsc(r.notas || '') + '</td>' +
+                '<td class="small">' + estadoBadge + '</td>' +
+                '<td class="text-end">' +
+                    '<button class="btn btn-sm btn-outline-secondary me-1" onclick="auMailToggleActive(\'' + r.id + '\',' + (!r.activo) + ')" title="' + (r.activo ? 'Desactivar' : 'Activar') + '">' +
+                        '<i class="fa ' + (r.activo ? 'fa-toggle-off' : 'fa-toggle-on') + '"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-sm btn-outline-primary me-1" onclick=\'auMailEdit(' + JSON.stringify(r).replace(/'/g, '&#39;') + ')\' title="Editar"><i class="fa fa-pen"></i></button>' +
+                    '<button class="btn btn-sm btn-outline-danger" onclick="auMailDelete(\'' + r.id + '\',\'' + _auMailEsc(r.email) + '\')" title="Eliminar"><i class="fa fa-trash"></i></button>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    };
+
+    window.auMailShowForm = function () {
+        document.getElementById('au-mail-id').value     = '';
+        document.getElementById('au-mail-email').value  = '';
+        document.getElementById('au-mail-nombre').value = '';
+        document.getElementById('au-mail-rol').value    = '';
+        document.getElementById('au-mail-notas').value  = '';
+        document.getElementById('au-mail-activo').checked = true;
+        document.getElementById('au-mail-form-title').textContent = 'Nuevo destinatario';
+        document.getElementById('au-mail-form-msg').textContent   = '';
+        document.getElementById('au-mail-form-card').style.display = '';
+    };
+
+    window.auMailHideForm = function () {
+        document.getElementById('au-mail-form-card').style.display = 'none';
+    };
+
+    window.auMailEdit = function (r) {
+        document.getElementById('au-mail-id').value      = r.id;
+        document.getElementById('au-mail-email').value   = r.email || '';
+        document.getElementById('au-mail-nombre').value  = r.nombre || '';
+        document.getElementById('au-mail-rol').value     = r.rol || '';
+        document.getElementById('au-mail-notas').value   = r.notas || '';
+        document.getElementById('au-mail-activo').checked = !!r.activo;
+        document.getElementById('au-mail-form-title').textContent = 'Editar destinatario';
+        document.getElementById('au-mail-form-msg').textContent   = '';
+        document.getElementById('au-mail-form-card').style.display = '';
+        document.getElementById('au-mail-form-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    window.auMailSave = async function () {
+        var msg     = document.getElementById('au-mail-form-msg');
+        var client  = window.supabaseClient;
+        if (!client) { msg.textContent = 'Supabase no disponible.'; msg.className = 'small text-danger'; return; }
+
+        var id     = document.getElementById('au-mail-id').value.trim();
+        var email  = document.getElementById('au-mail-email').value.trim().toLowerCase();
+        var nombre = document.getElementById('au-mail-nombre').value.trim();
+        var rol    = document.getElementById('au-mail-rol').value.trim() || null;
+        var notas  = document.getElementById('au-mail-notas').value.trim() || null;
+        var activo = !!document.getElementById('au-mail-activo').checked;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            msg.textContent = 'Correo no válido.';
+            msg.className = 'small text-danger';
+            return;
+        }
+
+        var payload = { email: email, nombre: nombre || null, rol: rol, notas: notas, activo: activo };
+        var resp;
+        if (id) {
+            resp = await client.from('mhr_email_recipients').update(payload).eq('id', id);
+        } else {
+            resp = await client.from('mhr_email_recipients').insert(payload);
+        }
+        if (resp.error) {
+            msg.textContent = 'Error: ' + resp.error.message;
+            msg.className = 'small text-danger';
+            return;
+        }
+        msg.textContent = id ? 'Destinatario actualizado.' : 'Destinatario agregado.';
+        msg.className = 'small text-success';
+        setTimeout(function () { window.auMailHideForm(); window.auMailLoad(); }, 700);
+    };
+
+    window.auMailToggleActive = async function (id, newVal) {
+        var client = window.supabaseClient; if (!client) return;
+        var resp = await client.from('mhr_email_recipients').update({ activo: newVal }).eq('id', id);
+        if (resp.error) { alert('Error: ' + resp.error.message); return; }
+        window.auMailLoad();
+    };
+
+    window.auMailDelete = async function (id, email) {
+        if (!confirm('¿Eliminar el destinatario "' + email + '"? Dejará de recibir correos.')) return;
+        var client = window.supabaseClient; if (!client) return;
+        var resp = await client.from('mhr_email_recipients').delete().eq('id', id);
+        if (resp.error) { alert('Error: ' + resp.error.message); return; }
+        window.auMailLoad();
+    };
+
+    window.auMailSendTest = async function () {
+        var msg = document.getElementById('au-mail-test-msg');
+        var raw = (document.getElementById('au-mail-test-rid').value || '').trim();
+        if (!raw) { msg.textContent = 'Pega un folio o un UUID.'; msg.className = 'small text-danger'; return; }
+        var client = window.supabaseClient; if (!client) { msg.textContent = 'Sin Supabase.'; msg.className = 'small text-danger'; return; }
+
+        // Si no es UUID, resolvemos por folio
+        var reportId = raw;
+        if (!/^[0-9a-fA-F-]{36}$/.test(raw)) {
+            var r = await client.from('reports').select('id').eq('folio', raw).maybeSingle();
+            if (r.error || !r.data) { msg.textContent = 'Folio no encontrado.'; msg.className = 'small text-danger'; return; }
+            reportId = r.data.id;
+        }
+
+        msg.textContent = 'Enviando…';
+        msg.className   = 'small text-muted';
+        var resp = await client.functions.invoke('mhr-send-report-email', {
+            body: { reportId: reportId, asuntoExtra: 'Correo de prueba enviado desde el panel de administración.' }
+        });
+        if (resp.error || (resp.data && resp.data.ok === false)) {
+            var err = (resp.error && resp.error.message) || (resp.data && resp.data.error) || 'Error desconocido';
+            msg.textContent = '❌ ' + err;
+            msg.className = 'small text-danger';
+            return;
+        }
+        msg.textContent = '✅ Enviado a ' + ((resp.data && resp.data.recipients && resp.data.recipients.length) || 0) + ' destinatarios.';
+        msg.className = 'small text-success';
+    };
+
+})();
+</script>
+</body>
+</html>

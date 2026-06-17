@@ -107,19 +107,12 @@
                 });
 
                 // Capa base: Google satelital (cobertura completa en aeropuertos a cualquier nivel de zoom)
+                // Solo imagen satelital, sin etiquetas/nombres de lugares
                 L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
                     subdomains: ['0', '1', '2', '3'],
                     attribution: 'Map data &copy; Google',
                     maxZoom: 21,
                     maxNativeZoom: 20
-                }).addTo(mapInstance);
-                // Capa de etiquetas y vialidades de Google sobre el satélite
-                L.tileLayer('https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
-                    subdomains: ['0', '1', '2', '3'],
-                    attribution: '',
-                    maxZoom: 21,
-                    maxNativeZoom: 20,
-                    opacity: 0.85
                 }).addTo(mapInstance);
 
                 // Centrar en el aeródromo AIFA
@@ -286,7 +279,7 @@
                 currentLugarField.value = locationStr;
                 currentLugarField.dataset.lat = selectedLatLng.lat.toFixed(6);
                 currentLugarField.dataset.lng = selectedLatLng.lng.toFixed(6);
-                currentLugarField.dataset.mapsUrl = 'https://maps.google.com/maps?q=' + selectedLatLng.lat.toFixed(6) + ',' + selectedLatLng.lng.toFixed(6) + '&t=k&z=17';
+                currentLugarField.dataset.mapsUrl = 'https://www.google.com/maps?q=' + selectedLatLng.lat.toFixed(6) + ',' + selectedLatLng.lng.toFixed(6);
 
 
                 // ===== PASO 4: BAJAR ZOOM =====

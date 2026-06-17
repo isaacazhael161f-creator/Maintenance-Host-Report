@@ -7,7 +7,8 @@
             border: 1px solid var(--border);
             border-top: 4px solid var(--blue);
             margin: 20px auto;
-            max-width: 900px;
+            max-width: 1600px;
+            width: 96vw;
         }
 
         #admin-panel h2 {

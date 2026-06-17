@@ -95,9 +95,11 @@ window.MHRRevisionPage = (function () {
             if (submitBtn) {
                 originalBtnText = submitBtn.textContent || submitBtn.value;
                 submitBtn.disabled = true;
-                if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = 'Guardando en base de datos...';
-                else submitBtn.value = 'Guardando en base de datos...';
+                if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = 'Generando PDF...';
+                else submitBtn.value = 'Generando PDF...';
             }
+
+            try {
 
             // Recolectar metadatos
             var fecha = document.getElementById('report-date') ? document.getElementById('report-date').textContent : '';
@@ -187,7 +189,7 @@ window.MHRRevisionPage = (function () {
                 var itemId = card.dataset.itemCatalogId;
                 if (!itemId) return;
                 var title = card.querySelector('.item-card-toggle');
-                var name = title ? title.textContent.replace(/^[▼▶]\s*/, '').trim() : itemId;
+                var name = card.dataset.itemNombre || (title ? title.textContent.replace(/^[▼▶]\s*/, '').trim() : itemId);
                 var fields = [];
                 var lugar = card.querySelector('.dynamic-lugar');
                 var hallazgo = card.querySelector('.dynamic-hallazgo');
@@ -208,19 +210,7 @@ window.MHRRevisionPage = (function () {
                 if (codigo && codigo.value.trim()) fields.push({ key: 'codigo', value: codigo.value.trim() });
                 if (followupStatus && followupStatus.value.trim()) fields.push({ key: 'followup_status', value: followupStatus.value.trim() });
                 if (followupObs && followupObs.value.trim()) fields.push({ key: 'followup_observaciones', value: followupObs.value.trim() });
-                // Fotos acumuladas de reportes anteriores (ítems de seguimiento)
-                var prevPhotosForPdf = [];
-                if (card.dataset.prefilled === '1') {
-                    var prevThumbs = card.querySelectorAll('.prev-photo-thumb');
-                    Array.prototype.forEach.call(prevThumbs, function (img) {
-                        prevPhotosForPdf.push({
-                            url: img.getAttribute('data-prev-url') || '',
-                            name: img.getAttribute('data-prev-name') || 'Foto',
-                            reportFolio: img.getAttribute('data-report-folio') || 'Reporte anterior'
-                        });
-                    });
-                }
-                filled.push({ id: itemId, name: name, fields: fields, followupStatus: followupStatus ? followupStatus.value : '', followupObs: followupObs ? followupObs.value : '', previousPhotos: prevPhotosForPdf });
+                filled.push({ id: itemId, name: name, fields: fields, followupStatus: followupStatus ? followupStatus.value : '', followupObs: followupObs ? followupObs.value : '' });
             });
 
             if (filled.length === 0) {
@@ -236,13 +226,29 @@ window.MHRRevisionPage = (function () {
                 var itemId = card.dataset.itemCatalogId;
                 var photos = (window.itemPhotos && window.itemPhotos[itemId]) ? window.itemPhotos[itemId] : [];
                 if (photos.length === 0) {
-                    var titleBtn = card.querySelector('.item-card-toggle');
-                    var name = titleBtn ? titleBtn.textContent.replace(/^[▼▶]\s*/, '').trim() : itemId;
-                    missingPhotoItems.push(name);
+                    // Extract clean name from data attribute or first line of summary
+                    var name = card.dataset.itemNombre || itemId;
+                    var titleEl = card.querySelector('.item-card-toggle');
+                    if (titleEl) {
+                        // For prefilled cards the toggle is a div with nested spans — get first text node
+                        var firstDiv = titleEl.querySelector('div > div:first-child');
+                        name = firstDiv ? firstDiv.textContent.trim() : (titleEl.childNodes[0] ? titleEl.childNodes[0].textContent.trim() : titleEl.textContent.split('\n')[0].replace(/^[▼▶▸]\s*/, '').trim());
+                    }
+                    missingPhotoItems.push({ name: name, card: card });
                 }
             });
             if (missingPhotoItems.length > 0) {
-                alert('Los siguientes ítems de seguimiento requieren nueva evidencia fotográfica:\n\n• ' + missingPhotoItems.join('\n• ') + '\n\nAdjunta al menos una foto nueva a cada ítem antes de continuar.');
+                // Auto-expand all cards missing photos so the user can see where to upload
+                missingPhotoItems.forEach(function (m) {
+                    var body = m.card.querySelector('.item-card-body');
+                    var chevron = m.card.querySelector('.pf-chevron');
+                    if (body && body.style.display === 'none') {
+                        body.style.display = 'block';
+                        if (chevron) chevron.style.transform = 'rotate(90deg)';
+                    }
+                    m.card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+                alert('Los siguientes ítems de seguimiento requieren nueva evidencia fotográfica:\n\n• ' + missingPhotoItems.map(function(m){ return m.name; }).join('\n• ') + '\n\nSe han expandido los ítems correspondientes. Adjunta al menos una foto nueva a cada uno antes de continuar.');
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
@@ -483,8 +489,17 @@ window.MHRRevisionPage = (function () {
                     }
                     var mapImage = placeField ? placeField.mapImage : '';
                     var mapsUrl = placeField ? placeField.mapsUrl : '';
+                    // Reescribir cualquier mapsUrl previo (formato antiguo con &t=k&z=17, etc.)
+                    // a partir de las coordenadas presentes en el texto, para garantizar el pin exacto.
+                    if (lugarVal) {
+                        var coordsMatch = lugarVal.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                        if (coordsMatch) mapsUrl = 'https://www.google.com/maps?q=' + coordsMatch[1] + ',' + coordsMatch[2];
+                    }
                     if (mapImage) {
                         h += '<div style="position:relative;width:100%;"><img src="' + mapImage + '" style="width:100%;max-height:88px;border-radius:4px;display:block;object-fit:cover;border:1px solid #e6eef9;"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.7));">\uD83D\uDCCD</div></div>';
+                    }
+                    if (mapsUrl) {
+                        h += '<a href="' + escapeHtml(mapsUrl) + '" target="_blank" rel="noopener" data-pdf-link="1" data-pdf-url="' + escapeHtml(mapsUrl) + '" style="display:inline-block;margin-top:4px;font-size:10px;color:#0055a5;text-decoration:underline;font-weight:600;">\uD83D\uDCCD Abrir en Google Maps</a>';
                     }
                 } catch (ex) { }
                 return h;
@@ -560,7 +575,52 @@ window.MHRRevisionPage = (function () {
             filled.forEach(function (f, _itemIdx) {
                 var infoHtml = '', observacionesVal = '', lugarVal = '';
                 if (f.fields && f.fields.length) {
-                    var prioColor = { '1': '#28a745', '2': '#ffc107', '3': '#ff8c00' }, condColor = { 'Satisfactorio': '#28a745', 'No Satisfactorio': '#dc3545', 'N/A': '#6c757d' };
+                    var prioColor = { '1': '#28a745', '2': '#ffc107', '3': '#dc3545' };
+                    var condColor = {
+                        'Satisfactorio': '#28a745',
+                        'No Satisfactorio': '#dc3545',
+                        'N/A': '#6c757d',
+                        'Daño Menor': '#28a745',
+                        'Daño Mayor': '#ffc107',
+                        'Daño Severo': '#ff8c00',
+                        'Daño Catastrofico': '#dc3545',
+                        'Daño Catastrófico': '#dc3545'
+                    };
+                    // Mapa de etiquetas: clave normalizada (sin acentos, minúsculas) → etiqueta con acentos
+                    var labelMap = {
+                        'hallazgo': 'Hallazgo',
+                        'condicion': 'Condición',
+                        'prioridad': 'Prioridad',
+                        'codigo': 'Código',
+                        'descripcion': 'Descripción',
+                        'accion': 'Acción',
+                        'observacion': 'Observación',
+                        'observaciones': 'Observaciones',
+                        'item': 'Ítem',
+                        'area': 'Área',
+                        'tipo': 'Tipo',
+                        'estado': 'Estado',
+                        'fecha': 'Fecha',
+                        'responsable': 'Responsable',
+                        'pista': 'Pista',
+                        'turno': 'Turno',
+                        'numero': 'Número'
+                    };
+                    // Normaliza valores con acento faltante
+                    var valueFix = {
+                        'Daño Catastrofico': 'Daño Catastrófico'
+                    };
+                    function _stripAccents(s) {
+                        try { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+                        catch (e) { return String(s || '').toLowerCase().trim(); }
+                    }
+                    function _prettyLabel(rawKey) {
+                        var norm = _stripAccents(rawKey);
+                        if (labelMap[norm]) return labelMap[norm];
+                        // Capitaliza la primera letra como fallback
+                        var s = String(rawKey || '');
+                        return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+                    }
                     infoHtml = '<ul style="margin:6px 0 6px 16px;padding:0;">';
                     f.fields.forEach(function (ff) {
                         var key = (ff.key || '').toString(), val = (ff.value || '').toString();
@@ -569,7 +629,9 @@ window.MHRRevisionPage = (function () {
                         var dot = '';
                         if (/prioridad/i.test(key) && prioColor[val]) dot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + prioColor[val] + ';margin-left:8px;vertical-align:middle;"></span>';
                         else if (/condici/i.test(key) && condColor[val]) dot = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + condColor[val] + ';margin-left:8px;vertical-align:middle;"></span>';
-                        infoHtml += '<li style="margin-bottom:4px;">' + key + ': ' + val + (dot ? ' ' + dot : '') + '</li>';
+                        var displayKey = _prettyLabel(key);
+                        var displayVal = valueFix[val] || val;
+                        infoHtml += '<li style="margin-bottom:4px;">' + escapeHtml(displayKey) + ': ' + escapeHtml(displayVal) + (dot ? ' ' + dot : '') + '</li>';
                     });
                     infoHtml += '</ul>';
                 } else { infoHtml = '<span class="muted">Sin campos adicionales</span>'; }
@@ -650,43 +712,46 @@ window.MHRRevisionPage = (function () {
             }());
             // --- Construcción de páginas de evidencias fotográficas (landscape) ---
             var photoPageHtmls = (function () {
-                var allCells = [];
+                var sections = [];
                 for (var _i = 0; _i < filled.length; _i++) {
                     var _f = filled[_i];
-                    // Fotos de reportes anteriores (etiquetadas por folio)
-                    var _prevPhotos = _f.previousPhotos || [];
-                    _prevPhotos.forEach(function (p) {
-                        allCells.push({
-                            itemName: _f.name,
-                            imgSrc: p.url,
-                            caption: p.name || 'Foto',
-                            reportLabel: p.reportFolio || 'Reporte anterior',
-                            isNew: false
-                        });
-                    });
-                    // Fotos nuevas del reporte actual
-                    var _newPhotos = (window.mhr && window.mhr.getItemPhotos)
+                    var _photos = (window.mhr && window.mhr.getItemPhotos)
                         ? window.mhr.getItemPhotos(_f.id)
                         : ((window.itemPhotos && window.itemPhotos[_f.id]) || []);
-                    (_newPhotos || []).forEach(function (ph, idx) {
+                    if (_photos && _photos.length > 0)
+                        sections.push({ itemName: _f.name, photos: _photos });
+                }
+                if (!sections.length) return null;
+
+                // Aplanar a celdas individuales (ordenadas por item)
+                var allCells = [];
+                sections.forEach(function (sec) {
+                    sec.photos.forEach(function (ph, idx) {
                         allCells.push({
-                            itemName: _f.name,
-                            imgSrc: ph.dataURL,
-                            caption: ph.name || ('Foto ' + (idx + 1)),
-                            reportLabel: 'Actual: ' + folio,
-                            isNew: true
+                            itemName: sec.itemName,
+                            dataURL: ph.dataURL,
+                            caption: ph.name || ('Foto ' + (idx + 1))
                         });
                     });
-                }
-                if (!allCells.length) return null;
+                });
 
-                var PER_PAGE = 8; // 4 col × 2 rows = 1/8 de página por foto
+                var PER_PAGE = 8; // máximo: 4 col × 2 rows
                 var totalPages = Math.ceil(allCells.length / PER_PAGE);
                 var pages = [];
 
                 for (var _pp = 0; _pp < totalPages; _pp++) {
                     var cells = allCells.slice(_pp * PER_PAGE, (_pp + 1) * PER_PAGE);
-                    while (cells.length < PER_PAGE) cells.push(null);
+                    var count = cells.length;
+
+                    // Distribución adaptable: ajusta cols/altura según cantidad real
+                    var cols, imgH;
+                    if (count === 1) { cols = 1; imgH = 620; }
+                    else if (count === 2) { cols = 2; imgH = 560; }
+                    else if (count === 3) { cols = 3; imgH = 500; }
+                    else if (count === 4) { cols = 2; imgH = 320; }
+                    else if (count <= 6) { cols = 3; imgH = 320; }
+                    else { cols = 4; imgH = 283; }
+                    var rows = Math.ceil(count / cols);
 
                     // 1122 × 794 px = A4 landscape a 96 dpi
                     var ph = '<div style="width:1122px;height:794px;padding:22px 24px 14px 24px;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;background:#fff;overflow:hidden;">';
@@ -701,24 +766,34 @@ window.MHRRevisionPage = (function () {
                     ph += '</tr></tbody></table>';
                     ph += '<div style="border-top:2px solid #0b66c3;margin-bottom:8px;"></div>';
 
-                    // Rejilla 4 × 2
-                    ph += '<table style="width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed;">';
-                    ph += '<tbody>';
-                    for (var _row = 0; _row < 2; _row++) {
+                    // Rejilla adaptable
+                    var cellWidthPct = (100 / cols).toFixed(2) + '%';
+                    var wrapperStyle = (count === 1)
+                        ? 'width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed;'
+                        : 'width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed;';
+                    ph += '<table style="' + wrapperStyle + '"><tbody>';
+                    for (var _row = 0; _row < rows; _row++) {
+                        var rowStart = _row * cols;
+                        var rowEnd = Math.min(rowStart + cols, count);
+                        var rowCount = rowEnd - rowStart;
                         ph += '<tr>';
-                        for (var _col = 0; _col < 4; _col++) {
-                            var _cell = cells[_row * 4 + _col];
-                            ph += '<td style="width:25%;vertical-align:top;border:1px solid #d1dce8;border-radius:3px;padding:5px;background:#fafcff;">';
-                            if (_cell) {
-                                // Etiqueta de reporte (color diferente para fotos nuevas vs anteriores)
-                                var labelColor = _cell.isNew ? '#059669' : '#0b66c3';
-                                var labelBg = _cell.isNew ? '#d1fae5' : '#dbeafe';
-                                ph += '<div style="font-size:8px;font-weight:700;color:' + labelColor + ';background:' + labelBg + ';border-radius:3px;padding:1px 4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(_cell.reportLabel) + '">' + escapeHtml(_cell.reportLabel) + '</div>';
-                                ph += '<div style="font-size:9px;font-weight:700;color:#0b66c3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;" title="' + escapeHtml(_cell.itemName) + '">' + escapeHtml(_cell.itemName) + '</div>';
-                                ph += '<img src="' + _cell.imgSrc + '" style="width:100%;height:262px;object-fit:cover;display:block;border-radius:2px;">';
-                                ph += '<div style="font-size:8px;color:#6b7280;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(_cell.caption) + '</div>';
-                            }
+                        // Centrar última fila incompleta con celdas vacías sin borde
+                        var leftPad = (cols - rowCount) / 2;
+                        var leftFull = Math.floor(leftPad);
+                        var rightFull = Math.ceil(leftPad);
+                        for (var _lp = 0; _lp < leftFull; _lp++) {
+                            ph += '<td style="width:' + cellWidthPct + ';"></td>';
+                        }
+                        for (var _ci = rowStart; _ci < rowEnd; _ci++) {
+                            var _cell = cells[_ci];
+                            ph += '<td style="width:' + cellWidthPct + ';vertical-align:top;border:1px solid #d1dce8;border-radius:3px;padding:5px;background:#fafcff;">';
+                            ph += '<div style="font-size:9px;font-weight:700;color:#0b66c3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;" title="' + escapeHtml(_cell.itemName) + '">' + escapeHtml(_cell.itemName) + '</div>';
+                            ph += '<img src="' + _cell.dataURL + '" style="width:100%;height:' + imgH + 'px;object-fit:cover;display:block;border-radius:2px;">';
+                            ph += '<div style="font-size:8px;color:#6b7280;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(_cell.caption) + '</div>';
                             ph += '</td>';
+                        }
+                        for (var _rp = 0; _rp < rightFull; _rp++) {
+                            ph += '<td style="width:' + cellWidthPct + ';"></td>';
                         }
                         ph += '</tr>';
                     }
@@ -756,7 +831,40 @@ window.MHRRevisionPage = (function () {
                         if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = 'Guardando datos...';
                         else submitBtn.value = 'Guardando datos...';
                     }
-                    await saveToSupabase(pdfUrl);
+                    var savedReportId = await saveToSupabase(pdfUrl);
+
+                    // Envío automático por correo (fire-and-forget; no bloquea el flujo)
+                    if (savedReportId && window.MHRReportMailer) {
+                        try {
+                            if (submitBtn) {
+                                if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = 'Enviando correo...';
+                                else submitBtn.value = 'Enviando correo...';
+                            }
+                            var mailRes = await window.MHRReportMailer.sendReportEmail({
+                                reportId:    savedReportId,
+                                blob:        blob,
+                                pdfFilename: 'reporte_' + folio + '.pdf'
+                            });
+                            if (mailRes && mailRes.ok) {
+                                console.log('[MHR] Correo enviado:', mailRes.data);
+                                try {
+                                    if (window.mhr && typeof window.mhr.toast === 'function') {
+                                        window.mhr.toast('📧 Correo enviado a los destinatarios', 'success');
+                                    }
+                                } catch (_t) { }
+                            } else {
+                                console.warn('[MHR] No se envió el correo:', mailRes && mailRes.error);
+                                try {
+                                    if (window.mhr && typeof window.mhr.toast === 'function') {
+                                        window.mhr.toast('⚠️ Reporte guardado, pero el correo no se envió: ' + ((mailRes && mailRes.error) || 'desconocido'), 'warning');
+                                    }
+                                } catch (_t) { }
+                            }
+                        } catch (mailErr) {
+                            console.warn('[MHR] Excepción al enviar correo:', mailErr);
+                        }
+                    }
+
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
@@ -768,6 +876,16 @@ window.MHRRevisionPage = (function () {
                     } catch (clearErr) { console.warn('No se pudo limpiar formulario automáticamente:', clearErr); }
                 }
             });;
+
+            } catch (_submitErr) {
+                console.error('Error al generar reporte:', _submitErr);
+                alert('Error al generar el reporte: ' + (_submitErr && _submitErr.message ? _submitErr.message : String(_submitErr)));
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;
+                    else submitBtn.value = originalBtnText;
+                }
+            }
         });
     }
 

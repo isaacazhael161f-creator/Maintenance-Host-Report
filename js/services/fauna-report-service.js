@@ -9,7 +9,6 @@
       var resp = await client
         .from('fauna_reports')
         .select('fecha_reporte')
-        .eq('tipo_reporte', 'Rescate')
         .not('ubicacion_lat', 'is', null)
         .not('ubicacion_lng', 'is', null)
         .order('fecha_reporte', { ascending: false });
@@ -43,10 +42,10 @@
       var query = client
         .from('fauna_reports')
         .select('id, folio, fecha_reporte, clase, especie, tipo_reporte, ubicacion_lat, ubicacion_lng, ubicacion_texto')
-        .eq('tipo_reporte', 'Rescate')
         .not('ubicacion_lat', 'is', null)
         .not('ubicacion_lng', 'is', null)
         .order('fecha_reporte', { ascending: false });
+      if (filters.tipo) query = query.eq('tipo_reporte', filters.tipo);
       if (filters.year) query = query.gte('fecha_reporte', filters.year + '-01-01').lte('fecha_reporte', filters.year + '-12-31');
       if (filters.month && filters.year) {
         var monthNum = Number(filters.month);
