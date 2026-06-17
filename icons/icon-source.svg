@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="55%" stop-color="#142848"/>
+      <stop offset="100%" stop-color="#0a1729"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.25" cy="0.18" r="0.85">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="header" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0f2542"/>
+    </linearGradient>
+    <linearGradient id="check" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <linearGradient id="planeFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="ds" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    <clipPath id="paperClip">
+      <rect x="222" y="200" width="580" height="700" rx="40"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background full bleed -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+
+  <!-- Stylized airplane (decorative, top right) -->
+  <g opacity="0.22" transform="translate(900 170) rotate(-28)">
+    <path d="M 30 0 L -30 -22 L -160 -22 L -210 -90 L -240 -85 L -210 -22 L -260 -22 L -290 -45 L -310 -40 L -300 0 L -310 40 L -290 45 L -260 22 L -210 22 L -240 85 L -210 90 L -160 22 L -30 22 L 30 0 Z"
+          fill="url(#planeFill)"/>
+  </g>
+
+  <!-- Runway centerline dashes at bottom -->
+  <g opacity="0.28">
+    <rect x="240" y="952" width="80" height="14" rx="7" fill="#fff"/>
+    <rect x="360" y="952" width="80" height="14" rx="7" fill="#fff"/>
+    <rect x="480" y="952" width="80" height="14" rx="7" fill="#fff"/>
+    <rect x="600" y="952" width="80" height="14" rx="7" fill="#fff"/>
+    <rect x="720" y="952" width="80" height="14" rx="7" fill="#fff"/>
+  </g>
+
+  <!-- Clipboard with paper, slight tilt for dynamism -->
+  <g transform="translate(512 540) rotate(-3.5) translate(-512 -540)" filter="url(#ds)">
+    <!-- Top metal clip -->
+    <rect x="436" y="160" width="152" height="62" rx="14" fill="#94a3b8"/>
+    <rect x="468" y="138" width="88" height="36" rx="10" fill="#cbd5e1"/>
+
+    <!-- Paper -->
+    <rect x="222" y="200" width="580" height="700" rx="40" fill="url(#paper)"/>
+
+    <!-- Header band (clipped to rounded corners) -->
+    <g clip-path="url(#paperClip)">
+      <rect x="222" y="200" width="580" height="138" fill="url(#header)"/>
+      <!-- MHR mark in header (path-based to avoid font issues) -->
+      <!-- M -->
+      <path d="M 358 246 L 358 314 L 374 314 L 374 270 L 392 308 L 404 308 L 422 270 L 422 314 L 438 314 L 438 246 L 418 246 L 398 290 L 378 246 Z" fill="#ffffff"/>
+      <!-- H -->
+      <path d="M 462 246 L 462 314 L 478 314 L 478 286 L 506 286 L 506 314 L 522 314 L 522 246 L 506 246 L 506 270 L 478 270 L 478 246 Z" fill="#ffffff"/>
+      <!-- R -->
+      <path d="M 546 246 L 546 314 L 562 314 L 562 290 L 580 290 L 596 314 L 614 314 L 596 286 C 612 282 620 272 620 266 C 620 254 610 246 594 246 Z M 562 260 L 588 260 C 596 260 600 264 600 268 C 600 272 596 276 588 276 L 562 276 Z" fill="#ffffff"/>
+    </g>
+
+    <!-- Document content lines -->
+    <rect x="282" y="402" width="420" height="18" rx="9" fill="#94a3b8" opacity="0.5"/>
+    <rect x="282" y="442" width="340" height="18" rx="9" fill="#cbd5e1"/>
+    <rect x="282" y="482" width="380" height="18" rx="9" fill="#cbd5e1"/>
+
+    <!-- Big checkmark -->
+    <path d="M 308 720 L 462 858 L 736 588"
+          stroke="url(#check)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M 308 720 L 462 858 L 736 588"
+          stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.35"/>
+  </g>
+</svg>

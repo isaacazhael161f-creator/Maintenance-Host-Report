@@ -1,11 +1,19 @@
-const CACHE_NAME = 'mhr-cache-v19';
+const CACHE_NAME = 'mhr-cache-v20';
 
 // Archivos del shell de la app que se cachean al instalar
 const SHELL_FILES = [
     './',
     './index.html',
+    './manifest.webmanifest',
     './js/mhr-utils.js',
     './logo.png',
+    './favicon-16.png',
+    './favicon-32.png',
+    './apple-touch-icon.png',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/icon-192-maskable.png',
+    './icons/icon-512-maskable.png',
     // CDN – se pre-cachean para que estén disponibles sin internet
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
