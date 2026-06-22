@@ -86,37 +86,96 @@
         var closeBtn = document.getElementById('pdf-preview-close');
         var spinner  = document.getElementById('pdf-spinner');
 
-        // Sin contenedor → abrir directo en pestaña
-        if (!preview || !iframe) { window.open(url, '_blank', 'noopener'); return; }
+        // Sin contenedor → abrir directo
+        if (!preview || !iframe) {
+            var a = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            return;
+        }
+
+        // Detectar móvil/tablet Android/iOS: los iframes no renderizan PDFs en WebView/PWA
+        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                       (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
 
         // Reset estado previo
-        if (spinner) spinner.style.display = '';
-        iframe.style.display = '';
+        iframe.onload = null;
+        iframe.onerror = null;
         iframe.src = 'about:blank';
 
-        // Cargar el PDF
-        try { iframe.src = url; } catch (_) { window.open(url, '_blank', 'noopener'); return; }
+        var fallbackTimer;
 
-        var loaded = false;
-        var fallbackTimer = setTimeout(function () {
-            if (!loaded) {
-                // Si el iframe no logró cargar a tiempo, abrir en pestaña
-                try { window.open(url, '_blank', 'noopener'); } catch (_) {}
-            }
-        }, 8000);
-
-        iframe.onload = function () {
-            loaded = true;
-            clearTimeout(fallbackTimer);
+        if (isMobile) {
+            // ── Móvil: no usar iframe; mostrar panel con enlace directo ──────
             if (spinner) spinner.style.display = 'none';
+            iframe.style.display = 'none';
+
+            var mobilePanel = document.getElementById('pdf-mobile-panel');
+            if (!mobilePanel) {
+                mobilePanel = document.createElement('div');
+                mobilePanel.id = 'pdf-mobile-panel';
+                mobilePanel.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:28px;text-align:center;';
+                preview.insertBefore(mobilePanel, iframe);
+            }
+            var safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            mobilePanel.innerHTML =
+                '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' +
+                '<p style="color:#374151;font-size:14px;margin:0;">Toca el bot\u00f3n para abrir el PDF:</p>' +
+                '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" ' +
+                'style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;background:#1d4ed8;color:#fff;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;-webkit-tap-highlight-color:transparent;">' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                'Abrir PDF</a>';
+            mobilePanel.style.display = 'flex';
+        } else {
+            // ── Escritorio: usar iframe con fallback ──────────────────────────
+            var mp = document.getElementById('pdf-mobile-panel');
+            if (mp) mp.style.display = 'none';
+
+            if (spinner) spinner.style.display = '';
+            iframe.style.display = '';
+
+            var loaded = false;
+            fallbackTimer = setTimeout(function () {
+                if (!loaded) {
+                    var fa = document.createElement('a');
+                    fa.href = url; fa.target = '_blank'; fa.rel = 'noopener noreferrer';
+                    document.body.appendChild(fa); fa.click(); document.body.removeChild(fa);
+                }
+            }, 8000);
+
+            try { iframe.src = url; } catch (_) {
+                clearTimeout(fallbackTimer);
+                var ea = document.createElement('a');
+                ea.href = url; ea.target = '_blank'; ea.rel = 'noopener noreferrer';
+                document.body.appendChild(ea); ea.click(); document.body.removeChild(ea);
+                return;
+            }
+
+            iframe.onload = function () {
+                loaded = true;
+                clearTimeout(fallbackTimer);
+                if (spinner) spinner.style.display = 'none';
+            };
+            iframe.onerror = function () {
+                clearTimeout(fallbackTimer);
+                var oa = document.createElement('a');
+                oa.href = url; oa.target = '_blank'; oa.rel = 'noopener noreferrer';
+                document.body.appendChild(oa); oa.click(); document.body.removeChild(oa);
+            };
+        }
+
+        // Botones de acción — funcionan como enlace nativo (evita window.open bloqueado)
+        if (dlBtn) dlBtn.onclick = function () {
+            var a = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         };
-        iframe.onerror = function () {
-            clearTimeout(fallbackTimer);
-            try { window.open(url, '_blank', 'noopener'); } catch (_) {}
+        if (openTab) openTab.onclick = function () {
+            var a = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         };
 
-        if (dlBtn)   dlBtn.onclick   = function () { window.open(url, '_blank', 'noopener'); };
-        if (openTab) openTab.onclick = function () { window.open(url, '_blank', 'noopener'); };
         if (backdrop) backdrop.classList.add('pdf-visible');
         preview.removeAttribute('aria-hidden');
         preview.classList.add('pdf-visible');
@@ -129,6 +188,9 @@
             iframe.onload = null;
             iframe.onerror = null;
             iframe.src = 'about:blank';
+            iframe.style.display = '';
+            var mp2 = document.getElementById('pdf-mobile-panel');
+            if (mp2) mp2.style.display = 'none';
         }
         if (closeBtn) closeBtn.onclick = _close;
         if (backdrop) backdrop.onclick = _close;

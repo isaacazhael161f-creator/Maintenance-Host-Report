@@ -327,7 +327,36 @@ window.MHRPdfRenderer = (function () {
                 if (spinner) spinner.removeAttribute('style');
                 _restoreBtn(submitBtn, originalBtnText);
 
-                if (iframe) iframe.src = url;
+                // Detectar móvil/tablet: los blob: URL no se renderizan en iframes de Android
+                var _isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                                (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+                if (_isMobile) {
+                    // Móvil: ocultar iframe, mostrar panel de descarga directa
+                    if (iframe) iframe.style.display = 'none';
+                    var _mp = document.getElementById('pdf-mobile-panel');
+                    if (!_mp) {
+                        _mp = document.createElement('div');
+                        _mp.id = 'pdf-mobile-panel';
+                        _mp.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:28px;text-align:center;';
+                        if (preview) preview.insertBefore(_mp, iframe);
+                    }
+                    _mp.innerHTML =
+                        '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+                        '<p style="color:#374151;font-size:15px;font-weight:700;margin:0;">PDF generado</p>' +
+                        '<p style="color:#6b7280;font-size:13px;margin:0;">Desc\u00e1rgalo para verlo en tu dispositivo.</p>' +
+                        '<a href="' + url + '" download="' + filename.replace(/['"<>]/g, '') + '" ' +
+                        'style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;background:#1d4ed8;color:#fff;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;-webkit-tap-highlight-color:transparent;">' +
+                        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                        'Descargar PDF</a>';
+                    _mp.style.display = 'flex';
+                } else {
+                    // Escritorio: mostrar en iframe
+                    if (iframe) { iframe.style.display = ''; iframe.src = url; }
+                    var _existingMp = document.getElementById('pdf-mobile-panel');
+                    if (_existingMp) _existingMp.style.display = 'none';
+                }
+
                 if (preview) {
                     preview.style.setProperty('display', 'flex', 'important');
                     preview.setAttribute('aria-hidden', 'false');
@@ -347,7 +376,9 @@ window.MHRPdfRenderer = (function () {
                     closeBtn.onclick = function () {
                         if (preview) preview.style.setProperty('display', 'none', 'important');
                         if (backdrop) backdrop.style.setProperty('display', 'none', 'important');
-                        if (iframe) iframe.src = '';
+                        if (iframe) { iframe.src = ''; iframe.style.display = ''; }
+                        var mp2 = document.getElementById('pdf-mobile-panel');
+                        if (mp2) { mp2.style.display = 'none'; mp2.innerHTML = ''; }
                     };
                 }
 

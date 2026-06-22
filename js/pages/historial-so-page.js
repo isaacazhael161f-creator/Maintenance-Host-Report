@@ -290,22 +290,31 @@
                 estatusCell = '<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;' + estatusStyle + ';">' + estatusIcon + '<span>' + esc(estatus) + '</span></span>';
             }
 
-            // Observaci\u00f3n — con icono de editar para admins
+            // Observación — preview de texto + miniaturas de imágenes
             var obsImgs = [];
             try { obsImgs = JSON.parse(r.observacion_imagenes || '[]'); } catch (e) { obsImgs = []; }
             var hasImages = Array.isArray(obsImgs) && obsImgs.length > 0;
             var obsCell;
             if (observacion || hasImages) {
-                var obsText = observacion
-                    ? '<span title="' + esc(observacion) + '" style="display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">' + esc(observacion) + '</span>'
-                    : '';
-                var imgBadge = hasImages
-                    ? ' <span style="display:inline-block;background:#dbeafe;color:#1e40af;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;vertical-align:middle;">' + obsImgs.length + ' \ud83d\udcf7</span>'
-                    : '';
-                var editIcon = canEdit
-                    ? ' <button class="hso-edit-trigger" ' + ridAttr + ' title="Editar observaci\u00f3n" style="background:none;border:none;cursor:pointer;color:#6b7280;vertical-align:middle;padding:0;">\u270f\ufe0f</button>'
-                    : '';
-                obsCell = obsText + imgBadge + editIcon;
+                var obsPreviewParts = '<div style="display:flex;flex-direction:column;gap:5px;min-width:160px;max-width:220px;">';
+                if (observacion) {
+                    obsPreviewParts += '<span title="' + esc(observacion) + '" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:12px;color:#374151;line-height:1.4;word-break:break-word;">' + esc(observacion) + '</span>';
+                }
+                if (hasImages) {
+                    obsPreviewParts += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+                    obsImgs.forEach(function (imgUrl) {
+                        var safeUrl = imgUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                        obsPreviewParts += '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;flex-shrink:0;">' +
+                            '<img src="' + safeUrl + '" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid #e5e7eb;display:block;">' +
+                            '</a>';
+                    });
+                    obsPreviewParts += '</div>';
+                }
+                if (canEdit) {
+                    obsPreviewParts += '<button class="hso-edit-trigger" ' + ridAttr + ' title="Editar observaci\u00f3n" style="align-self:flex-start;background:none;border:none;cursor:pointer;color:#6b7280;font-size:11px;padding:0;display:inline-flex;align-items:center;gap:3px;">\u270f\ufe0f <span style="text-decoration:underline;">Editar</span></button>';
+                }
+                obsPreviewParts += '</div>';
+                obsCell = obsPreviewParts;
             } else if (canEdit) {
                 obsCell = '<button class="hso-edit-trigger" ' + ridAttr + ' style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:12px;">+ A\u00f1adir</button>';
             } else {

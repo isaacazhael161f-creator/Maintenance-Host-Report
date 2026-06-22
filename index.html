@@ -2045,21 +2045,19 @@
             }
         })();
     </script>
-<!-- ═══════════════════ ADMIN PANEL OVERLAY ═══════════════════ -->
-<div id="mhr-admin-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.35);backdrop-filter:blur(2px);animation:mhrFadeIn .18s ease;">
-  <div id="mhr-admin-panel" style="position:absolute;top:0;right:0;bottom:0;width:calc(100% - 250px);background:#f1f5f9;box-shadow:-8px 0 40px rgba(0,0,0,0.25);display:flex;flex-direction:column;animation:mhrSlideIn .22s ease;">
+<!-- ═══════════════════ ADMIN PANEL FULL PAGE ═══════════════════ -->
+<div id="mhr-admin-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#f1f5f9;flex-direction:column;animation:mhrFadeIn .18s ease;">
     <!-- barra superior -->
     <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;background:#0f172a;flex-shrink:0;">
+      <button onclick="mhrCloseAdminPanel()" title="Volver" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;color:rgba(255,255,255,0.85);cursor:pointer;padding:5px 12px;font-size:13px;display:flex;align-items:center;gap:6px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Atrás
+      </button>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" opacity=".7"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       <span style="color:rgba(255,255,255,0.85);font-size:13px;font-weight:600;flex:1;">Administración</span>
-      <button onclick="mhrCloseAdminPanel()" title="Cerrar" style="background:rgba(255,255,255,0.08);border:none;border-radius:6px;color:rgba(255,255,255,0.7);cursor:pointer;padding:5px 10px;font-size:13px;display:flex;align-items:center;gap:6px;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        Cerrar
-      </button>
     </div>
-    <!-- iframe -->
-    <iframe id="mhr-admin-iframe" src="about:blank" style="flex:1;border:none;width:100%;" allowfullscreen></iframe>
-  </div>
+    <!-- iframe ocupa todo el resto -->
+    <iframe id="mhr-admin-iframe" src="about:blank" style="flex:1;border:none;width:100%;height:100%;" allowfullscreen></iframe>
 </div>
 <style>
   @keyframes mhrFadeIn  { from { opacity:0 } to { opacity:1 } }
@@ -2074,19 +2072,13 @@
     if (iframe.src === 'about:blank' || !iframe.src) {
       iframe.src = 'admin-usuarios.html';
     }
-    overlay.style.display = '';
-    document.body.style.overflow = 'hidden';
+    overlay.style.display = 'flex';
     if (popup) popup.style.display = 'none';
   }
   function mhrCloseAdminPanel() {
     var overlay = document.getElementById('mhr-admin-overlay');
     if (overlay) overlay.style.display = 'none';
-    document.body.style.overflow = '';
   }
-  // Close on backdrop click
-  document.getElementById('mhr-admin-overlay').addEventListener('click', function(e) {
-    if (e.target === this) mhrCloseAdminPanel();
-  });
   // Close on Escape — only when overlay is visible
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
