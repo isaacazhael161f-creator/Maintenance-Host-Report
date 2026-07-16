@@ -55,7 +55,7 @@ as $$
         select 1
         from public.user_roles ur
         where ur.user_id = auth.uid()
-          and lower(coalesce(ur.role, '')) in ('admin', 'superuser', 'ingenieria')
+          and lower(coalesce(ur.role, '')) in ('admin', 'superuser', 'superadmin', 'ingenieria')
     );
 $$;
 

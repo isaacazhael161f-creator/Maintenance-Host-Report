@@ -251,7 +251,7 @@
             return;
         }
 
-        var canEdit = ['admin', 'superuser', 'ingenieria'].indexOf(String(window.mhrCurrentRole || '').toLowerCase()) !== -1;
+        var canEdit = ['admin', 'superuser', 'superadmin', 'ingenieria'].indexOf(String(window.mhrCurrentRole || '').toLowerCase()) !== -1;
 
         var html = '';
         reports.forEach(function (r) {
@@ -379,7 +379,7 @@
             var rid = mailBtn.dataset.hsoId;
             if (!rid) return;
             var role = String(window.mhrCurrentRole || '').toLowerCase();
-            if (['admin', 'superuser', 'ingenieria'].indexOf(role) === -1) return;
+            if (['admin', 'superuser', 'superadmin', 'ingenieria'].indexOf(role) === -1) return;
             _hsoSendMail(mailBtn, rid);
             return;
         }
@@ -389,7 +389,7 @@
         if (!reportId) return;
         // Re-check permission at click time
         var role = String(window.mhrCurrentRole || '').toLowerCase();
-        if (['admin', 'superuser', 'ingenieria'].indexOf(role) === -1) return;
+        if (['admin', 'superuser', 'superadmin', 'ingenieria'].indexOf(role) === -1) return;
         window.hsoOpenEditModal(reportId);
     }
 

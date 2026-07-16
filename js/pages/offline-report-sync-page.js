@@ -1,5 +1,8 @@
 window.MHROfflineReportSyncPage = (function () {
+  var initialized = false;
   function init(ctx) {
+        if (initialized) return;
+        initialized = true;
         /* ── 1. IndexedDB helpers ───────────────────────────────── */
         var DB_NAME    = 'mhr-offline-db';
         var DB_VERSION = 1;
@@ -44,6 +47,8 @@ window.MHROfflineReportSyncPage = (function () {
                 });
             });
         }
+
+        window.getPendingReports = getPendingReports;
 
         function markReportSynced(id) {
             return openOfflineDB().then(function (db) {
@@ -139,6 +144,16 @@ window.MHROfflineReportSyncPage = (function () {
             var utcTimeStr = pad(now.getUTCHours()) + ':' + pad(now.getUTCMinutes()) + ':' + pad(now.getUTCSeconds()) + ' UTC';
             var utcDateStr = pad(now.getUTCDate()) + '/' + pad(now.getUTCMonth() + 1) + '/' + now.getUTCFullYear();
 
+            var areaRep = '';
+            var areaEl = document.getElementById('report-area-rep');
+            if (areaEl && areaEl.value && areaEl.value !== 'N/A') {
+                areaRep = (areaEl.options[areaEl.selectedIndex] || {}).text || areaEl.value || '';
+                if (areaRep === 'N/A') areaRep = '';
+            }
+            var areaRepName = '';
+            var areaRepNameEl = document.getElementById('report-area-rep-name');
+            if (areaRepNameEl && areaRep) areaRepName = areaRepNameEl.value.trim();
+
             var items  = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][id^="tipo_"]'));
             var filled = [];
             items.forEach(function (chk) {
@@ -221,6 +236,7 @@ window.MHROfflineReportSyncPage = (function () {
                 return;
             }
             savePendingReport(data).then(function () {
+                window.clearOfflineDraft && window.clearOfflineDraft();
                 window.updatePendingBadge();
                 showOfflineBanner('📥 Sin conexión — reporte guardado localmente (se sincronizará al reconectarse)', 'pending');
                 alert('Reporte guardado localmente.\nCuando te conectes a Internet se subirá automáticamente.');
@@ -229,6 +245,45 @@ window.MHROfflineReportSyncPage = (function () {
                 alert('No se pudo guardar localmente: ' + (err && err.message ? err.message : err));
             });
         };
+
+        // Borrador ligero: conserva la captura actual aunque se recargue la app.
+        var DRAFT_KEY = 'mhr-offline-report-draft-v1';
+        function saveDraft() {
+            var form = document.getElementById('report-form');
+            if (!form) return;
+            var values = {};
+            Array.prototype.slice.call(form.querySelectorAll('input, textarea, select')).forEach(function (el) {
+                if (!el.name && !el.id || el.type === 'file') return;
+                var key = el.name || el.id;
+                if (el.type === 'checkbox' || el.type === 'radio') values[key] = values[key] || { checked: false, values: [] }, values[key].checked = values[key].checked || el.checked, values[key].values.push({ value: el.value, checked: el.checked });
+                else values[key] = el.value;
+            });
+            try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ values: values, savedAt: Date.now() })); } catch (_) {}
+        }
+        function restoreDraft() {
+            var raw; try { raw = JSON.parse(localStorage.getItem(DRAFT_KEY) || ''); } catch (_) { return; }
+            if (!raw || !raw.values) return;
+            var form = document.getElementById('report-form'); if (!form) return;
+            Object.keys(raw.values).forEach(function (key) {
+                var els = form.querySelectorAll('[name="' + CSS.escape(key) + '"],#' + CSS.escape(key));
+                var val = raw.values[key];
+                Array.prototype.slice.call(els).forEach(function (el) {
+                    if (el.type === 'checkbox' || el.type === 'radio') {
+                        var item = Array.isArray(val.values) && val.values.find(function (x) { return x.value === el.value; });
+                        if (item) el.checked = item.checked;
+                    } else el.value = val;
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        }
+        window.clearOfflineDraft = function () { try { localStorage.removeItem(DRAFT_KEY); } catch (_) {} };
+        window.MHROfflineReportSyncPage.saveDraft = saveDraft;
+        setTimeout(function () {
+            restoreDraft();
+            var form = document.getElementById('report-form');
+            if (form) form.addEventListener('input', function () { clearTimeout(window._mhrDraftTimer); window._mhrDraftTimer = setTimeout(saveDraft, 500); });
+            if (form) form.addEventListener('change', saveDraft);
+        }, 0);
 
         /* ── 5. Subir un reporte pendiente a Supabase ───────────── */
         async function uploadPendingReport(record) {

@@ -116,7 +116,7 @@ window.MHRAuthSessionPage = (function () {
                     var adminGroup = document.getElementById('sidebar-group-admin');
                     var popup = document.getElementById('sidebar-admin-popup');
                     var userInfoEl = document.getElementById('user-info');
-                    var isAdmin = ['admin', 'superuser', 'ingenieria'].includes(role);
+                    var isAdmin = ['admin', 'superuser', 'superadmin', 'ingenieria'].includes(role);
 
                     // Keep legacy sidebar-group-admin hidden (not used anymore)
                     if (adminGroup) adminGroup.style.display = 'none';
@@ -150,6 +150,7 @@ window.MHRAuthSessionPage = (function () {
                         'editor',
                         'inspector',
                         'superuser',
+                        'superadmin',
                         'control_fauna',
                         'servicio_medico',
                         'colab_editor'
@@ -165,7 +166,7 @@ window.MHRAuthSessionPage = (function () {
                     }
                 
                     var adminPanel = document.getElementById('admin-panel');
-                    if (adminPanel && ['admin', 'superuser', 'ingenieria'].includes(role)) {
+                    if (adminPanel && ['admin', 'superuser', 'superadmin', 'ingenieria'].includes(role)) {
                         adminPanel.style.display = 'block';
                         if (typeof loadAdminReports === 'function') {
                             loadAdminReports();

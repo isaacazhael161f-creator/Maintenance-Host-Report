@@ -34,6 +34,10 @@ window.MHRSupabaseOrchestratorPage = (function () {
       window.MHRFaunaSubmitPage.init({ supabase: supabase });
     }
 
+    if (window.MHROfflineReportSyncPage && typeof window.MHROfflineReportSyncPage.init === 'function') {
+      window.MHROfflineReportSyncPage.init({ supabase: supabase });
+    }
+
     if (window.MHRFaunaDashboardPage && typeof window.MHRFaunaDashboardPage.init === 'function') {
       window.MHRFaunaDashboardPage.init({
         supabase: supabase,

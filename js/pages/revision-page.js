@@ -90,6 +90,12 @@ window.MHRRevisionPage = (function () {
                 return;
             }
 
+            // Si la conexión se perdió justo al enviar, conservar el reporte localmente.
+            if (!navigator.onLine && typeof window.saveFormOffline === 'function') {
+                window.saveFormOffline();
+                return;
+            }
+
             var submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('input[type="submit"]');
             var originalBtnText = '';
             if (submitBtn) {
@@ -832,6 +838,7 @@ window.MHRRevisionPage = (function () {
                         else submitBtn.value = 'Guardando datos...';
                     }
                     var savedReportId = await saveToSupabase(pdfUrl);
+                    if (savedReportId && typeof window.clearOfflineDraft === 'function') window.clearOfflineDraft();
 
                     // Envío automático por correo (fire-and-forget; no bloquea el flujo)
                     if (savedReportId && window.MHRReportMailer) {
