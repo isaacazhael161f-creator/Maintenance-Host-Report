@@ -145,6 +145,9 @@ window.MHRAuthSessionPage = (function () {
                         popup.style.display = 'none';
                     }
                 
+                    // SUPERADMIN es global: no depende de permisos ni del sistema
+                    // seleccionado en las tablas compartidas.
+                    var isGlobalSuperadmin = role === 'superadmin';
                     var allowedRoles = [
                         'admin',
                         'editor',
@@ -156,7 +159,7 @@ window.MHRAuthSessionPage = (function () {
                         'colab_editor'
                     ];
                 
-                    if (allowedRoles.includes(role)) {
+                    if (isGlobalSuperadmin || allowedRoles.includes(role)) {
                         if (reportForm) reportForm.style.display = 'block';
                     } else {
                         if (reportForm) reportForm.style.display = 'none';
