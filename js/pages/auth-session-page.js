@@ -90,7 +90,7 @@ window.MHRAuthSessionPage = (function () {
                         role = sessionStorage.getItem('user_role') || 'viewer';
                     }
                 
-                    role = String(role || 'viewer').toLowerCase();
+                    role = String(role || 'viewer').trim().toLowerCase();
                     window.mhrCurrentRole = role;
                 
                     if (loginModal) loginModal.style.display = 'none';

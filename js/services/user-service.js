@@ -20,8 +20,20 @@
         .select('role')
         .eq('user_id', userId)
         .single();
-      if (r.error) return null;
-      return r.data && r.data.role ? r.data.role : null;
+      var roleFromUserRoles = (!r.error && r.data && r.data.role) ? String(r.data.role).trim() : '';
+
+      // La base es compartida por varias aplicaciones. SUPERADMIN es un rol
+      // global y debe prevalecer aunque user_roles tenga el rol de otra app.
+      var u = await client
+        .from('usuarios')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+      var roleFromUsuarios = (!u.error && u.data && u.data.role) ? String(u.data.role).trim() : '';
+      if (roleFromUsuarios.toLowerCase() === 'superadmin' || roleFromUserRoles.toLowerCase() === 'superadmin') {
+        return 'superadmin';
+      }
+      return roleFromUserRoles || roleFromUsuarios || null;
     },
     async getUserProfile(client, userId){
       var r = await client
