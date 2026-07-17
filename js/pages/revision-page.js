@@ -886,7 +886,11 @@ window.MHRRevisionPage = (function () {
 
             } catch (_submitErr) {
                 console.error('Error al generar reporte:', _submitErr);
-                alert('Error al generar el reporte: ' + (_submitErr && _submitErr.message ? _submitErr.message : String(_submitErr)));
+                if (!navigator.onLine && typeof window.saveFormOffline === 'function') {
+                    window.saveFormOffline();
+                } else {
+                    alert('Error al generar el reporte: ' + (_submitErr && _submitErr.message ? _submitErr.message : String(_submitErr)));
+                }
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     if (submitBtn.tagName === 'BUTTON') submitBtn.textContent = originalBtnText;

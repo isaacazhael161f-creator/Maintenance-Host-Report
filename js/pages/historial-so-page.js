@@ -12,6 +12,87 @@
     var allReports = [];            // caché de reportes cargados
     var currentFilteredReports = [];  // último conjunto filtrado (para export)
     var isLoading = false;
+    var mailRecipients = [];
+
+    function ensureMailTab() {
+        var tabs = document.querySelector('#hso-panel-historial') && document.querySelector('#hso-panel-historial').previousElementSibling;
+        var mailPanel = document.getElementById('hso-panel-destinatarios');
+        var recipientPanel = document.getElementById('hso-mail-recipients-panel');
+        if (!recipientPanel) return;
+        if (!mailPanel) {
+            mailPanel = document.createElement('div');
+            mailPanel.id = 'hso-panel-destinatarios';
+            mailPanel.style.display = 'none';
+            var parent = document.getElementById('hso-panel-historial').parentNode;
+            parent.appendChild(mailPanel);
+        }
+        if (recipientPanel.parentNode !== mailPanel) mailPanel.appendChild(recipientPanel);
+        if (tabs && !document.getElementById('hso-tab-destinatarios')) {
+            var btn = document.createElement('button');
+            btn.id = 'hso-tab-destinatarios';
+            btn.type = 'button';
+            btn.textContent = '📧 Destinatarios';
+            btn.onclick = function () { window.hsoSwitchTab('destinatarios'); };
+            btn.style.cssText = 'padding:10px 22px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid transparent;color:#6b7280;cursor:pointer;margin-bottom:-2px;';
+            tabs.appendChild(btn);
+        }
+    }
+
+    function hsoMailIsAdmin() {
+        return ['admin', 'superuser', 'superadmin'].indexOf(String(window.mhrCurrentRole || '').trim().toLowerCase()) !== -1;
+    }
+
+    window.hsoMailShowForm = function () {
+        if (!hsoMailIsAdmin()) return alert('Solo admins y superusers pueden administrar destinatarios.');
+        var form = document.getElementById('hso-mail-form');
+        if (form) form.style.display = 'block';
+        var email = document.getElementById('hso-mail-email');
+        if (email) email.focus();
+    };
+    window.hsoMailHideForm = function () {
+        var form = document.getElementById('hso-mail-form');
+        if (form) form.style.display = 'none';
+        ['hso-mail-email', 'hso-mail-name', 'hso-mail-role'].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    };
+    window.hsoMailLoadRecipients = async function () {
+        var list = document.getElementById('hso-mail-list');
+        if (!list || !window.supabaseClient) return;
+        var res = await window.supabaseClient.from('mhr_email_recipients').select('id,email,nombre,rol,activo').order('email');
+        if (res.error) { list.textContent = 'No se pudo cargar la lista: ' + res.error.message; return; }
+        mailRecipients = res.data || [];
+        if (!mailRecipients.length) { list.textContent = 'No hay destinatarios configurados.'; return; }
+        list.innerHTML = '<div style="display:grid;gap:6px;">' + mailRecipients.map(function (r) {
+            var active = !!r.activo;
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:7px;flex-wrap:wrap;">' +
+                '<span style="flex:1;min-width:220px;"><strong style="color:#0f172a;">' + esc(r.email) + '</strong>' +
+                (r.nombre ? ' <span style="color:#64748b;">— ' + esc(r.nombre) + '</span>' : '') +
+                (r.rol ? '<small style="display:block;color:#64748b;">' + esc(r.rol) + '</small>' : '') + '</span>' +
+                '<span style="color:' + (active ? '#15803d' : '#94a3b8') + ';font-size:12px;">' + (active ? '● Activo' : '○ Inactivo') + '</span>' +
+                '<button type="button" onclick="hsoMailToggleRecipient(\'' + esc(r.id) + '\',' + active + ')" style="padding:5px 9px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer;">' + (active ? 'Desactivar' : 'Activar') + '</button>' +
+                '<button type="button" onclick="hsoMailDeleteRecipient(\'' + esc(r.id) + '\',\'' + esc(r.email) + '\')" style="padding:5px 9px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:5px;cursor:pointer;">Eliminar</button>' +
+                '</div>';
+        }).join('') + '</div>';
+    };
+    window.hsoMailSaveRecipient = async function () {
+        if (!hsoMailIsAdmin()) return alert('Solo admins y superusers pueden administrar destinatarios.');
+        var email = (document.getElementById('hso-mail-email') || {}).value || '';
+        var msg = document.getElementById('hso-mail-msg');
+        email = email.trim().toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { if (msg) msg.textContent = 'Captura un correo válido.'; return; }
+        var res = await window.supabaseClient.from('mhr_email_recipients').insert({ email: email, nombre: (document.getElementById('hso-mail-name') || {}).value || null, rol: (document.getElementById('hso-mail-role') || {}).value || null, activo: true });
+        if (res.error) { if (msg) msg.textContent = res.error.message; return; }
+        hsoMailHideForm(); hsoMailLoadRecipients();
+    };
+    window.hsoMailToggleRecipient = async function (id, active) {
+        if (!hsoMailIsAdmin()) return;
+        var res = await window.supabaseClient.from('mhr_email_recipients').update({ activo: !active }).eq('id', id);
+        if (res.error) alert('No se pudo actualizar: ' + res.error.message); else hsoMailLoadRecipients();
+    };
+    window.hsoMailDeleteRecipient = async function (id, email) {
+        if (!hsoMailIsAdmin() || !confirm('¿Eliminar a ' + email + '? Dejará de recibir correos.')) return;
+        var res = await window.supabaseClient.from('mhr_email_recipients').delete().eq('id', id);
+        if (res.error) alert('No se pudo eliminar: ' + res.error.message); else hsoMailLoadRecipients();
+    };
 
     // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -246,7 +327,7 @@
 
         if (!reports || reports.length === 0) {
             tbody.innerHTML =
-                '<tr><td colspan="10" style="padding:20px;text-align:center;color:#6b7280;">' +
+                '<tr><td colspan="11" style="padding:20px;text-align:center;color:#6b7280;">' +
                 'No hay reportes que coincidan con los filtros.</td></tr>';
             return;
         }
@@ -304,9 +385,9 @@
                     obsPreviewParts += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
                     obsImgs.forEach(function (imgUrl) {
                         var safeUrl = imgUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-                        obsPreviewParts += '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer" style="display:inline-block;flex-shrink:0;">' +
+                        obsPreviewParts += '<button type="button" class="hso-image-preview" data-image-url="' + safeUrl + '" title="Ver imagen" style="display:inline-block;flex-shrink:0;padding:0;border:0;background:none;cursor:zoom-in;">' +
                             '<img src="' + safeUrl + '" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid #e5e7eb;display:block;">' +
-                            '</a>';
+                            '</button>';
                     });
                     obsPreviewParts += '</div>';
                 }
@@ -344,6 +425,12 @@
             } else {
                 mailCell = '<span style="color:#9ca3af;font-size:12px;">-</span>';
             }
+            var actionsCell = canEdit
+                ? '<div style="display:flex;gap:5px;white-space:nowrap;">' +
+                  '<button class="hso-edit-report-btn" ' + ridAttr + ' title="Modificar reporte" style="padding:5px 8px;border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:5px;cursor:pointer;font-size:11px;">✏️ Modificar</button>' +
+                  '<button class="hso-delete-report-btn" ' + ridAttr + ' title="Eliminar reporte" style="padding:5px 8px;border:1px solid #fecaca;background:#fff;color:#dc2626;border-radius:5px;cursor:pointer;font-size:11px;">🗑️ Eliminar</button>' +
+                  '</div>'
+                : '<span style="color:#9ca3af;font-size:12px;">-</span>';
 
             html += '<tr>' +
                 '<td style="white-space:nowrap;">' + fecha + '</td>' +
@@ -356,6 +443,7 @@
                 '<td>' + obsCell + '</td>' +
                 '<td>' + pdfCell + '</td>' +
                 '<td>' + mailCell + '</td>' +
+                '<td>' + actionsCell + '</td>' +
                 '</tr>';
         });
         tbody.innerHTML = html;
@@ -366,6 +454,11 @@
     }
 
     function _tbodyClickHandler(e) {
+        var imageBtn = e.target.closest('.hso-image-preview');
+        if (imageBtn) {
+            _hsoShowImagePreview(imageBtn.dataset.imageUrl || '');
+            return;
+        }
         // PDF preview
         var pdfBtn = e.target.closest('.hso-pdf-btn');
         if (pdfBtn) {
@@ -381,6 +474,18 @@
             var role = String(window.mhrCurrentRole || '').toLowerCase();
             if (['admin', 'superuser', 'superadmin', 'ingenieria'].indexOf(role) === -1) return;
             _hsoSendMail(mailBtn, rid);
+            return;
+        }
+        var deleteBtn = e.target.closest('.hso-delete-report-btn');
+        if (deleteBtn) {
+            if (!hsoMailIsAdmin()) return;
+            window.hsoDeleteReport(deleteBtn.dataset.hsoId);
+            return;
+        }
+        var editReportBtn = e.target.closest('.hso-edit-report-btn');
+        if (editReportBtn) {
+            if (!hsoMailIsAdmin()) return;
+            window.hsoOpenEditModal(editReportBtn.dataset.hsoId);
             return;
         }
         var btn = e.target.closest('.hso-edit-trigger');
@@ -447,6 +552,7 @@
     }
 
     async function loadAdminReports() {
+        ensureMailTab();
         if (isLoading) return;
         isLoading = true;
         showLoadingState();
@@ -456,6 +562,7 @@
             currentFilteredReports = allReports.slice();
             populateResponsableFilter(allReports);
             renderReports(allReports);
+            if (hsoMailIsAdmin()) window.hsoMailLoadRecipients();
             // Refresh Vista de Datos si está activa
             if (typeof window._hsoRenderDataView === 'function') window._hsoRenderDataView();
         } catch (e) {
@@ -551,6 +658,8 @@
         var panelD = document.getElementById('hso-panel-datos');
         var btnH   = document.getElementById('hso-tab-historial');
         var btnD   = document.getElementById('hso-tab-datos');
+        var panelM = document.getElementById('hso-panel-destinatarios');
+        var btnM   = document.getElementById('hso-tab-destinatarios');
 
         var activeStyle   = 'padding:10px 22px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid #2563eb;color:#2563eb;cursor:pointer;margin-bottom:-2px;';
         var inactiveStyle = 'padding:10px 22px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid transparent;color:#6b7280;cursor:pointer;margin-bottom:-2px;';
@@ -558,13 +667,25 @@
         if (tab === 'historial') {
             if (panelH) panelH.style.display = '';
             if (panelD) panelD.style.display = 'none';
+            if (panelM) panelM.style.display = 'none';
             if (btnH) btnH.style.cssText = activeStyle;
             if (btnD) btnD.style.cssText = inactiveStyle;
+            if (btnM) btnM.style.cssText = inactiveStyle;
+        } else if (tab === 'destinatarios') {
+            if (panelH) panelH.style.display = 'none';
+            if (panelD) panelD.style.display = 'none';
+            if (panelM) panelM.style.display = '';
+            if (btnH) btnH.style.cssText = inactiveStyle;
+            if (btnD) btnD.style.cssText = inactiveStyle;
+            if (btnM) btnM.style.cssText = activeStyle;
+            if (hsoMailIsAdmin()) window.hsoMailLoadRecipients();
         } else {
             if (panelH) panelH.style.display = 'none';
             if (panelD) panelD.style.display = '';
+            if (panelM) panelM.style.display = 'none';
             if (btnH) btnH.style.cssText = inactiveStyle;
             if (btnD) btnD.style.cssText = activeStyle;
+            if (btnM) btnM.style.cssText = inactiveStyle;
             if (typeof window._hsoRenderDataView === 'function') window._hsoRenderDataView();
         }
     };
@@ -948,6 +1069,20 @@
         if (modal) modal.style.display = 'none';
     };
 
+    window.hsoDeleteReport = async function (reportId) {
+        if (!hsoMailIsAdmin() || !reportId || !window.supabaseClient) return;
+        var report = allReports.find(function (r) { return String(r.id) === String(reportId); });
+        if (!report || !confirm('¿Eliminar el reporte ' + (report.folio || '') + '? Esta acción no se puede deshacer.')) return;
+        var result = await window.supabaseClient.from('reports').delete().eq('id', reportId);
+        if (result.error) {
+            alert('No se pudo eliminar el reporte: ' + result.error.message);
+            return;
+        }
+        allReports = allReports.filter(function (r) { return String(r.id) !== String(reportId); });
+        currentFilteredReports = currentFilteredReports.filter(function (r) { return String(r.id) !== String(reportId); });
+        renderReports(currentFilteredReports.length ? currentFilteredReports : allReports);
+    };
+
     function _renderModalExistingImages(imageUrls) {
         var container = document.getElementById('hso-modal-existing-imgs');
         if (!container) return;
@@ -959,14 +1094,47 @@
         imageUrls.forEach(function (url, i) {
             var safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
             html += '<div id="hso-existing-img-' + i + '" style="position:relative;display:inline-block;">' +
-                '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' +
+                '<button type="button" class="hso-image-preview" data-image-url="' + safeUrl + '" title="Ver imagen" style="display:block;padding:0;border:0;background:none;cursor:zoom-in;">' +
                 '<img src="' + safeUrl + '" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;" loading="lazy">' +
-                '</a>' +
+                '</button>' +
                 '<button onclick="hsoRemoveExistingImage(' + i + ')" title="Eliminar imagen" style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:20px;padding:0;font-weight:700;">×</button>' +
                 '</div>';
         });
         container.innerHTML = html;
     }
+
+    function _hsoShowImagePreview(url) {
+        if (!url) return;
+        var overlay = document.getElementById('hso-image-preview-modal');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'hso-image-preview-modal';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(15,23,42,.82);cursor:zoom-out;';
+            overlay.innerHTML = '<button type="button" aria-label="Cerrar previsualización" style="position:absolute;top:18px;right:22px;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:25px;line-height:38px;cursor:pointer;">×</button>' +
+                '<img alt="Previsualización de observación" style="max-width:calc(100vw - 48px);max-height:calc(100vh - 48px);object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default;">';
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay || e.target.tagName === 'BUTTON') overlay.style.display = 'none';
+            });
+            document.body.appendChild(overlay);
+        }
+        overlay.querySelector('img').src = url;
+        overlay.style.display = 'flex';
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            var overlay = document.getElementById('hso-image-preview-modal');
+            if (overlay) overlay.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        var imageBtn = e.target.closest('.hso-image-preview');
+        if (imageBtn && !imageBtn.closest('#admin-reports-list')) {
+            e.preventDefault();
+            _hsoShowImagePreview(imageBtn.dataset.imageUrl || '');
+        }
+    });
 
     window.hsoRemoveExistingImage = function (index) {
         var modal = document.getElementById('hso-edit-modal');
@@ -1076,7 +1244,9 @@
             var updateRes = await client.from('reports').update({
                 estatus: estatus,
                 observacion: observacion || null,
-                observacion_imagenes: JSON.stringify(existingUrls)
+                observacion_imagenes: JSON.stringify(existingUrls),
+                // El PDF anterior ya no representa estos datos modificados.
+                pdf_url: null
             }).eq('id', reportId);
 
             if (updateRes.error) throw updateRes.error;
@@ -1086,6 +1256,7 @@
                 report.estatus = estatus;
                 report.observacion = observacion;
                 report.observacion_imagenes = JSON.stringify(existingUrls);
+                report.pdf_url = null;
             }
 
             if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ Guardado correctamente.'; }

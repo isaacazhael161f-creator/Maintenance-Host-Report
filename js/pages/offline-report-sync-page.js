@@ -378,7 +378,7 @@ window.MHROfflineReportSyncPage = (function () {
                     if (row && row.item_catalogo_id) insertedItemsByCatalogId[String(row.item_catalogo_id)] = row;
                 });
                 var itemsError = itemsResult.error;
-                if (itemsError) console.warn('Error insertando items offline:', itemsError);
+                if (itemsError) throw itemsError;
             }
 
             // 5c. Subir fotos
@@ -399,9 +399,9 @@ window.MHROfflineReportSyncPage = (function () {
                         var itemPathSegment = insertedItem && insertedItem.id ? insertedItem.id : itemId;
                         var fileName = reportId + '/' + itemPathSegment + '_' + Date.now() + '_' + pi + '.' + ext;
                         var { error: upError } = await window.MHRReportService.uploadToBucket(sc, 'report-evidencias', fileName, blob, { upsert: false, contentType: mime });
-                        if (upError) { console.warn('Error subiendo foto:', upError); continue; }
+                        if (upError) throw upError;
                         if (insertedItem && insertedItem.id) {
-                            await window.MHRReportService.insertItemPhoto(sc, {
+                            var photoResult = await window.MHRReportService.insertItemPhoto(sc, {
                                 report_inspection_item_id: insertedItem.id,
                                 bucket: 'report-evidencias',
                                 storage_path: fileName,
@@ -409,6 +409,7 @@ window.MHROfflineReportSyncPage = (function () {
                                 mime_type: mime,
                                 size_bytes: blob.size
                             });
+                            if (photoResult && photoResult.error) throw photoResult.error;
                         }
                     } catch (photoErr) {
                         console.warn('Error procesando foto offline:', photoErr);

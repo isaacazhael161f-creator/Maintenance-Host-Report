@@ -17,6 +17,7 @@ window.MHRMainTabsPage = (function () {
         this.classList.add('active');
 
         sections.forEach(function (section) { section.classList.remove('active'); });
+        window.scrollTo(0, 0);
         var targetSection = document.getElementById(targetTab + '-section');
         if (targetSection) {
           targetSection.classList.add('active');

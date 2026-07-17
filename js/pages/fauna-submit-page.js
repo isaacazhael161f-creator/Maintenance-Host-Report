@@ -6,6 +6,16 @@ window.MHRFaunaSubmitPage = (function () {
                 faunaForm.addEventListener('submit', async function (e) {
                     e.preventDefault();
 
+                    if (!navigator.onLine) {
+                        if (typeof window.saveFaunaFormOffline === 'function') window.saveFaunaFormOffline();
+                        else alert('Sin conexión: no se pudo guardar el reporte de fauna localmente.');
+                        return;
+                    }
+                    if (window._mhrFaunaRetrying) {
+                        try { localStorage.removeItem('mhr-offline-fauna-draft-v1'); } catch (_) {}
+                        window._mhrFaunaRetrying = false;
+                    }
+
                     // Feedback visual
                     var submitBtn = faunaForm.querySelector('input[type="submit"]');
                     if (submitBtn) {
@@ -316,10 +326,12 @@ window.MHRFaunaSubmitPage = (function () {
                                             var parsedImpactCoords = parseCoordsFromText(fields[j].value);
                                             impactPayload.ubicacion_lat = parsedImpactCoords.lat;
                                             impactPayload.ubicacion_lng = parsedImpactCoords.lng;
-                                            break;
+                                        }
+                                        if (fields[j].key === 'Especie' && fields[j].value && !impactPayload.especie) {
+                                            impactPayload.especie = fields[j].value;
                                         }
                                     }
-                                    if (impactPayload.ubicacion_texto) break;
+                                    if (impactPayload.ubicacion_texto && impactPayload.especie) break;
                                 }
                                 impactoHtml += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;">';
                                 impactoHtml += '<tbody>';

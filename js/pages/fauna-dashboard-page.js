@@ -938,6 +938,102 @@ window.MHRFaunaDashboardPage = (function () {
             // ── Render aerolíneas cards ───────────────────────────────────────
             var _fesAerolineasCatalog = null; // cache
 
+            // ── Render all impacto charts for a given dataset ────────────────
+            function _fesRenderImpCharts(data) {
+                var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                // Eventos por mes
+                var cByMonth = new Array(12).fill(0);
+                data.forEach(function(r){
+                    var d = r.created_at ? new Date(r.created_at) : null;
+                    if (d) cByMonth[d.getMonth()]++;
+                });
+                fesBarChart('fes-imp-chart-mes', 'fes-imp-chart-mes-labels', cByMonth, MESES, '#2563eb');
+                // Especie
+                var eCounts = {};
+                data.forEach(function(r){
+                    var items = Array.isArray(r.detalle_items) ? r.detalle_items : [];
+                    items.forEach(function(it){
+                        var esp = _itemField(it.fields, ['Especie', 'especie']) ||
+                                  _itemField(it.fields, ['Otra Especie', 'especie_otra']) ||
+                                  _itemField(it.fields, ['Tipo de Animal', 'tipo_animal']);
+                        if (esp && String(esp).trim()) eCounts[esp] = (eCounts[esp] || 0) + 1;
+                    });
+                    if (!items.length && r.especie) eCounts[r.especie] = (eCounts[r.especie] || 0) + 1;
+                });
+                fesHBarChart('fes-imp-chart-especie', Object.entries(eCounts).sort(function(a,b){ return b[1]-a[1]; }), '#16a34a');
+                // Heatmap
+                fesHeatmap('fes-imp-heatmap', data);
+                // Hora del día
+                var cByHour = new Array(24).fill(0);
+                data.forEach(function(r){
+                    var hora = r.hora_evento;
+                    if (!hora && r.created_at) {
+                        var d = new Date(r.created_at);
+                        hora = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+                    }
+                    if (!hora) return;
+                    var h = parseInt(hora.split(':')[0], 10);
+                    if (h >= 0 && h < 24) cByHour[h]++;
+                });
+                var horaLabels = Array.from({length:24}, function(_,i){ return i.toString().padStart(2,'0')+':00'; });
+                fesBarChart('fes-imp-chart-hora', 'fes-imp-chart-hora-labels', cByHour, horaLabels, '#f59e0b');
+                // Top horas críticas
+                var topHoras = cByHour.map(function(v,i){ return [i,v]; }).filter(function(x){ return x[1]>0; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+                var topHorasEl = document.getElementById('fes-imp-top-horas');
+                if (topHorasEl) topHorasEl.innerHTML = topHoras.length ? topHoras.map(function(x){
+                    return '<span style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #fde68a;">' +
+                        x[0].toString().padStart(2,'0') + ':00 · ' + x[1] + '</span>';
+                }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos de hora</span>';
+                // Fases
+                var fases = fesCountBy(data, 'fase_vuelo');
+                var fasesEl = document.getElementById('fes-imp-fases-badges');
+                if (fasesEl) {
+                    var fc = { 'Aterrizaje': ['#dbeafe','#1e40af','→'], 'Despegue': ['#dcfce7','#166534','↑'] };
+                    fasesEl.innerHTML = fases.length ? fases.map(function(f){
+                        var c = fc[f[0]] || ['#f1f5f9','#374151','✈'];
+                        return '<span style="display:inline-flex;align-items:center;gap:6px;background:' + c[0] + ';color:' + c[1] + ';border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;border:1px solid ' + c[0] + ';">' +
+                            c[2] + ' ' + f[0] + ' · <b>' + f[1] + '</b></span>';
+                    }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos de fase</span>';
+                }
+                // Parte avión + Pista
+                fesFillTable('fes-imp-parte-tbody', fesCountBy(data, 'parte_avion'), 'Sin datos');
+                fesFillTable('fes-imp-pista-tbody', fesCountBy(data, 'pista'), 'Sin datos');
+            }
+
+            // ── Aerolínea selection (acts as filter on charts) ────────────────
+            window._fesSelectedAerolinea = null;
+
+            window._fesSelectAerolinea = function(stored, displayName, allImpData) {
+                window._fesSelectedAerolinea = stored;
+                var filtered = allImpData.filter(function(r){ return r.aerolinea === stored; });
+                // Update filter bar
+                var lbl = document.getElementById('fes-aero-filter-label');
+                var clr = document.getElementById('fes-aero-filter-clear');
+                if (lbl) lbl.innerHTML = 'Mostrando <strong>' + displayName + '</strong> · ' + filtered.length + ' impacto' + (filtered.length !== 1 ? 's' : '');
+                if (clr) clr.style.display = 'inline-block';
+                // Highlight selected card
+                var container = document.getElementById('fes-aero-cards');
+                if (container) container.querySelectorAll('[data-aero-stored]').forEach(function(c){
+                    var sel = c.dataset.aeroStored === stored;
+                    c.style.outline  = sel ? '2px solid #1d4ed8' : 'none';
+                    c.style.background = sel ? '#eff6ff' : '#fff';
+                });
+                _fesRenderImpCharts(filtered);
+            };
+
+            window._fesClearAeroFilter = function() {
+                window._fesSelectedAerolinea = null;
+                var lbl = document.getElementById('fes-aero-filter-label');
+                var clr = document.getElementById('fes-aero-filter-clear');
+                if (lbl) lbl.textContent = 'Mostrando todas las aerolíneas';
+                if (clr) clr.style.display = 'none';
+                var container = document.getElementById('fes-aero-cards');
+                if (container) container.querySelectorAll('[data-aero-stored]').forEach(function(c){
+                    c.style.outline = 'none'; c.style.background = '#fff';
+                });
+                if (window._fesLastImpData) _fesRenderImpCharts(window._fesLastImpData);
+            };
+
             async function fesRenderAerolineas(impData) {
                 var container = document.getElementById('fes-aero-cards');
                 if (!container) return;
@@ -1032,8 +1128,13 @@ window.MHRFaunaDashboardPage = (function () {
                         '<div style="font-size:11px;color:#64748b;margin:2px 0;">' + iataLabel + '</div>' +
                         '<div style="margin-top:8px;display:inline-block;background:#fee2e2;color:#991b1b;border-radius:20px;padding:4px 14px;font-size:14px;font-weight:800;">' + count + '</div>' +
                         '<div style="font-size:10px;color:#94a3b8;margin-top:3px;">impacto' + (count !== 1 ? 's' : '') + '</div>';
+                    card.dataset.aeroStored = stored;
                     card.addEventListener('click', function(){
-                        fesShowAerolineaDetalle(stored, info || { nombre_aerolinea: displayName, codigo_iata: iataLabel, logo_url: logoUrl || null }, impData.filter(function(r){ return r.aerolinea === stored; }));
+                        if (window._fesSelectedAerolinea === stored) {
+                            window._fesClearAeroFilter && window._fesClearAeroFilter();
+                        } else {
+                            window._fesSelectAerolinea && window._fesSelectAerolinea(stored, displayName, impData);
+                        }
                     });
                     container.appendChild(card);
                 });
@@ -1094,6 +1195,65 @@ window.MHRFaunaDashboardPage = (function () {
                 }
                 panel.style.display = '';
                 panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+                // Render per-airline charts
+                var charts = document.getElementById('fes-aero-det-charts');
+                if (charts) {
+                    charts.style.display = records.length ? '' : 'none';
+                    if (records.length) {
+                        var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                        // Eventos por mes
+                        var cByMonth = new Array(12).fill(0);
+                        records.forEach(function(r) {
+                            var d = r.created_at ? new Date(r.created_at) : null;
+                            if (d) cByMonth[d.getMonth()]++;
+                        });
+                        fesBarChart('fes-aero-det-chart-mes', 'fes-aero-det-chart-mes-labels', cByMonth, MESES, '#2563eb');
+
+                        // Especie
+                        var eCounts = {};
+                        records.forEach(function(r) {
+                            var items = Array.isArray(r.detalle_items) ? r.detalle_items : [];
+                            items.forEach(function(it) {
+                                var esp = _itemField(it.fields, ['Especie', 'especie']) ||
+                                          _itemField(it.fields, ['Otra Especie', 'especie_otra']) ||
+                                          _itemField(it.fields, ['Tipo de Animal', 'tipo_animal']);
+                                if (esp && String(esp).trim()) eCounts[esp] = (eCounts[esp] || 0) + 1;
+                            });
+                            if (!items.length && r.especie) eCounts[r.especie] = (eCounts[r.especie] || 0) + 1;
+                        });
+                        fesHBarChart('fes-aero-det-chart-especie', Object.entries(eCounts).sort(function(a,b){ return b[1]-a[1]; }), '#16a34a');
+
+                        // Top horas críticas
+                        var hCounts = new Array(24).fill(0);
+                        records.forEach(function(r) {
+                            var h = r.hora_evento;
+                            if (!h && r.created_at) { var d = new Date(r.created_at); h = d.getHours().toString().padStart(2,'0') + ':00'; }
+                            if (h) { var hh = parseInt(h.split(':')[0], 10); if (hh >= 0 && hh < 24) hCounts[hh]++; }
+                        });
+                        var topHoras = hCounts.map(function(v,i){ return [i,v]; }).filter(function(x){ return x[1]>0; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+                        var horasEl = document.getElementById('fes-aero-det-horas');
+                        if (horasEl) horasEl.innerHTML = topHoras.length ? topHoras.map(function(x){
+                            return '<span style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #fde68a;">' +
+                                x[0].toString().padStart(2,'0') + ':00 · ' + x[1] + '</span>';
+                        }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos</span>';
+
+                        // Fases de operación
+                        var fases = fesCountBy(records, 'fase_vuelo');
+                        var fasesEl = document.getElementById('fes-aero-det-fases');
+                        if (fasesEl) {
+                            var fc = { 'Aterrizaje': ['#dbeafe','#1e40af','\u2192'], 'Despegue': ['#dcfce7','#166534','\u2191'] };
+                            fasesEl.innerHTML = fases.length ? fases.map(function(f) {
+                                var c = fc[f[0]] || ['#f1f5f9','#374151','\u2708'];
+                                return '<span style="display:inline-flex;align-items:center;gap:6px;background:' + c[0] + ';color:' + c[1] + ';border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;">' + c[2] + ' ' + f[0] + ' · <b>' + f[1] + '</b></span>';
+                            }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos</span>';
+                        }
+
+                        // Parte avión + Pista
+                        fesFillTable('fes-aero-det-parte-tbody', fesCountBy(records, 'parte_avion'), 'Sin datos');
+                        fesFillTable('fes-aero-det-pista-tbody', fesCountBy(records, 'pista'), 'Sin datos');
+                    }
+                }
             }
 
             // ── main stats loader ─────────────────────────────────────────────
@@ -1111,81 +1271,7 @@ window.MHRFaunaDashboardPage = (function () {
                     window._fesLastResData = resData;
 
                     // ── IMPACTOS charts ────────────────────────────────────────
-                    var MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-
-                    // Eventos por mes
-                    var countsByMonth = new Array(12).fill(0);
-                    impData.forEach(function(r){
-                        var d = r.created_at ? new Date(r.created_at) : null;
-                        if (d) countsByMonth[d.getMonth()]++;
-                    });
-                    fesBarChart('fes-imp-chart-mes', 'fes-imp-chart-mes-labels', countsByMonth, MESES, '#2563eb');
-
-                    // Eventos por especie (horizontal) — extraído de detalle_items
-                    var especieCounts = {};
-                    impData.forEach(function (r) {
-                        var items = Array.isArray(r.detalle_items) ? r.detalle_items : [];
-                        items.forEach(function (it) {
-                            var esp = _itemField(it.fields, ['Especie', 'especie']) ||
-                                      _itemField(it.fields, ['Otra Especie', 'especie_otra']) ||
-                                      _itemField(it.fields, ['Tipo de Animal', 'tipo_animal']);
-                            if (esp && String(esp).trim()) {
-                                especieCounts[esp] = (especieCounts[esp] || 0) + 1;
-                            }
-                        });
-                        // Fallback al campo top-level por compatibilidad con registros antiguos
-                        if (items.length === 0 && r.especie) {
-                            especieCounts[r.especie] = (especieCounts[r.especie] || 0) + 1;
-                        }
-                    });
-                    var impEspecies = Object.entries(especieCounts).sort(function (a, b) { return b[1] - a[1]; });
-                    fesHBarChart('fes-imp-chart-especie', impEspecies, '#16a34a');
-
-                    // Heatmap Mes × Condición
-                    fesHeatmap('fes-imp-heatmap', impData);
-
-                    // Distribución por hora del día
-                    var countsByHour = new Array(24).fill(0);
-                    impData.forEach(function(r){
-                        var hora = r.hora_evento; // '08:30'
-                        if (!hora && r.created_at) {
-                            var d = new Date(r.created_at);
-                            hora = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-                        }
-                        if (!hora) return;
-                        var h = parseInt(hora.split(':')[0], 10);
-                        if (h >= 0 && h < 24) countsByHour[h]++;
-                    });
-                    var horaLabels = Array.from({length:24}, function(_,i){ return i.toString().padStart(2,'0')+':00'; });
-                    fesBarChart('fes-imp-chart-hora', 'fes-imp-chart-hora-labels', countsByHour, horaLabels, '#f59e0b');
-
-                    // Top horas críticas (top 5 horas con más eventos)
-                    var horaIndexed = countsByHour.map(function(v,i){ return [i, v]; }).filter(function(x){ return x[1]>0; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
-                    var topHorasEl = document.getElementById('fes-imp-top-horas');
-                    if (topHorasEl) {
-                        topHorasEl.innerHTML = horaIndexed.length ? horaIndexed.map(function(x){
-                            return '<span style="display:inline-block;background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #fde68a;">' +
-                                x[0].toString().padStart(2,'0') + ':00 · ' + x[1] + '</span>';
-                        }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos de hora</span>';
-                    }
-
-                    // Resumen por fase de operación
-                    var fases = fesCountBy(impData, 'fase_vuelo');
-                    var fasesEl = document.getElementById('fes-imp-fases-badges');
-                    if (fasesEl) {
-                        var faseColors = { 'Aterrizaje': ['#dbeafe','#1e40af','→'], 'Despegue': ['#dcfce7','#166534','↑'] };
-                        fasesEl.innerHTML = fases.length ? fases.map(function(f){
-                            var c = faseColors[f[0]] || ['#f1f5f9','#374151','✈'];
-                            return '<span style="display:inline-flex;align-items:center;gap:6px;background:' + c[0] + ';color:' + c[1] + ';border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;border:1px solid ' + c[0] + ';">' +
-                                c[2] + ' ' + f[0] + ' · <b>' + f[1] + '</b></span>';
-                        }).join('') : '<span style="color:#94a3b8;font-size:12px;">Sin datos de fase</span>';
-                    }
-
-                    // Tablas parte avión + pista
-                    var impPartes = fesCountBy(impData, 'parte_avion');
-                    var impPistas = fesCountBy(impData, 'pista');
-                    fesFillTable('fes-imp-parte-tbody', impPartes, 'Sin datos');
-                    fesFillTable('fes-imp-pista-tbody', impPistas, 'Sin datos');
+                    _fesRenderImpCharts(impData);
 
                     // ── RESCATES KPIs ─────────────────────────────────────────
                     var resEspecies  = {};
@@ -1220,9 +1306,8 @@ window.MHRFaunaDashboardPage = (function () {
                     });
                     fesBarChart('fes-res-mensual-bars', 'fes-res-mensual-labels', resCountsByMonth, MESES, '#16a34a');
 
-                    // Refresh aerolíneas panel if visible
-                    var aeroPanel = document.getElementById('fes-sub-aerolineas');
-                    if (aeroPanel && aeroPanel.style.display !== 'none') fesRenderAerolineas(impData);
+                    // Always render aerolíneas (default sub-tab)
+                    fesRenderAerolineas(impData);
 
                 } catch (err) {
                     console.error('Error in loadFaunaStatistics:', err);
@@ -1323,7 +1408,17 @@ window.MHRFaunaDashboardPage = (function () {
                                     fechaReporte = fechaReporte + ' ' + horaExtraida;
                                 }
                                 
-                                const especie = report.especie || '-';
+                                let especie = report.especie;
+                                if (!especie && report.detalle_items) {
+                                    try {
+                                        var _items = typeof report.detalle_items === 'string' ? JSON.parse(report.detalle_items) : report.detalle_items;
+                                        for (var _i = 0; _i < (_items || []).length; _i++) {
+                                            var _eField = (_items[_i].fields || []).find(function(f){ return f.key === 'Especie'; });
+                                            if (_eField && _eField.value) { especie = _eField.value; break; }
+                                        }
+                                    } catch(e) {}
+                                }
+                                especie = especie || '-';
                                 const ubicacion = report.ubicacion_texto || report.zona || '-';
                                 const responsable = report.responsable || '-';
                                 const estado = report.estado || 'pendiente';
