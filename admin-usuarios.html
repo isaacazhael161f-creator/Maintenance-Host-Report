@@ -1934,6 +1934,26 @@
       if (rpc.error) throw rpc.error;
       if (rpc.data && rpc.data.ok === false) throw new Error(rpc.data.error || 'Error asignando rol');
 
+      // Registrar también la membresía del aplicativo. El alta de Auth y
+      // user_roles no es suficiente porque el panel MHR filtra por aplicación.
+      var mhrApp = await _sb.from('aplicaciones').select('id').eq('clave', 'MHR').maybeSingle();
+      if (mhrApp.error) throw mhrApp.error;
+      if (mhrApp.data) {
+        var mhrPerms = { estado: 'ACTIVO' };
+        if (dirId) mhrPerms.dir_id = dirId;
+        if (subdirId) mhrPerms.subdir_id = subdirId;
+        if (gerId) mhrPerms.ger_id = gerId;
+        if (sections.length > 0) mhrPerms.allowed_sections = sections;
+        var membership = await _sb.from('usuarios_aplicaciones').upsert({
+          usuario_id: newId,
+          aplicacion_id: mhrApp.data.id,
+          rol: role,
+          permisos: mhrPerms,
+          estado: 'ACTIVO'
+        }, { onConflict: 'usuario_id,aplicacion_id' });
+        if (membership.error) throw membership.error;
+      }
+
       var finalPwd = (_el('au-reg-password') || {}).value || '';
       setMsg(
         '✓ Usuario creado. ' +
