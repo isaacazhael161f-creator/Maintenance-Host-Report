@@ -414,7 +414,30 @@ window.MHRAuthSessionPage = (function () {
                             });
                 
                             if (error) throw error;
-                
+
+                            // La autenticación es compartida con AIFA Operaciones.
+                            // Tener una cuenta en auth.users no implica acceso a MHR.
+                            // Validar la membresía antes de cargar cualquier módulo.
+                            var mhrAppCheck = await supabase.from('aplicaciones')
+                                .select('id').eq('clave', 'MHR').maybeSingle();
+                            if (mhrAppCheck.error || !mhrAppCheck.data) {
+                                await supabase.auth.signOut();
+                                throw new Error('No se pudo validar el acceso al aplicativo MHR.');
+                            }
+                            var mhrMembership = await supabase.from('usuarios_aplicaciones')
+                                .select('rol, estado')
+                                .eq('usuario_id', data.user.id)
+                                .eq('aplicacion_id', mhrAppCheck.data.id)
+                                .eq('estado', 'ACTIVO').maybeSingle();
+                            var globalRole = await supabase.from('user_roles')
+                                .select('role').eq('user_id', data.user.id).maybeSingle();
+                            var globalRoleName = String((globalRole.data && globalRole.data.role) || '').toLowerCase();
+                            var isGlobalMhrUser = globalRoleName === 'superuser' || globalRoleName === 'superadmin';
+                            if (mhrMembership.error || (!mhrMembership.data && !isGlobalMhrUser)) {
+                                await supabase.auth.signOut();
+                                throw new Error('Tu usuario no tiene acceso asignado al aplicativo MHR.');
+                            }
+
                             sessionStorage.setItem('user', JSON.stringify(data.user));
                             sessionStorage.setItem('token', data.session.access_token);
                 
