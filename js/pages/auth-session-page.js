@@ -222,7 +222,7 @@ window.MHRAuthSessionPage = (function () {
                     var currentCargo = (profile && profile.cargo) || '';
 
                     try {
-                        var usuarios = await window.MHRUserService.fetchAppUsuarios(supabase);
+                        var usuarios = await window.MHRUserService.fetchAppUsuarios(supabase, 'MHR');
 
                         var usuariosFiltrados = (usuarios || []).filter(function (u) {
                             return belongsToGsoPath(u.pertenece) && hasRevisionCrearPermission(u.permisos_extra);

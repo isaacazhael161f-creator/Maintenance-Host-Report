@@ -1,9 +1,31 @@
 (function(){
   window.MHRUserService = {
-    async fetchAppUsuarios(client){
+    async fetchAppUsuarios(client, appKey){
       var r = await client.from('vw_app_usuarios').select('*');
       if (r.error) throw r.error;
-      return r.data || [];
+      var users = r.data || [];
+      // La relación es opcional durante el despliegue: si la migración aún no
+      // está aplicada, MHR conserva exactamente el comportamiento anterior.
+      if (!appKey) return users;
+      var app = await client.from('aplicaciones').select('id').eq('clave', appKey).maybeSingle();
+      if (app.error || !app.data) return users;
+      var memberships = await client.from('usuarios_aplicaciones')
+        .select('usuario_id, estado, rol, permisos')
+        .eq('aplicacion_id', app.data.id).eq('estado', 'ACTIVO');
+      if (memberships.error) return users;
+      var allowed = {};
+      (memberships.data || []).forEach(function (m) { allowed[m.usuario_id] = m; });
+      return users.filter(function (u) {
+        var id = u.user_id || u.usuario_id || u.id;
+        var role = String(u.role || u.rol || '').toLowerCase();
+        return !!allowed[id] || role === 'superuser' || role === 'superadmin';
+      }).map(function (u) {
+        var m = allowed[u.user_id || u.usuario_id || u.id];
+        u.aplicacion = appKey;
+        if (m.rol) u.role = m.rol;
+        if (m.permisos) u.permisos_extra = Object.assign({}, u.permisos_extra || {}, m.permisos);
+        return u;
+      });
     },
     async findUsuarioByUsernameOrEmail(client, userValue){
       var r = await client

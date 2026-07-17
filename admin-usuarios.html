@@ -1058,18 +1058,35 @@
     _setStatus('Cargando…', 'text-warning');
     try {
       // Fetch view (basic info) + user_roles permissions + profiles (cargo) in parallel
-      var [ur, pr, ar, pfr] = await Promise.all([
+      var [ur, pr, ar, pfr, app] = await Promise.all([
         _sb.from('v_usuarios_roles').select('*'),
         _sb.from('user_roles').select('user_id, permissions'),
         _sb.from('areas')
           .select('id, clave, nombre, nivel, parent_area_id')
           .eq('estado', 'ACTIVO')
           .order('nivel').order('orden_visualizacion'),
-        _sb.from('profiles').select('id, full_name, username, cargo')
+        _sb.from('profiles').select('id, full_name, username, cargo'),
+        _sb.from('aplicaciones').select('id').eq('clave', 'MHR').maybeSingle()
       ]);
 
       if (ur.error) throw ur.error;
       _auUsers = ur.data || [];
+
+      // El administrador de MHR solo gestiona usuarios asignados a MHR.
+      // Si la migración aún no está aplicada, se conserva el comportamiento
+      // anterior para permitir un despliegue gradual sin interrumpir accesos.
+      if (!app.error && app.data) {
+        var memberships = await _sb.from('usuarios_aplicaciones')
+          .select('usuario_id').eq('aplicacion_id', app.data.id).eq('estado', 'ACTIVO');
+        if (!memberships.error) {
+          var allowed = {};
+          (memberships.data || []).forEach(function (m) { allowed[m.usuario_id] = true; });
+          _auUsers = _auUsers.filter(function (u) {
+            var role = String(u.role || u.rol || '').toLowerCase();
+            return !!allowed[u.user_id] || role === 'superuser' || role === 'superadmin';
+          });
+        }
+      }
 
       // Merge permissions into each user
       if (!pr.error && pr.data) {
