@@ -14,6 +14,7 @@ set search_path = public
 as $$
 declare
   v_permissions jsonb;
+  v_mhr_app uuid;
 begin
   if not public.mhr_is_admin() then
     return jsonb_build_object('ok', false, 'error', 'No autorizado');
@@ -33,10 +34,20 @@ begin
     v_permissions := v_permissions || jsonb_build_object('allowed_sections', to_jsonb(p_allowed_sections));
   end if;
 
-  insert into public.user_roles (user_id, role, permissions)
-  values (p_user_id, p_role, v_permissions)
-  on conflict (user_id) do update
-    set role = excluded.role, permissions = excluded.permissions;
+  select id into v_mhr_app from public.aplicaciones where clave = 'MHR' and activo = true;
+  if v_mhr_app is null then
+    return jsonb_build_object('ok', false, 'error', 'Aplicativo MHR no configurado');
+  end if;
+
+  -- El rol de MHR vive exclusivamente aquí. No insertar en user_roles:
+  -- esa tabla es compartida con AIFA/Operaciones y otorgaría acceso allí.
+  insert into public.usuarios_aplicaciones (usuario_id, aplicacion_id, rol, permisos, estado)
+  values (p_user_id, v_mhr_app, p_role, v_permissions, 'ACTIVO')
+  on conflict (usuario_id, aplicacion_id) do update
+    set rol = excluded.rol,
+        permisos = excluded.permisos,
+        estado = 'ACTIVO',
+        updated_at = now();
 
   return jsonb_build_object('ok', true);
 exception when others then

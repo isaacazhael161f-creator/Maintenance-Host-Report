@@ -37,6 +37,13 @@
       return (r.data && r.data[0]) ? r.data[0] : null;
     },
     async getUserRole(client, userId){
+      var mhrApp = await client.from('aplicaciones').select('id').eq('clave', 'MHR').maybeSingle();
+      if (!mhrApp.error && mhrApp.data) {
+        var mr = await client.from('usuarios_aplicaciones')
+          .select('rol').eq('usuario_id', userId).eq('aplicacion_id', mhrApp.data.id)
+          .eq('estado', 'ACTIVO').maybeSingle();
+        if (!mr.error && mr.data && mr.data.rol) return String(mr.data.rol).trim();
+      }
       var r = await client
         .from('user_roles')
         .select('role')
